@@ -1,0 +1,4 @@
+/** Copyright (C) Marat Fayzullin 1994,1995,1996,1997       **/
+/**     You are not allowed to distribute this software     **/
+/**     commercially. Please, notify me, if you make any    **/   
+/**     changes to this file.                               **/

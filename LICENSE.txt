@@ -1,0 +1,6 @@
+This repository contains code from various sources subject to different licenses.
+
+MEMU specific code is in the public domain and is covered by the Unlicense:
+<http://unlicense.org/>
+
+The FatFS code is Copyright (C) 20xx, ChaN. See the associated LICENSE.txt file.
