@@ -148,8 +148,8 @@ static FLAGVAL flagvals[] =
 		{"tape"			,DIAG_TAPE},
 		{"speed"		,DIAG_SPEED},
 		{"exit"			,DIAG_EXIT},
-		{"hw-win"		,DIAG_HW_WIN},
-		{"hw-kbd"		,DIAG_HW_KBD},
+		{"win-hw"		,DIAG_WIN_HW},
+		{"kbd-hw"		,DIAG_KBD_HW},
 		{"dart-ports"		,DIAG_DART_PORTS},
 		{"dart-config"		,DIAG_DART_CFG},
 		{"dart-data"		,DIAG_DART_DATA},
@@ -164,6 +164,10 @@ static FLAGVAL flagvals[] =
         {"vga-mode", DIAG_VGA_MODE},
         {"vga-port", DIAG_VGA_PORT},
         {"vga-refresh", DIAG_VGA_REFRESH},
+        {"nfx-port", DIAG_NFX_PORT},
+        {"nfx-reg", DIAG_NFX_REG},
+        {"nfx-event", DIAG_NFX_EVENT},
+        {"nfx-data", DIAG_NFX_DATA},
         {"chip-log", DIAG_CHIP_LOG}
 	};
 /*...e*/
@@ -303,12 +307,14 @@ void diag_control(int c)
 		case 'a': diag_flags[DIAG_SPEED_UP         ] ^= TRUE; break;
 		case 'b': diag_flags[DIAG_MEM_IOBYTE       ] ^= TRUE; break;
      LM(case 'd': diag_flags[DIAG_ACT_MEM_DUMP     ]  = TRUE; break;)
-        case 'e': snd_query (); break;
+//      case 'e': snd_query (); break;
 		case 'f': diag_flags[DIAG_CPM_BDOS_FILE    ] ^= TRUE; break;
 		case 'i': diag_flags[DIAG_Z80_INTERRUPTS   ] ^= TRUE; break;
 		case 'k': diag_flags[DIAG_KBD_SENSE        ] ^= TRUE; break;
      LM(case 'l': diag_flags[DIAG_ACT_SNA_LOAD     ]  = TRUE; break;)
 		case 'm': diag_flags[DIAG_SPEED            ] ^= TRUE; break;
+ 		case 'n': diag_flags[DIAG_ACT_VID_DUMP_VDP ]  = TRUE; break;
+ 		case 'o': diag_flags[DIAG_VID_AUTO_DUMP_VDP] ^= TRUE; break;
 		case 'p': diag_flags[DIAG_BAD_PORT_DISPLAY ] ^= TRUE; break;
 		case 'q': diag_flags[DIAG_BAD_PORT_IGNORE  ] ^= TRUE; break;
      LM(case 'r': diag_flags[DIAG_ACT_Z80_REGS	   ]  = TRUE; break;)

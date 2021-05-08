@@ -1,0 +1,3385 @@
+cbool.h
+diff: cbool.h: No such file or directory
+cfx2.h
+CodesCB.h
+diff: CodesCB.h: No such file or directory
+CodesED.h
+diff: CodesED.h: No such file or directory
+Codes.h
+diff: Codes.h: No such file or directory
+CodesXCB.h
+diff: CodesXCB.h: No such file or directory
+CodesXX.h
+diff: CodesXX.h: No such file or directory
+common.h
+config.h
+8a9,17
+> #define WINCFG_WTH          80
+> #define WINCFG_HGT          24
+> 
+> #define STY_NORMAL          0   // ( 16 * CLR_NORMAL    + CLR_BACKGROUND )
+> #define STY_HIGHLIGHT       1   // ( 16 * CLR_HIGHLIGHT + CLR_HIGHBACK )
+> #define STY_DISABLED        2   // ( 16 * CLR_DISABLED  + CLR_BACKGROUND )
+> #define STY_HELP            3   // ( 16 * CLR_HELP      + CLR_BACKGROUND )
+> #define STY_COUNT           4
+> 
+15a25
+> extern void cfg_set_disk_dir (const char *psDir);
+18a29,30
+> extern void cfg_keypress(int wk);
+> extern void cfg_keyrelease(int wk);
+console.h
+diff: console.h: No such file or directory
+cpm.h
+ctc.h
+dart.h
+diag.h
+24d23
+<     DIAG_ALWAYS,
+25a25
+>     DIAG_ALWAYS,
+97,100d96
+<     DIAG_NFX_PORT,
+<     DIAG_NFX_REG,
+<     DIAG_NFX_EVENT,
+<     DIAG_NFX_DATA,
+108a105,106
+> 	DIAG_ACT_VID_DUMP_VDP,
+> 	DIAG_VID_AUTO_DUMP_VDP,
+dirt.h
+dis.h
+gpio.h
+diff: gpio.h: No such file or directory
+hardware.h
+diff: hardware.h: No such file or directory
+joy.h
+kbd.h
+19a20,22
+> typedef void (*KeyHandler)(int);
+> extern void kbd_set_handlers (KeyHandler press, KeyHandler release);
+> 
+25c28
+< #ifndef NO_JOY
+---
+> #ifdef HAVE_JOY
+28d30
+< extern BOOLEAN kbd_grid_test(int row, int bitpos);
+kernel.h
+diff: kernel.h: No such file or directory
+keyeventbuffer.h
+diff: keyeventbuffer.h: No such file or directory
+kfuncs.h
+diff: kfuncs.h: No such file or directory
+mem.h
+9a10,12
+> #ifdef SMALL_MEM
+> #define MAX_BLOCKS 4
+> #else
+10a14
+> #endif
+48d51
+< extern void mem_wrchk (BOOLEAN bChk);
+61a65
+> extern void mem_wrchk (BOOLEAN bChk);
+77a82,85
+> 
+> #ifdef SMALL_MEM
+> extern byte *mem_ram_ptr (word addr, word *psize);
+> #endif
+memu.h
+11a12
+> #ifdef HAVE_SID
+12a14
+> #endif
+29a32
+> #ifdef HAVE_JOY
+30a34
+> #endif
+31a36
+> #ifdef HAVE_SID
+33d37
+< 	double latency;
+34a39
+> #endif
+37a43,44
+> 	double latency;
+> #ifdef HAVE_JOY
+38a46
+> #endif
+39a48
+> #ifdef HAVE_SID
+40a50
+> #endif
+68,73c78
+< #ifdef ALT_ENTRY
+< extern int ALT_ENTRY (int argc, const char *argv[]);
+< #else
+< extern int main (int argc, const char *argv[]);
+< #endif
+< 
+---
+> extern int memu (int argc, const char *argv[]);
+77a83
+> extern void unimplemented (const char *psErr);
+mon.h
+43a44
+> extern void mon_show (void);
+monprom.h
+nfx.h
+diff: nfx.h: No such file or directory
+printer.h
+roms.h
+17a18,25
+> //#ifdef SMALL_MEM
+> extern const byte rom_os   [ROM_SIZE];
+> extern const byte rom_basic[ROM_SIZE];
+> extern const byte rom_assem[ROM_SIZE];
+> extern const byte rom_cpm  [ROM_SIZE];
+> extern const byte rom_sdx  [ROM_SIZE];
+> //#else
+> #if 0
+20a29
+> extern byte rom_cpm  [ROM_SIZE];
+21a31
+> #endif
+sdxfdc.h
+sid.h
+snd.h
+spec.h
+Tables.h
+diff: Tables.h: No such file or directory
+tape.h
+TxtRead.h
+diff: TxtRead.h: No such file or directory
+types.h
+ui.h
+vdeb.h
+vga.h
+vid.h
+17a18
+> #define	VID_MEMORY_SIZE 0x4000
+35a37,39
+> extern byte vid_reg_read(int reg);
+> extern void vid_reg_write(int reg, byte b);
+> extern byte vid_status_read(void);
+44,51d47
+< 
+< #if 0
+< // #ifdef HAVE_VGA
+< #include "win.h"
+< byte vid_getram (unsigned int addr);
+< byte vid_getreg (unsigned int addr);
+< WIN *vid_getwin (void);
+< #endif
+win.h
+Z80.h
+diff: Z80.h: No such file or directory
+cfx2.c
+284a285
+> #ifdef DEBUG
+285a287
+> #endif
+common.c
+8c8
+< #include <stdio.h>
+---
+> #include "ff_stdio.h"
+29c29
+< #ifndef NO_JOY
+---
+> #ifdef HAVE_JOY
+32c32
+< #ifndef NO_DART
+---
+> #ifdef HAVE_DART
+38d37
+< #include "sid.h"
+41,42d39
+< #include "spec.h"
+< #include "ui.h"
+50a48,51
+> #ifndef SMALL_MEM
+> #include "sid.h"
+> #include "spec.h"
+> #include "ui.h"
+51a53
+> #endif
+87,88c89
+<     diag_message(DIAG_EXIT, reason);
+<     diag_message (DIAG_INIT, "Terminate");
+---
+> #ifndef SMALL_MEM
+92a94,99
+>     diag_message (DIAG_INIT, "snd_term");
+>     snd_term();
+>     diag_message (DIAG_INIT, "sid_term");
+>     sid_term();
+>     diag_message (DIAG_INIT, "spec_term");
+>     spec_term();
+95,100d101
+< #ifdef HAVE_VGA
+<     if ( cfg.bVGA )
+<         {
+<         diag_message (DIAG_INIT, "vga_term");
+<         vga_term ();
+<         }
+102,107c103,108
+<     diag_message (DIAG_INIT, "vid_term");
+<     vid_term();
+<     diag_message (DIAG_INIT, "mon_term");
+<     mon_term();
+<     diag_message (DIAG_INIT, "snd_term");
+<     snd_term();
+---
+> #ifdef HAVE_JOY
+>     diag_message (DIAG_INIT, "joy_term");
+>     joy_term();
+> #endif
+>     diag_message (DIAG_INIT, "print_term");
+>     print_term();
+110c111
+< #ifndef NO_DART
+---
+> #ifdef HAVE_DART
+114,117d114
+< #ifndef NO_JOY
+<     diag_message (DIAG_INIT, "joy_term");
+<     joy_term();
+< #endif
+132,137c129,140
+<     diag_message (DIAG_INIT, "sid_term");
+<     sid_term();
+<     diag_message (DIAG_INIT, "print_term");
+<     print_term();
+<     diag_message (DIAG_INIT, "spec_term");
+<     spec_term();
+---
+> #ifdef HAVE_VGA
+>     if ( cfg.bVGA )
+>         {
+>         diag_message (DIAG_INIT, "vga_term");
+>         vga_term ();
+>         }
+> #endif
+>     diag_message (DIAG_INIT, "mon_term");
+>     mon_term();
+>     diag_message (DIAG_INIT, "vid_term");
+>     vid_term();
+>     diag_message (DIAG_ALWAYS, "Terminate: %s", reason);
+203,204c206,212
+<     strcat (psPath, "/");
+<     strcat (psPath, psFile);
+---
+>     int n = strlen (psPath);
+>     if ( n > 0 )
+>         {
+>         char ch = psPath[n - 1];
+>         if (( ch != '/' ) && ( ch != '\\' ))  strcat (psPath, "/");
+>         }
+>     strcpy (&psPath[n], psFile);
+207a216
+> #ifndef SMALL_MEM
+305a315
+> #endif  // ! SMALL_MEM
+config.c
+6c6
+< #include <stdio.h>
+---
+> #include "ff_stdio.h"
+15a16
+> #include "cfgwin.h"
+26a28
+> #ifdef HAVE_SID
+27a30,33
+> #else
+> #define N_SIDISC    0
+> #endif
+> #ifndef SMALL_MEM
+28a35
+> #endif
+36c43
+< #ifndef NO_JOY
+---
+> #ifdef HAVE_JOY
+46,61d52
+< #define CLR_BACKGROUND      0
+< #define CLR_HIGHBACK        1
+< #define CLR_NORMAL          2
+< #define CLR_HIGHLIGHT       3
+< #define CLR_DISABLED        4
+< #define CLR_HELP            5
+< #define CLR_COUNT           6
+< 
+< #define STY_NORMAL          ( 16 * CLR_NORMAL    + CLR_BACKGROUND )
+< #define STY_HIGHLIGHT       ( 16 * CLR_HIGHLIGHT + CLR_HIGHBACK )
+< #define STY_DISABLED        ( 16 * CLR_DISABLED  + CLR_BACKGROUND )
+< #define STY_HELP            ( 16 * CLR_HELP      + CLR_BACKGROUND )
+< 
+< #define WINCFG_WTH          80
+< #define WINCFG_HGT          24
+< 
+73a65,68
+> #ifdef SMALL_MEM
+> #define SDX_MEM_BLOCKS      4
+> #define CPM_MEM_BLOCKS      4
+> #else
+75a71
+> #endif
+111,121d106
+< static WIN *cfg_win  =  NULL;
+< static int  cfg_wk   =  -1;
+< static COL cfg_clr[CLR_COUNT] = {
+<     {   0,   0,   0 },   /* Backgound */
+<     {  64,  64,  64 },   /* Highlighted background */
+<     {   0, 255, 255 },   /* Normal text */
+<     { 255, 255,   0 },   /* Highlighted text */
+<     {   0, 127, 127 },   /* Disabled text */
+<     {   0, 255,   0 }    /* Help text */
+<     };
+< 
+139a125
+> #ifdef HAVE_SID
+140a127
+> #endif
+150,187c137
+< 
+< #ifndef NO_JOY
+< static struct st_joykey
+<     {
+<     int     wk;
+<     int     row;
+<     int     bitpos;
+<     }
+<     joykey[] =
+<         {
+<         {WK_Left,   3, 0x80},
+<         {WK_Right,  4, 0x80},
+<         {WK_Up,     2, 0x80},
+<         {WK_Down,   6, 0x80},
+<         {WK_Return, 5, 0x40},
+<         {WK_Escape, 1, 0x01}
+<         };
+< static int jk_last = -1;
+< static long long ms_last = 0;
+< #define JOY_REPEAT  250     // Repeat interval for joystick buttons in ms.
+< #endif
+< 
+< //  Set configuration file name
+< 
+< void config_set_file (const char *psFile)
+<     {
+<     config_fn   =   psFile;
+<     }
+< 
+< //  Exit config screen.
+< void config_term (void)
+<     {
+<     if ( cfg_win != NULL )
+<         {
+<         win_delete (cfg_win);
+<         cfg_win  =  NULL;
+<         }
+<     }
+---
+> static int  cfg_wk   =  -1;
+192c142
+< static void cfg_keypress(int wk)
+---
+> void cfg_keypress(int wk)
+204c154
+< static void cfg_keyrelease(int wk)
+---
+> void cfg_keyrelease(int wk)
+210,278d159
+< //  Display text on config screen - Uses the monitor ROM font
+< static void cfg_print (int iRow, int iCol, int iSty, const char *psTxt, int nCh)
+<     {
+<     BOOLEAN  bEOT;
+<     int  iFG =  iSty >> 4;
+<     int  iBG =  iSty & 0x0f;
+<     byte *pby   =  cfg_win->data + GLYPH_HEIGHT * cfg_win->width * iRow + GLYPH_WIDTH * iCol;
+<     int  ch;
+<     byte by;
+<     int  iScan, iPix, iCh;
+<     if ( nCh <= 0 )   nCh   =  strlen (psTxt);
+< 
+<     for ( iScan = 0; iScan < GLYPH_HEIGHT; ++iScan )
+<         {
+<         bEOT  =  FALSE;
+<         for ( iCh = 0; iCh < nCh; ++iCh )
+<             {
+<             if ( ! bEOT )
+<                 {
+<                 ch =  psTxt[iCh];
+<                 if ( ch == '\0' )
+<                     {
+<                     bEOT  =  TRUE;
+<                     ch =  ' ';
+<                     }
+<                 else if ( ch < 0 )   ch =  '?';
+<                 }
+<             else  ch =  ' ';
+<             by =  mon_alpha_prom[ch][iScan];
+<             for ( iPix = 0; iPix < GLYPH_WIDTH; ++iPix )
+<                 {
+<                 *pby  =  ( by & 0x80 ) ? iFG : iBG;
+<                 ++pby;
+<                 by = by << 1;
+<                 }
+<             }
+<         pby   += cfg_win->width - GLYPH_WIDTH * nCh;
+<         }
+<     }
+< 
+< //  Display a help message
+< static void cfg_help (const char *psHelp)
+<     {
+<     cfg_print (iRowHelp, 0, STY_HELP, psHelp, WINCFG_WTH);
+<     }
+< 
+< //  Dispays a cursor (inverted video)
+< static void cfg_csr (int iRow, int iCol, int iSty)
+<     {
+<     int  iFG =  iSty >> 4;
+<     int  iBG =  iSty & 0x0f;
+<     int  iPix;
+<     byte *pby   =  cfg_win->data + ( GLYPH_HEIGHT * ( iRow + 1 ) - 1 ) * cfg_win->width + GLYPH_WIDTH * iCol;
+<     for ( iPix = 0; iPix < GLYPH_WIDTH; ++iPix )
+<         {
+<         if ( *pby == iFG )   *pby  =  iBG;
+<         else                 *pby  =  iFG;
+<         ++pby;
+<         }
+<     }
+< 
+< //  Clears rows of text on the configuration screen
+< static void cfg_clear_rows (int iFirst, int iLast)
+<     {
+<     memset (cfg_win->data + GLYPH_HEIGHT * cfg_win->width * iFirst,
+<         CLR_BACKGROUND,
+<         GLYPH_HEIGHT * cfg_win->width * ( iLast - iFirst ));
+<     }
+< 
+284c165
+< static int cfg_key (void)
+---
+> int cfg_key (void)
+286c167,168
+<     win_refresh (cfg_win);
+---
+>     // diag_message (DIAG_INIT, "Entered cfg_key");
+>     cfg_refresh ();
+289a172
+>         // diag_message (DIAG_INIT, "Call kbd_periodic");
+295,320d177
+< #ifndef NO_JOY
+<         int jk = -1;
+<         joy_periodic ();
+<         for (int i = 0; i < sizeof (joykey) / sizeof (joykey[0]); ++i)
+<             {
+<             if (kbd_grid_test (joykey[i].row, joykey[i].bitpos))
+<                 {
+<                 jk = joykey[i].wk;
+<                 break;
+<                 }
+<             }
+<         if ( jk > 0 )
+<             {
+<             long long ms_now = get_millis ();
+<             if ( ( jk != jk_last ) || ( ms_now - ms_last > JOY_REPEAT ) )
+<                 {
+<                 cfg_wk = jk;
+<                 jk_last = jk;
+<                 ms_last = ms_now;
+<                 }
+<             }
+<         else
+<             {
+<             jk_last = -1;
+<             }
+< #endif
+321a179
+>     // diag_message (DIAG_INIT, "Return cfg_wk = %d", cfg_wk);
+324a183,216
+> //  Test for entering config mode
+> BOOLEAN test_cfg_key (int wk)
+>     {
+>     if ( config_fn == NULL ) return FALSE;
+>     // diag_message (DIAG_INIT, "Test key 0x%02X for Config key", wk);
+>     switch (wk)
+>         {
+> //        case WK_Scroll_Lock:
+>         case WK_Sys_Req:
+>         case WK_PC_Windows_L:
+>         case WK_PC_Windows_R:
+>         case WK_PC_Menu:
+>         case WK_F11:
+>             // diag_message (DIAG_INIT, "Config Key found");
+>             config ();
+>             // diag_message (DIAG_INIT, "Config exit");
+>             return TRUE;
+>         }
+>     return FALSE;
+>     }
+> 
+> //  Set configuration file name
+> 
+> void config_set_file (const char *psFile)
+>     {
+>     config_fn   =   psFile;
+>     }
+> 
+> //  Display a help message
+> static void cfg_help (const char *psHelp)
+>     {
+>     cfg_print (iRowHelp, 0, STY_HELP, psHelp, WINCFG_WTH);
+>     }
+> 
+1031,1072d922
+< //  Display drive option selection
+< static void row_dropt_draw (int info, int iState)
+<     {
+<     static char sNo[]   =  " [ ] No  ";
+<     static char sYes[]  =  " [ ] Yes ";
+<     static const char *psHelp[] = {   "<Space> to select: SiDiscs limited to 8MB",
+<                                       "<Space> to select: Huge SiDiscs for HexTrain",
+<                                       "<Space> to select: SiDisc contents lost on exit",
+<                                       "<space> to select: SiDisc contents saved. Slow for huge disks"};
+<     int iSty = ( iState == STATE_DISABLED ) ? STY_DISABLED : STY_NORMAL;
+<     int iSel;
+<     if ( iState == STATE_FOCUS ) iSel = iSelDropt;
+<     else iSel = -1;
+<     if ( iSidEmu & SIDEMU_HUGE )
+<         {
+<         sNo[2]  =  ' ';
+<         sYes[2] =  '*';
+<         }
+<     else
+<         {
+<         sNo[2]  =  '*';
+<         sYes[2] =  ' ';
+<         }
+<     cfg_print (ROW_DRIVEOPT, 0, iSty, "Huge SiDiscs: ", 0);
+<     cfg_print (ROW_DRIVEOPT, 14, ( iSel == 0 ) ? STY_HIGHLIGHT : iSty, sNo, 0);
+<     cfg_print (ROW_DRIVEOPT, 24, ( iSel == 1 ) ? STY_HIGHLIGHT : iSty, sYes, 0);
+<     if ( iSidEmu & SIDEMU_NO_SAVE )
+<         {
+<         sNo[2]  =  '*';
+<         sYes[2] =  ' ';
+<         }
+<     else
+<         {
+<         sNo[2]  =  ' ';
+<         sYes[2] =  '*';
+<         }
+<     cfg_print (ROW_DRIVEOPT, 40, iSty, "Save silicon drives: ", 0);
+<     cfg_print (ROW_DRIVEOPT, 61, ( iSel == 2 ) ? STY_HIGHLIGHT : iSty, sNo, 0);
+<     cfg_print (ROW_DRIVEOPT, 71, ( iSel == 3 ) ? STY_HIGHLIGHT : iSty, sYes, 0);
+<     if ( iState == STATE_FOCUS ) cfg_help (psHelp[iSelDropt]);
+<     }
+< 
+1095a946,947
+> //  Display drive option selection
+> #ifdef HAVE_SID
+1114a967,1007
+> static void row_dropt_draw (int info, int iState)
+>     {
+>     static char sNo[]   =  " [ ] No  ";
+>     static char sYes[]  =  " [ ] Yes ";
+>     static const char *psHelp[] = {   "<Space> to select: SiDiscs limited to 8MB",
+>                                       "<Space> to select: Huge SiDiscs for HexTrain",
+>                                       "<Space> to select: SiDisc contents lost on exit",
+>                                       "<space> to select: SiDisc contents saved. Slow for huge disks"};
+>     int iSty = ( iState == STATE_DISABLED ) ? STY_DISABLED : STY_NORMAL;
+>     int iSel;
+>     if ( iState == STATE_FOCUS ) iSel = iSelDropt;
+>     else iSel = -1;
+>     if ( iSidEmu & SIDEMU_HUGE )
+>         {
+>         sNo[2]  =  ' ';
+>         sYes[2] =  '*';
+>         }
+>     else
+>         {
+>         sNo[2]  =  '*';
+>         sYes[2] =  ' ';
+>         }
+>     cfg_print (ROW_DRIVEOPT, 0, iSty, "Huge SiDiscs: ", 0);
+>     cfg_print (ROW_DRIVEOPT, 14, ( iSel == 0 ) ? STY_HIGHLIGHT : iSty, sNo, 0);
+>     cfg_print (ROW_DRIVEOPT, 24, ( iSel == 1 ) ? STY_HIGHLIGHT : iSty, sYes, 0);
+>     if ( iSidEmu & SIDEMU_NO_SAVE )
+>         {
+>         sNo[2]  =  '*';
+>         sYes[2] =  ' ';
+>         }
+>     else
+>         {
+>         sNo[2]  =  ' ';
+>         sYes[2] =  '*';
+>         }
+>     cfg_print (ROW_DRIVEOPT, 40, iSty, "Save silicon drives: ", 0);
+>     cfg_print (ROW_DRIVEOPT, 61, ( iSel == 2 ) ? STY_HIGHLIGHT : iSty, sNo, 0);
+>     cfg_print (ROW_DRIVEOPT, 71, ( iSel == 3 ) ? STY_HIGHLIGHT : iSty, sYes, 0);
+>     if ( iState == STATE_FOCUS ) cfg_help (psHelp[iSelDropt]);
+>     }
+> 
+1167a1061
+> #endif
+1290,1292c1184,1186
+<         psExt = ".img\0.sid\0.bin";
+<         nExt = 2;
+<         if ( iSidEmu & SIDEMU_HUGE ) nExt = 3;
+---
+>         psExt = ".img\0.bin\0.sid";
+>         nExt = 3;
+>         // if ( iSidEmu & SIDEMU_HUGE ) nExt = 3;
+1317c1211
+< static void cfg_set_disk_dir (const char *psDir)
+---
+> void cfg_set_disk_dir (const char *psDir)
+1334a1229
+> #ifdef HAVE_SID
+1335a1231
+> #endif
+1398a1295
+> #ifdef HAVE_SID
+1402a1300
+> #endif
+1420a1319
+> #ifdef HAVE_SID
+1427a1327
+> #endif
+1466a1367
+> #ifdef HAVE_SID
+1470a1372
+> #endif
+1488a1391
+> #ifdef HAVE_SID
+1495a1399
+> #endif
+1525a1430,1458
+> #ifdef SMALL_MEM
+>     if ( rom_enable & ROMEN_CPM )
+>         {
+>         if ( cfg.mon_emu & MONEMU_WIN_MONO ) iCfgOld  =  CFG_CPM_MONO;
+>         else                                 iCfgOld  =  CFG_CPM_COLOUR;
+>         }
+>     else if ( rom_enable & ROMEN_SDX2 )
+>         {
+>         iCfgOld  =  CFG_SDX;
+>         }
+> #else
+>     if ( ( rom_enable & ROMEN_CPM ) && ( cfg.rom_fn[ROM_CPM] != NULL ) )
+>         {
+>         if ( cfg.mon_emu & MONEMU_WIN_MONO ) iCfgOld  =  CFG_CPM_MONO;
+>         else                                 iCfgOld  =  CFG_CPM_COLOUR;
+>         }
+>     else if ( ( rom_enable & ROMEN_SDX2 ) && ( cfg.rom_fn[ROM_SDX2] != NULL ) )
+>         {
+>         iCfgOld  =  CFG_SDX;
+>         }
+> #endif
+>     else if ( mem_get_alloc () >= 4 )
+>         {
+>         iCfgOld  =  CFG_MTX512;
+>         }
+>     else
+>         {
+>         iCfgOld  =  CFG_MTX500;
+>         }
+1528d1460
+<     else
+1530,1546d1461
+<         if ( ( rom_enable & ROMEN_CPM ) && ( cfg.rom_fn[ROM_CPM] != NULL ) )
+<             {
+<             if ( cfg.mon_emu & MONEMU_WIN_MONO ) iCfgOld  =  CFG_CPM_MONO;
+<             else                                 iCfgOld  =  CFG_CPM_COLOUR;
+<             }
+<         else if ( ( rom_enable & ROMEN_SDX2 ) && ( cfg.rom_fn[ROM_SDX2] != NULL ) )
+<             {
+<             iCfgOld  =  CFG_SDX;
+<             }
+<         else if ( mem_get_alloc () >= 4 )
+<             {
+<             iCfgOld  =  CFG_MTX512;
+<             }
+<         else
+<             {
+<             iCfgOld  =  CFG_MTX500;
+<             }
+1578a1494
+> #ifdef HAVE_SID
+1579a1496
+> #endif
+1594,1599c1511
+<     cfg_win  =  win_create (GLYPH_WIDTH * WINCFG_WTH, GLYPH_HEIGHT * WINCFG_HGT,
+<         cfg.mon_width_scale, cfg.mon_height_scale,
+<         "MEMU Configuration",
+<         NULL, NULL,
+<         cfg_clr, CLR_COUNT,
+<         cfg_keypress, cfg_keyrelease);
+---
+>     cfg_wininit ();
+1616,1618d1527
+< #ifdef ALT_SAVE_CFG
+<         ALT_SAVE_CFG (pfil);
+< #endif
+1644c1553
+<             if ( cfg.latency != 0.0 )   fprintf (pfil, "-snd-latency %f\n", cfg.latency);
+---
+>             // if ( cfg.latency != 0.0 )   fprintf (pfil, "-snd-latency %f\n", cfg.latency);
+1661,1668d1569
+< #ifndef NO_JOY
+<         if ( cfg.joy_emu & JOYEMU_JOY )
+<             {
+<             fprintf (pfil, "-joy\n");
+<             if ( cfg.joy_central != 0 ) fprintf (pfil, "-joy-central %d\n", cfg.joy_central);
+<             if ( cfg.joy_buttons != NULL ) fprintf (pfil, "-joy-buttons \"%s\"\n", cfg.joy_buttons);
+<             }
+< #endif
+1671d1571
+<         if ( cfg.tracks_sdxfdc[0] != 0 ) fprintf (pfil, "-sdx-tracks %d\n", cfg.tracks_sdxfdc[0]);
+1673c1573
+<         if ( cfg.tracks_sdxfdc[1] != 0 ) fprintf (pfil, "-sdx-tracks2 %d\n", cfg.tracks_sdxfdc[1]);
+---
+> #ifdef HAVE_SID
+1678a1579
+> #endif
+1697a1599,1615
+>         rom_enable   =  mem_get_rom_enable ();
+>         if ( rom_enable != 0xff )   fprintf (pfil, "-rom-enable 0x%02x\n", rom_enable);
+>         
+> #ifdef ALT_SAVE_CFG
+>         ALT_SAVE_CFG (pfil);
+> #endif
+> #if 0
+>         if ( cfg.tracks_sdxfdc[0] != 0 ) fprintf (pfil, "-sdx-tracks %d\n", cfg.tracks_sdxfdc[0]);
+>         if ( cfg.tracks_sdxfdc[1] != 0 ) fprintf (pfil, "-sdx-tracks2 %d\n", cfg.tracks_sdxfdc[1]);
+> #ifdef HAVE_JOY
+>         if ( cfg.joy_emu & JOYEMU_JOY )
+>             {
+>             fprintf (pfil, "-joy\n");
+>             if ( cfg.joy_central != 0 ) fprintf (pfil, "-joy-central %d\n", cfg.joy_central);
+>             if ( cfg.joy_buttons != NULL ) fprintf (pfil, "-joy-buttons \"%s\"\n", cfg.joy_buttons);
+>             }
+> #endif
+1714,1715c1632
+<         rom_enable   =  mem_get_rom_enable ();
+<         if ( rom_enable != 0xff )   fprintf (pfil, "-rom-enable 0x%02x\n", rom_enable);
+---
+> #ifdef HAVE_GUI
+1720c1637,1642
+<         if ( cfg.tape_fn ) fprintf (pfil, "%s\n", cfg.tape_fn);
+---
+> #endif
+> #endif
+>         if ( ! cfg.tape_disable )
+>             {
+>             if ( ( ps = tape_get_input () ) ) fprintf (pfil, "\"%s\"\n", ps);
+>             }
+1759a1682
+>                 cfg_set_display ();
+1771a1695
+>                 cfg_set_display ();
+1783a1708
+>                 cfg_set_display ();
+1786a1712
+> #ifndef SMALL_MEM
+1787a1714
+> #endif
+1794a1722
+> #ifndef SMALL_MEM
+1796a1725
+> #endif
+1802a1732
+>                 cfg_set_display ();
+1809a1740
+> #ifndef SMALL_MEM
+1811a1743
+> #endif
+1817a1750
+>                 cfg_set_display ();
+1827a1761
+>                 cfg_set_display ();
+1940a1875
+> #ifdef HAVE_SID
+1942a1878
+> #endif
+1947a1884
+> #ifdef HAVE_CFX2
+1948a1886
+> #endif
+1959d1896
+<                 kbd_apply_unmap ();
+2014a1952
+> #ifdef HAVE_SID
+2015a1954
+> #endif
+2016a1956
+> #if NUM_DRIVES > 1
+2017a1958,1959
+> #endif
+> #if NUM_DRIVES > 2
+2018a1961,1962
+> #endif
+> #if NUM_DRIVES > 3
+2019a1964,1965
+> #endif
+> #if NUM_DRIVES > 4
+2020a1967,1968
+> #endif
+> #if NUM_DRIVES > 5
+2021a1970
+> #endif
+2036a1986
+>             // printf ("Redraw config screen\n");
+2045a1996
+>         // printf ("cfg_key = %d\n", wk);
+2074,2094d2024
+< //  Test for entering config mode
+< BOOLEAN test_cfg_key (int wk)
+<     {
+<     // diag_message (DIAG_INIT, "Test key 0x%02X for Config key", wk);
+<     switch (wk)
+<         {
+< //        case WK_Scroll_Lock:
+<         case WK_Sys_Req:
+<         case WK_PC_Windows_L:
+<         case WK_PC_Windows_R:
+<         case WK_PC_Menu:
+<         case WK_F11:
+<         {
+<         // diag_message (DIAG_INIT, "Config Key found");
+<         config ();
+<         return TRUE;
+<         }
+<         }
+<     return FALSE;
+<     }
+< 
+2206a2137
+> #ifdef HAVE_OSFS
+2207a2139
+> #endif
+2215a2148
+> #ifdef HAVE_OSFS
+2216a2150
+> #endif
+2226d2159
+< #ifdef HAVE_CFX2
+2228a2162
+> #ifdef HAVE_CFX2
+2232c2166,2168
+<         }
+---
+> #else
+>         unimplemented ((*pargv)[*pi]);
+>         ++(*pi);
+2233a2170
+>         }
+2247,2250d2183
+<     else if ( !strcmp((*pargv)[*pi], "-help") )
+<         {
+<         usage (NULL);
+<         }
+2268,2317c2201
+<     fprintf(stderr, "       -disk-dir            directory containg disk images\n");
+<     fprintf(stderr, "       -tape-dir            directory containg tape files\n");
+<     fprintf(stderr, "       -help                display this usage message\n");
+<     }
+< 
+< //  Test for a regular file
+< 
+< #ifdef WIN32
+< #define S_ISREG(mode) (mode & _S_IFREG)
+< #endif
+< 
+< BOOLEAN cfg_test_file (const char *psPath)
+<     {
+<     struct stat st;
+<     int iErr = stat (psPath, &st);
+<     return ( ( iErr == 0 ) && ( S_ISREG (st.st_mode) ) );
+<     }
+< 
+< WIN * get_cfg_win (void)
+<     {
+<     return   cfg_win;
+<     }
+< 
+< //  Find the configuration file
+< #if 0
+< #ifdef __circle__
+< char * cfg_find_file (const char *argv0)
+<     {
+<     static char *psFile = "/memu.cfg";
+<     return psFile;
+<     }
+< #else
+< //  Combine directory and file names
+< static char *cfg_make_path (const char *psDir, char chDirSep, const char *psFile)
+<     {
+<     char * psPath;
+<     if ( psDir != NULL )
+<         {
+<         int nDir = strlen (psDir);
+<         int nPath = nDir + strlen (psFile) + 2;
+<         psPath = emalloc (nPath);
+<         strcpy (psPath, psDir);
+<         psPath[nDir] = chDirSep;
+<         strcpy (&psPath[nDir+1], psFile);
+<         }
+<     else
+<         {
+<         psPath = estrdup (psFile);
+<         }
+<     return psPath;
+---
+>     fprintf(stderr, "       -disk-dir dir        directory containg disk images\n");
+2319,2491d2202
+< 
+< //  Find the configuration file
+< char * cfg_find_file (const char *argv0)
+<     {
+<     char *psCfg, *ps1, *ps2;
+<     char *psPath = getenv ("PATH");
+<     int nProg = strlen (argv0);
+<     char *psProg = (char *) emalloc (nProg+4);
+<     char chPathSep, chDirSep;
+<     // printf ("argv0 = %s\n", argv0);
+<     // printf ("psPath = %s\n", psPath);
+<     // printf ("nProg = %d\n", nProg);
+< 
+<     /* Name of configuration file */
+< 
+<     if ( argv0 == NULL ) return NULL;
+<     strcpy (psProg, argv0);
+<     if ( strcasecmp (&psProg[nProg - 4], ".exe") == 0 )
+<         {
+<         nProg -= 4;
+<         psProg[nProg] = '\0';
+<         }
+<     strcpy (&psProg[nProg], ".cfg");
+<     nProg += 4;
+<     // printf ("psProg = %s\n", psProg);
+< 
+<     /* Guess OS */
+< 
+<     if ( ( strchr (argv0, '\\') != NULL ) || ( ( psPath != NULL ) && ( strchr (psPath, ';' ) != NULL ) ) )
+<         {
+<         // printf ("Windows OS\n");
+<         chPathSep = ';';
+<         chDirSep = '\\';
+<         }
+<     else
+<         {
+<         // printf ("Linux OS\n");
+<         chPathSep = ':';
+<         chDirSep = '/';
+<         }
+< 
+<     /* Direct location */
+< 
+<     if ( strchr (psProg, chDirSep) != NULL )
+<         {
+<         if ( cfg_test_file (psProg) )
+<             {
+<             // printf ("Found config file.\n");
+<             return psProg;
+<             }
+<         if ( ( psProg[0] == chDirSep ) || ( ( psProg[1] == ':' ) && ( psProg[2] == '\\' ) ) )
+<             {
+<             // printf ("Absolute path and no config file.\n");
+<             free ((void *) psProg);
+<             return NULL;
+<             }
+<         }
+< 
+<     /* Search path */
+< 
+<     if ( psPath == NULL ) return NULL;
+<     psPath = estrdup (psPath);
+<     ps2 = psPath - 1;
+<     while ( ps2 != NULL )
+<         {
+<         ps1 = ps2 + 1;
+<         ps2 = strchr (ps1, chPathSep);
+<         if ( ps2 != NULL ) *ps2 = '\0';
+<         // printf ("Try folder = %s\n", ps1);
+<         psCfg = cfg_make_path (ps1, chDirSep, psProg);
+<         if ( cfg_test_file (psCfg) )
+<             {
+<             // printf ("Found %s\n", psCfg);
+<             free ((void *) psPath);
+<             free ((void *) psProg);
+<             return psCfg;
+<             }
+<         free ((void *) psCfg);
+<         }
+<     free ((void *) psPath);
+<     free ((void *) psProg);
+<     // printf ("No configuration file.\n");
+<     return NULL;
+<     }
+< #endif
+< #endif
+< 
+< #ifdef ALT_MAIN
+< char * cfg_exe_path (void)
+<     {
+< #ifdef UNIX    
+<     static const char *psLink = "/proc/self/exe";
+<     struct stat st;
+<     char *psPath = NULL;
+<     ssize_t n;
+<     if ( lstat(psLink, &st) == -1 ) return NULL;
+<     while (1)
+<         {
+<         psPath = realloc (psPath, st.st_size + 1);
+<         if ( psPath == NULL ) return NULL;
+<         n = readlink (psLink, psPath, st.st_size + 1);
+<         if ( n == -1 )
+<             {
+<             free (psPath);
+<             return NULL;
+<             }
+<         if ( n <= st.st_size ) break;
+<         st.st_size = n;
+<         }
+<     psPath[n] = '\0';
+<     return psPath;
+< #endif
+< #ifdef WIN32
+<     char *psPath = malloc (MAX_PATH + 1);
+<     DWORD n;
+<     if ( psPath == NULL ) return NULL;
+<     n = GetModuleFileName (NULL, psPath, MAX_PATH + 1);
+<     if ( ( n == 0 ) || ( GetLastError () == ERROR_INSUFFICIENT_BUFFER ) )
+<         {
+<         free (psPath);
+<         return NULL;
+<         }
+<     return psPath;
+< #endif
+<     }
+< 
+< int memu (int argc, const char *argv[]);
+< 
+< int main (int argc, const char *argv[])
+<     {
+<     if ( argc == 1 )
+<         {
+<         char *psExe = cfg_exe_path ();
+<         if ( psExe != NULL )
+<             {
+< #ifdef WIN32
+<             char *psDEnd = strrchr (psExe, '\\');
+< #else
+<             char *psDEnd = strrchr (psExe, '/');
+< #endif
+<             if ( psDEnd != NULL )
+<                 {
+<                 char *psCfg;
+<                 *(psDEnd + 1) = '\0';
+<                 psCfg = malloc (strlen (psExe) + 8);
+<                 if ( psCfg != NULL )
+<                     {
+<                     strcpy (psCfg, psExe);
+<                     strcat (psCfg, "memu.cfg");
+<                     if ( cfg_test_file (psCfg) )
+<                         {
+<                         const char **argn = malloc (3 * sizeof (char *));
+<                         if ( argn != NULL )
+<                             {
+<                             argn[0] = argv[0];
+<                             argn[1] = estrdup ("-config-file");
+<                             argn[2] = psCfg;
+<                             argc = 3;
+<                             argv = argn;
+<                             }
+<                         else
+<                             {
+<                             free (psCfg);
+<                             }
+<                         }
+<                     }
+<                 }
+<             free (psExe);
+<             }
+<         }
+<     return memu (argc, argv);
+<     }
+< #endif
+cpm.c
+32c32
+< #if defined(AIX) || defined(LINUX) || defined(SUN) || defined(MACOSX)
+---
+> #if defined(AIX) || defined(UNIX) || defined(SUN) || defined(MACOSX)
+ctc.c
+dart.c
+diag.c
+8c8
+< #include <stdio.h>
+---
+> #include "ff_stdio.h"
+22a23
+> #ifndef SMALL_MEM
+23a25
+> #endif
+34d35
+< static const char *diag_ring_fn = "memu.ring";
+35a37,38
+> #ifndef SMALL_MEM
+> static const char *diag_ring_fn = "memu.ring";
+38a42
+> #endif
+55a60
+> #ifndef SMALL_MEM
+56a62
+> #endif
+67a74
+> #ifndef SMALL_MEM
+72a80
+> #endif
+159,162d166
+<         {"nfx-port", DIAG_NFX_PORT},
+<         {"nfx-reg", DIAG_NFX_REG},
+<         {"nfx-event", DIAG_NFX_EVENT},
+<         {"nfx-data", DIAG_NFX_DATA},
+174c178
+< 		for ( i = 0; i < DIAG_ALL_COUNT; ++i )
+---
+> 		for ( i = DIAG_ALWAYS; i < DIAG_ALL_COUNT; ++i )
+228a233
+> #ifndef SMALL_MEM
+245a251
+> #endif
+283a290,295
+> #ifdef SMALL_MEM
+> #define LM(x)
+> #else
+> #define LM(x) x
+> #endif
+> 
+289c301
+<         case 'h': vdeb_break (); break;
+---
+>      LM(case 'h': vdeb_break (); break;)
+293c305,306
+< 		case 'd': diag_flags[DIAG_ACT_MEM_DUMP     ]  = TRUE; break;
+---
+>      LM(case 'd': diag_flags[DIAG_ACT_MEM_DUMP     ]  = TRUE; break;)
+> //      case 'e': snd_query (); break;
+297c310
+< 		case 'l': diag_flags[DIAG_ACT_SNA_LOAD     ]  = TRUE; break;
+---
+>      LM(case 'l': diag_flags[DIAG_ACT_SNA_LOAD     ]  = TRUE; break;)
+298a312,313
+>  		case 'n': diag_flags[DIAG_ACT_VID_DUMP_VDP ]  = TRUE; break;
+>  		case 'o': diag_flags[DIAG_VID_AUTO_DUMP_VDP] ^= TRUE; break;
+301,308c316,322
+< 		case 'r': diag_flags[DIAG_ACT_Z80_REGS     ]  = TRUE; break;
+< 		case 's': diag_flags[DIAG_ACT_SNA_SAVE     ]  = TRUE; break;
+< 		case 't': diag_flags[DIAG_ACT_TAP_REWIND   ]  = TRUE; break;
+< 		case 'u': diag_flags[DIAG_ACT_VID_DUMP     ]  = TRUE; break;
+< 		case 'v': diag_flags[DIAG_ACT_VID_REGS     ]  = TRUE; break;
+< 		case 'w': diag_flags[DIAG_ACT_VID_SNAPSHOT ]  = TRUE; break;
+< 		case 'x': diag_flags[DIAG_VID_AUTO_SNAPSHOT] ^= TRUE; break;
+< 		case 'y': diag_flags[DIAG_SPEC_PORTS       ] ^= TRUE; break;
+---
+>      LM(case 'r': diag_flags[DIAG_ACT_Z80_REGS	   ]  = TRUE; break;)
+> 	 LM(case 's': diag_flags[DIAG_ACT_SNA_SAVE	   ]  = TRUE; break;)
+> 	 LM(case 't': diag_flags[DIAG_ACT_TAP_REWIND   ]  = TRUE; break;)
+> 	 LM(case 'v': diag_flags[DIAG_ACT_VID_REGS	   ]  = TRUE; break;)
+> 	 LM(case 'w': diag_flags[DIAG_ACT_VID_SNAPSHOT ]  = TRUE; break;)
+> 	 LM(case 'x': diag_flags[DIAG_VID_AUTO_SNAPSHOT] ^= TRUE; break;)
+> 	 LM(case 'y': diag_flags[DIAG_SPEC_PORTS	   ] ^= TRUE; break;)
+320a335
+> #ifndef SMALL_MEM
+322a338
+> #endif
+329a346
+> #ifndef SMALL_MEM
+341a359
+> #endif
+dirt.c
+diff: dirt.c: No such file or directory
+dis.c
+gpio.c
+diff: gpio.c: No such file or directory
+hardware.c
+diff: hardware.c: No such file or directory
+joy_lin.c
+joy_w32.c
+diff: joy_w32.c: No such file or directory
+kbd2.c
+mem.c
+3c3
+< mem.c - MTX memory
+---
+>   mem.c - MTX memory
+5,20c5,20
+< We have a 8KB monitor ROM and 8 other 8KB ROMs.
+< By default, ROM 2 is subpaged into 16 subpages.
+< We have a number of 16KB RAM pages.
+< 
+< Memory is never paged in less than 8KB chunks.
+< 8 chunks comprise the whole 64KB visible to the Z80.
+< So we keep two maps, one for reading, one for writing.
+< 
+< This version has changes by Bill Brendling, allowing larger memory sizes,
+< and selective enabling of ROMs.
+< 
+< It implements the memory map rules, as documented in the manual,
+< as implemented correctly by MTX500 and MTX512, and REMEMOTECH.
+< However, the 512KB extra memory on certain SDXs is known to fail to
+< implement the rules properly, and it is expected that MTX S2 and MTX 2000
+< could have problems also.
+---
+>   We have a 8KB monitor ROM and 8 other 8KB ROMs.
+>   By default, ROM 2 is subpaged into 16 subpages.
+>   We have a number of 16KB RAM pages.
+> 
+>   Memory is never paged in less than 8KB chunks.
+>   8 chunks comprise the whole 64KB visible to the Z80.
+>   So we keep two maps, one for reading, one for writing.
+> 
+>   This version has changes by Bill Brendling, allowing larger memory sizes,
+>   and selective enabling of ROMs.
+> 
+>   It implements the memory map rules, as documented in the manual,
+>   as implemented correctly by MTX500 and MTX512, and REMEMOTECH.
+>   However, the 512KB extra memory on certain SDXs is known to fail to
+>   implement the rules properly, and it is expected that MTX S2 and MTX 2000
+>   could have problems also.
+25c25
+< #include <stdio.h>
+---
+> #include "ff_stdio.h"
+32a33
+> #ifdef HAVE_VDEB
+33a35
+> #endif
+46a49,56
+> #ifdef SMALL_MEM
+> #define MAX_SUBPAGES    1
+> static byte *mem_high = NULL;
+> static byte *mem_vapour = NULL;
+> static const byte *mem_rom_os;
+> static const byte *mem_subpages[8][MAX_SUBPAGES];
+> #else
+> #define MAX_SUBPAGES    256
+48c58
+< static byte mem_vapor[ROM_SIZE]; /* Write here when no chip, or ROM selected */
+---
+> static byte mem_vapour[ROM_SIZE]; /* Write here when no chip, or ROM selected */
+49a60,61
+> static byte *mem_subpages[8][MAX_SUBPAGES];
+> #endif
+51d62
+< static byte *mem_subpages[8][0x100];
+53c64
+< static byte *mem_read[8]; /* Read through these */
+---
+> static const byte *mem_read[8]; /* Read through these */
+54a66
+> static byte *mem_update[8]; /* Allow emulator to update ROMS */
+57a70
+> #ifdef HAVE_VDEB
+58a72
+> #endif
+69,71c83,86
+< 	{
+< 	return  rom_enable;
+< 	}
+---
+>     {
+>     // printf ("mem_get_rom_enable() = 0x%02X\n", rom_enable);
+>     return  rom_enable;
+>     }
+75,77c90,93
+< 	{
+< 	rom_enable  =  ienable;
+< 	}
+---
+>     {
+>     // printf ("mem_set_rom_enable (0x%02X)\n", ienable);
+>     rom_enable  =  ienable;
+>     }
+81,83c97,99
+< 	{
+< 	return  mem_blocks;
+< 	}
+---
+>     {
+>     return  mem_blocks;
+>     }
+86a103
+> #ifdef HAVE_VDEB
+90a108
+> #endif
+91a110
+> #ifndef SMALL_MEM
+94,104c113,123
+< 	{
+< 	int i;
+< 	for ( i = mem_n_subpages[rom]; i < n_subpages; i++ )
+< 		{
+< 		mem_subpages[rom][i] = (byte *) emalloc(ROM_SIZE);
+< 		memset(mem_subpages[rom][i], 0xff, ROM_SIZE);
+< 		}
+< 	for ( ; i < mem_n_subpages[rom]; i++ )
+< 		free(mem_subpages[rom][i]);
+< 	mem_n_subpages[rom] = n_subpages;
+< 	}
+---
+>     {
+>     int i;
+>     for ( i = mem_n_subpages[rom]; i < n_subpages; i++ )
+>         {
+>         mem_subpages[rom][i] = (byte *) emalloc(ROM_SIZE);
+>         memset(mem_subpages[rom][i], 0xff, ROM_SIZE);
+>         }
+>     for ( ; i < mem_n_subpages[rom]; i++ )
+>         free(mem_subpages[rom][i]);
+>     mem_n_subpages[rom] = n_subpages;
+>     }
+108,110c127,129
+< 	{
+< 	return mem_n_subpages[rom];
+< 	}
+---
+>     {
+>     return mem_n_subpages[rom];
+>     }
+111a131
+> #endif
+115,117c135,149
+< 	{
+< 	return mem_read[addr>>13][addr&0x1fff];
+< 	}
+---
+>     {
+>     // printf ("RdZ80 (%04X)\n", addr);
+> #ifdef SMALL_MEM
+>     if ( mem_read[addr>>13] == NULL ) return 0xFF;
+> #endif
+>     return mem_read[addr>>13][addr&0x1fff];
+> /*
+>     byte b = 0xFF;
+>     const byte *p = mem_read[addr>>13];
+>     printf ("RdZ80 (%04X) p = %p", addr, p);
+>     if ( p != NULL ) b = p[addr&0x1fff];
+>     printf (", b = %02X\n", b);
+>     return b;
+> */
+>     }
+121,127c153,156
+< 	{
+< #if 0
+< 	if ( diag_flags[DIAG_SPEED] && addr < 0x3700 )
+< 		{
+< 		diag_message(DIAG_ALWAYS, "ouch");
+< 		return;
+< 		}
+---
+>     {
+>     // printf ("WrZ80 (%04X, %02X)\n", addr, value);
+> #ifdef SMALL_MEM
+>     if ( mem_write[addr>>13] == NULL ) return;
+129,132c158,161
+< 	if ( (addr>>13) != 0 || (mem_iobyte&0x80) != 0 )
+<         {
+< 		/* Normal write */
+< 		mem_write[addr>>13][addr&0x1fff] = value;
+---
+>     if ( (addr>>13) != 0 || (mem_iobyte&0x80) != 0 )
+>         /* Normal write */
+>         mem_write[addr>>13][addr&0x1fff] = value;
+> #ifdef HAVE_VDEB
+133a163,172
+> #endif
+>     else
+>         /* Write to first 8KB in RELCPMH=0 mode, sets sub-page */
+>         {
+> #ifdef SMALL_MEM
+>         fatal ("ROM sub-pages not supported.");
+> #else
+>         diag_message(DIAG_MEM_SUBPAGE, "ROM sub-page set to 0x%02x", value);
+>         mem_set_rom_subpage(value);
+> #endif
+135,141c174
+< 	else
+< 		/* Write to first 8KB in RELCPMH=0 mode, sets sub-page */
+< 		{
+< 		diag_message(DIAG_MEM_SUBPAGE, "ROM sub-page set to 0x%02x", value);
+< 		mem_set_rom_subpage(value);
+< 		}
+< 	}
+---
+>     }
+146,148c179,184
+< 	{
+< 	return mem_read[addr>>13][addr&0x1fff];
+< 	}
+---
+>     {
+> #ifdef SMALL_MEM
+>     if ( mem_read[addr>>13] == NULL ) return 0xFF;
+> #endif
+>     return mem_read[addr>>13][addr&0x1fff];
+>     }
+151c187
+< /* Notice this deliberately uses mem_read.
+---
+> /* Notice this deliberately uses mem_update (previously used mem_read).
+157,159c193,198
+< 	{
+< 	mem_read[addr>>13][addr&0x1fff] = value;
+< 	}
+---
+>     {
+> #ifdef SMALL_MEM
+>     if ( mem_update[addr>>13] == NULL ) return;
+> #endif
+>     mem_update[addr>>13][addr&0x1fff] = value;
+>     }
+163,166c202,205
+< 	{
+< 	while ( len-- )
+< 		*buf++ = mem_read_byte(addr++);
+< 	}
+---
+>     {
+>     while ( len-- )
+>         *buf++ = mem_read_byte(addr++);
+>     }
+170c209
+< 	{
+---
+>     {
+172,174c211,213
+< 	while ( len-- )
+< 		mem_write_byte(addr++, *buf++);
+< 	}
+---
+>     while ( len-- )
+>         mem_write_byte(addr++, *buf++);
+>     }
+181,182c220,221
+<      RELCPMH=1 P=0 0x0000-0x3fff
+<      RELCPMH=0 P=1 0x8000-0xbfff
+---
+>    RELCPMH=1 P=0 0x0000-0x3fff
+>    RELCPMH=0 P=1 0x8000-0xbfff
+190,276d228
+< #if 0
+< /*...smy original implementation:0:*/
+< void mem_set_iobyte(byte val)
+< 	{
+< 	mem_iobyte = val;
+<     vdeb_iobyte (mem_iobyte);
+< 	if ( mem_iobyte & 0x80 )
+< 		{
+< 		mem_read[7] = mem_write[7] = mem_ram[0]+ROM_SIZE;
+< 		mem_read[6] = mem_write[6] = mem_ram[0];
+< 		switch ( mem_iobyte & 0x0f )
+< 			{
+< 			case 0:
+< 				mem_read[5] = mem_write[5] = mem_ram[1]+ROM_SIZE;
+< 				mem_read[4] = mem_write[4] = mem_ram[1];
+< 				if ( mem_500 )
+< 					{
+< 					mem_read[3] = mem_high; mem_write[3] = mem_vapor;
+< 					mem_read[2] = mem_high; mem_write[2] = mem_vapor;
+< 					mem_read[1] = mem_high; mem_write[1] = mem_vapor;
+< 					mem_read[0] = mem_high; mem_write[0] = mem_vapor;
+< 					}
+< 				else
+< 					{
+< 					mem_read[3] = mem_write[3] = mem_ram[2]+ROM_SIZE;
+< 					mem_read[2] = mem_write[2] = mem_ram[2];
+< 					mem_read[1] = mem_write[1] = mem_ram[3]+ROM_SIZE;
+< 					mem_read[0] = mem_write[0] = mem_ram[3];
+< 					}
+< 				break;
+< 			default:
+< 				mem_read[5] = mem_high; mem_write[5] = mem_vapor;
+< 				mem_read[4] = mem_high; mem_write[4] = mem_vapor;
+< 				mem_read[3] = mem_high; mem_write[3] = mem_vapor;
+< 				mem_read[2] = mem_high; mem_write[2] = mem_vapor;
+< 				mem_read[1] = mem_high; mem_write[1] = mem_vapor;
+< 				mem_read[0] = mem_high; mem_write[0] = mem_vapor;
+< 				break;
+< 			}
+< 		}
+< 	else
+< 		{
+< 		mem_read[7] = mem_write[7] = mem_ram[0]+ROM_SIZE;
+< 		mem_read[6] = mem_write[6] = mem_ram[0];
+< 		switch ( mem_iobyte & 0x0f )
+< 			{
+< 			case 0x00:
+< 				mem_read[5] = mem_write[5] = mem_ram[1]+ROM_SIZE;
+< 				mem_read[4] = mem_write[4] = mem_ram[1];
+< 				if ( mem_500 )
+< 					{
+< 					mem_read[3] = mem_high; mem_write[3] = mem_vapor;
+< 					mem_read[2] = mem_high; mem_write[2] = mem_vapor;
+< 					}
+< 				else
+< 					{
+< 					mem_read[3] = mem_write[3] = mem_ram[2]+ROM_SIZE;
+< 					mem_read[2] = mem_write[2] = mem_ram[2];
+< 					}
+< 				break;
+< 			case 0x01:
+< 				if ( mem_500 )
+< 					{
+< 					mem_read[5] = mem_high; mem_write[5] = mem_vapor;
+< 					mem_read[4] = mem_high; mem_write[4] = mem_vapor;
+< 					}
+< 				else
+< 					{
+< 					mem_read[5] = mem_write[5] = mem_ram[3]+ROM_SIZE;
+< 					mem_read[4] = mem_write[4] = mem_ram[3];
+< 					}
+< 				mem_read[3] = mem_high; mem_write[3] = mem_vapor;
+< 				mem_read[2] = mem_high; mem_write[2] = mem_vapor;
+< 				break;
+< 			default:
+< 				mem_read[5] = mem_high; mem_write[5] = mem_vapor;
+< 				mem_read[4] = mem_high; mem_write[4] = mem_vapor;
+< 				mem_read[3] = mem_high; mem_write[3] = mem_vapor;
+< 				mem_read[2] = mem_high; mem_write[2] = mem_vapor;
+< 				break;
+< 			}
+< 		mem_read[1] = mem_rom[(mem_iobyte>>4)&7]; mem_write[1] = mem_vapor;
+< 		mem_read[0] = mem_rom_os; mem_write[0] = mem_vapor;
+< 		}
+< 	}
+< /*...e*/
+< #endif
+280,295c232,251
+< 	{
+< 	if ( iblock < mem_blocks )
+< 		{
+< 		mem_read [2*ipage  ] = mem_ram[iblock]         ;
+< 		mem_write[2*ipage  ] = mem_ram[iblock]         ;
+< 		mem_read [2*ipage+1] = mem_ram[iblock]+ROM_SIZE;
+< 		mem_write[2*ipage+1] = mem_ram[iblock]+ROM_SIZE;
+< 		}
+< 	else
+< 		{
+< 		mem_read [2*ipage  ] = mem_high ;
+< 		mem_write[2*ipage  ] = mem_vapor;
+< 		mem_read [2*ipage+1] = mem_high ;
+< 		mem_write[2*ipage+1] = mem_vapor;
+< 		}
+< 	}
+---
+>     {
+>     if ( iblock < mem_blocks )
+>         {
+>         mem_read  [2*ipage  ] = mem_ram[iblock]         ;
+>         mem_write [2*ipage  ] = mem_ram[iblock]         ;
+>         mem_update[2*ipage  ] = mem_ram[iblock]         ;
+>         mem_read  [2*ipage+1] = mem_ram[iblock]+ROM_SIZE;
+>         mem_write [2*ipage+1] = mem_ram[iblock]+ROM_SIZE;
+>         mem_update[2*ipage+1] = mem_ram[iblock]+ROM_SIZE;
+>         }
+>     else
+>         {
+>         mem_read  [2*ipage  ] = mem_high ;
+>         mem_write [2*ipage  ] = mem_vapour;
+>         mem_update[2*ipage  ] = mem_vapour;
+>         mem_read  [2*ipage+1] = mem_high ;
+>         mem_write [2*ipage+1] = mem_vapour;
+>         mem_update[2*ipage+1] = mem_vapour;
+>         }
+>     }
+299,300c255,256
+< 	{
+< 	int iblock, ipage;
+---
+>     {
+>     int iblock, ipage;
+301a258
+>     // printf ("mem_set_iobyte (%02X)\n", val);
+306,321c263,288
+< 	mem_iobyte = val;
+< 	mem_read[7] = mem_write[7] = mem_ram[0]+ROM_SIZE;
+< 	mem_read[6] = mem_write[6] = mem_ram[0]         ;
+< 	if ( mem_iobyte & 0x80 )
+< 		{
+< 		iblock = 3 * ( mem_iobyte & 0x0f ) + 1;
+< 		if ( mem_iobyte & 0x0f )
+< 			for ( ipage = 0; ipage <= 2; ++ipage, ++iblock )
+< 				mem_set_iobyte_ram(ipage, iblock);
+< 		else
+< 			for ( ipage = 2; ipage >= 0; --ipage, ++iblock )
+< 				mem_set_iobyte_ram(ipage, iblock);
+< 		}
+< 	else
+< 		{
+< 		int irom = ( mem_iobyte >> 4 ) & 7;
+---
+>     mem_iobyte = val;
+> #ifdef HAVE_VDEB
+>     vdeb_iobyte (mem_iobyte);
+> #endif
+>     mem_read[7] = mem_write[7] = mem_update[7] = mem_ram[0] + ROM_SIZE;
+>     mem_read[6] = mem_write[6] = mem_update[6] = mem_ram[0];
+>     if ( mem_iobyte & 0x80 )
+>         {
+>         iblock = 3 * ( mem_iobyte & 0x0f ) + 1;
+>         if ( mem_iobyte & 0x0f )
+>             for ( ipage = 0; ipage <= 2; ++ipage, ++iblock )
+>                 mem_set_iobyte_ram(ipage, iblock);
+>         else
+>             for ( ipage = 2; ipage >= 0; --ipage, ++iblock )
+>                 mem_set_iobyte_ram(ipage, iblock);
+>         }
+>     else
+>         {
+>         mem_read[0] = mem_rom_os;
+>         mem_write[0] = mem_vapour;
+> #ifdef SMALL_MEM
+>         mem_update[0] = NULL;
+> #else
+>         mem_update[0] = mem_rom_os;
+> #endif
+>         int irom = ( mem_iobyte >> 4 ) & 7;
+323c290
+< 		if ( ( ( rom_enable >> irom ) & 0x01 ) == 0 )
+---
+>         if ( ( ( rom_enable >> irom ) & 0x01 ) == 0 )
+325c292,297
+< 			mem_read[1] = mem_high;
+---
+>             mem_read[1] = mem_high;
+> #ifdef SMALL_MEM
+>             mem_update[1] = NULL;
+> #else
+>             mem_update[1] = mem_vapour;
+> #endif
+327,328c299,300
+<             diag_message (DIAG_INIT, "iobyte = 0x%02X, rom_enable = 0x%02X,  ROM Disabled, ptr = %p",
+<                 mem_iobyte, rom_enable, mem_read[1]);
+---
+>               diag_message (DIAG_INIT, "iobyte = 0x%02X, rom_enable = 0x%02X,  ROM Disabled, ptr = %p",
+>               mem_iobyte, rom_enable, mem_read[1]);
+331c303,312
+< 		else
+---
+>         else
+> #endif
+>             {
+>             int mask = mem_n_subpages[irom]-1;
+> #ifdef SMALL_MEM
+>             mem_read[1] = mem_subpages[irom][mem_subpage&mask];
+>             mem_update[1] = NULL;
+> #else
+>             mem_update[1] = mem_subpages[irom][mem_subpage&mask];
+>             mem_read[1] = mem_update[1];
+333,335d313
+< 			{
+< 			int mask = mem_n_subpages[irom]-1;
+< 			mem_read[1] = mem_subpages[irom][mem_subpage&mask];
+337,338c315,316
+<             diag_message (DIAG_INIT, "iobyte = 0x%02X, subpage = 0x%02X, mask = 0x%02X, ptr = %p",
+<                 mem_iobyte, mem_subpage, mask, mem_read[1]);
+---
+>               diag_message (DIAG_INIT, "iobyte = 0x%02X, subpage = 0x%02X, mask = 0x%02X, ptr = %p",
+>               mem_iobyte, mem_subpage, mask, mem_read[1]);
+340,345c318,322
+< 			}
+< 		mem_write[1] = mem_vapor;
+< 		mem_read[0] = mem_rom_os; mem_write[0] = mem_vapor;
+< 		iblock = 2 * ( mem_iobyte & 0x0f ) + 1;
+< 		for ( ipage = 2; ipage >= 1; --ipage, ++iblock )
+< 			mem_set_iobyte_ram(ipage, iblock);
+---
+>             }
+>         mem_write[1] = mem_vapour;
+>         iblock = 2 * ( mem_iobyte & 0x0f ) + 1;
+>         for ( ipage = 2; ipage >= 1; --ipage, ++iblock )
+>             mem_set_iobyte_ram(ipage, iblock);
+351,352c328,331
+<             mem_write[2] = mem_vapor;
+<             mem_write[3] = mem_vapor;
+---
+>             mem_write[2] = mem_vapour;
+>             mem_write[3] = mem_vapour;
+>             mem_update[2] = mem_vapour;
+>             mem_update[3] = mem_vapour;
+354,355c333,341
+< 		}
+< 	}
+---
+>         }
+>     /*
+>     for ( int i = 0; i < 8; ++i )
+>         {
+>         printf ("mem_read[%d] = %p, mem_write[%d] = %p, mem_update[%d] = %p\n",
+>             i, mem_read[i], i, mem_write[i], i, mem_update[1]);
+>         }
+>     */
+>     }
+359,361c345,347
+< 	{
+< 	return mem_iobyte;
+< 	}
+---
+>     {
+>     return mem_iobyte;
+>     }
+366,368c352,354
+< 	{
+< 	return mem_subpage;
+< 	}
+---
+>     {
+>     return mem_subpage;
+>     }
+372,375c358,361
+< 	{
+< 	mem_subpage = subpage;
+< 	mem_set_iobyte(mem_iobyte);
+< 	}
+---
+>     {
+>     mem_subpage = subpage;
+>     mem_set_iobyte(mem_iobyte);
+>     }
+380c366
+< 	{
+---
+>     {
+383,384c369,370
+< 	mem_set_iobyte(val);
+< 	}
+---
+>     mem_set_iobyte(val);
+>     }
+389,392c375,378
+< 	{
+< 	int i;
+< 	if ( ( nblocks < 2 ) || ( nblocks > MAX_BLOCKS ) )
+< 		fatal("invalid amount of memory");
+---
+>     {
+>     int i;
+>     if ( ( nblocks < 2 ) || ( nblocks > MAX_BLOCKS ) )
+>         fatal("invalid amount of memory");
+394,399c380,385
+< 	mem_blocks = nblocks;
+< 	for ( i = 0; i < nblocks; ++i )
+< 		if ( mem_ram[i] == NULL )
+< 			mem_ram[i] = (byte *) emalloc(0x4000);
+< 	mem_set_iobyte(mem_iobyte); /* Recalculate page visibility */
+< 	}
+---
+>     mem_blocks = nblocks;
+>     for ( i = 0; i < nblocks; ++i )
+>         if ( mem_ram[i] == NULL )
+>             mem_ram[i] = (byte *) emalloc(0x4000);
+>     mem_set_iobyte(mem_iobyte); /* Recalculate page visibility */
+>     }
+401a388
+> #ifndef SMALL_MEM
+404,412c391,399
+< 	{
+< 	int i;
+< 	if ( ( nblocks < 0 ) || ( nblocks > MAX_BLOCKS ) )
+< 		fatal("invalid amount of snapshot memory");
+< 	mem_blocks_snapshot = nblocks;
+< 	for ( i = 0; i < nblocks; ++i )
+< 		if ( mem_ram_snapshot[i] == NULL )
+< 			mem_ram_snapshot[i] = (byte *) emalloc(0x4000);
+< 	}
+---
+>     {
+>     int i;
+>     if ( ( nblocks < 0 ) || ( nblocks > MAX_BLOCKS ) )
+>         fatal("invalid amount of snapshot memory");
+>     mem_blocks_snapshot = nblocks;
+>     for ( i = 0; i < nblocks; ++i )
+>         if ( mem_ram_snapshot[i] == NULL )
+>             mem_ram_snapshot[i] = (byte *) emalloc(0x4000);
+>     }
+416,420c403,407
+< 	{
+< 	int i;
+< 	for ( i = 0; i < mem_blocks && i < mem_blocks_snapshot; i++ )
+< 		memcpy(mem_ram_snapshot[i], mem_ram[i], 0x4000);
+< 	}
+---
+>     {
+>     int i;
+>     for ( i = 0; i < mem_blocks && i < mem_blocks_snapshot; i++ )
+>         memcpy(mem_ram_snapshot[i], mem_ram[i], 0x4000);
+>     }
+424,434c411,421
+< 	{
+< 	byte *p = mem_read[addr>>13];
+< 	int i;
+< 	for ( i = 0; i < mem_blocks && i < mem_blocks_snapshot; i++ )
+< 		if ( p >= mem_ram[i] && p < mem_ram[i]+0x4000 )
+< 			{
+< 			p = p - mem_ram[i] + mem_ram_snapshot[i];
+< 			break;
+< 			}
+< 	return p[addr&0x1fff];
+< 	}
+---
+>     {
+>     const byte *p = mem_read[addr>>13];
+>     int i;
+>     for ( i = 0; i < mem_blocks && i < mem_blocks_snapshot; i++ )
+>         if ( p >= mem_ram[i] && p < mem_ram[i]+0x4000 )
+>             {
+>             p = p - mem_ram[i] + mem_ram_snapshot[i];
+>             break;
+>             }
+>     return p[addr&0x1fff];
+>     }
+439,455c426,442
+< 	{
+< 	byte *p = mem_read[addr>>13];
+< 	int i, j;
+< 	for ( i = 0; i < mem_blocks && i < mem_blocks_snapshot; i++ )
+< 		if ( p >= mem_ram[i] && p < mem_ram[i]+0x4000 )
+< 			return MEMT_RAM_SNAPSHOT;
+< 	for ( ; i < mem_blocks ; i++ )
+< 		if ( p >= mem_ram[i] && p < mem_ram[i]+0x4000 )
+< 			return MEMT_RAM_NO_SNAPSHOT;
+< 	if ( p >= mem_rom_os && p < mem_rom_os+ROM_SIZE )
+< 		return MEMT_ROM;
+< 	for ( i = 0; i < 8; i++ )	
+< 		for ( j = 0; j < mem_n_subpages[i]; j++ )
+< 			if ( p >= mem_subpages[i][j] && p < mem_subpages[i][j]+ROM_SIZE )
+< 				return MEMT_ROM;
+< 	return MEMT_VOID;
+< 	}
+---
+>     {
+>     const byte *p = mem_read[addr>>13];
+>     int i, j;
+>     for ( i = 0; i < mem_blocks && i < mem_blocks_snapshot; i++ )
+>         if ( p >= mem_ram[i] && p < mem_ram[i]+0x4000 )
+>             return MEMT_RAM_SNAPSHOT;
+>     for ( ; i < mem_blocks ; i++ )
+>         if ( p >= mem_ram[i] && p < mem_ram[i]+0x4000 )
+>             return MEMT_RAM_NO_SNAPSHOT;
+>     if ( p >= mem_rom_os && p < mem_rom_os+ROM_SIZE )
+>         return MEMT_ROM;
+>     for ( i = 0; i < 8; i++ )	
+>         for ( j = 0; j < mem_n_subpages[i]; j++ )
+>             if ( p >= mem_subpages[i][j] && p < mem_subpages[i][j]+ROM_SIZE )
+>                 return MEMT_ROM;
+>     return MEMT_VOID;
+>     }
+456a444
+> #endif
+460,480c448,483
+< 	{
+< 	int i;
+< 	for ( i = 0; i < MAX_BLOCKS; ++i )
+< 		{
+< 		mem_ram         [i] = NULL;
+< 		mem_ram_snapshot[i] = NULL;
+< 		}
+< 
+< 	memset(mem_high, 0xff, ROM_SIZE);
+< 
+< 	mem_set_n_subpages(0,  1);
+< 	mem_set_n_subpages(1,  1);
+< 	mem_set_n_subpages(2, 16);
+< 	mem_set_n_subpages(3,  1);
+< 	mem_set_n_subpages(4,  1);
+< 	mem_set_n_subpages(5,  1);
+< 	mem_set_n_subpages(6,  1);
+< 	mem_set_n_subpages(7,  1);
+< 	memcpy(mem_rom_os        , rom_os   , ROM_SIZE);
+< 	memcpy(mem_subpages[0][0], rom_basic, ROM_SIZE);
+< 	memcpy(mem_subpages[1][0], rom_assem, ROM_SIZE);
+---
+>     {
+>     // printf ("mem_init_mtx\n");
+>     int i;
+>     for ( i = 0; i < MAX_BLOCKS; ++i )
+>         {
+>         mem_ram         [i] = NULL;
+>         mem_ram_snapshot[i] = NULL;
+>         }
+> #ifndef SMALL_MEM
+>     memset(mem_high, 0xff, ROM_SIZE);
+>     mem_set_n_subpages(0,  1);
+>     mem_set_n_subpages(1,  1);
+>     mem_set_n_subpages(2, 16);
+>     mem_set_n_subpages(3,  1);
+>     mem_set_n_subpages(4,  1);
+>     mem_set_n_subpages(5,  1);
+>     mem_set_n_subpages(6,  1);
+>     mem_set_n_subpages(7,  1);
+>     memcpy(mem_rom_os        , rom_os   , ROM_SIZE);
+>     memcpy(mem_subpages[0][0], rom_basic, ROM_SIZE);
+>     memcpy(mem_subpages[1][0], rom_assem, ROM_SIZE);
+>     mem_alloc_snapshot(0);
+> #else
+>     /*
+>     printf ("rom_os = %p\nrom_basic = %p\nrom_assem = %p\nrom_cpm = %p\nrom_sdx = %p\n",
+>         rom_os, rom_basic, rom_assem, rom_cpm, rom_sdx);
+>     printf ("rom_os[0] = %02X\n", rom_os[2]);
+>     */
+>     mem_rom_os = rom_os;
+>     mem_subpages[0][0] = rom_basic;
+>     mem_subpages[1][0] = rom_assem;
+>     mem_subpages[4][0] = rom_cpm;
+>     mem_subpages[5][0] = rom_sdx;
+>     for ( int i = 0; i < 8; ++i )
+>         mem_n_subpages[i] = 1;
+> #endif
+482,483c485
+< 	mem_alloc(4);
+< 	mem_alloc_snapshot(0);
+---
+>     mem_alloc(4);
+485,486c487,488
+< 	mem_set_iobyte(0x00);
+< 	}
+---
+>     mem_set_iobyte(0x00);
+>     }
+492,506c494,510
+< 	{
+< 	if ( diag_flags[DIAG_MEM_DUMP] )
+< 		{
+< 		FILE *fp;
+< 		byte buf[0x10000];
+< 		/* Can't read 0x10000 in one go */
+< 		mem_read_block(0x0000,0xffff,buf);
+< 		buf[0xffff] = mem_read_byte(0xffff);
+< 		if ( (fp = fopen("memu.mem", "wb")) != NULL )
+< 			{
+< 			fwrite(buf, 1, sizeof(buf), fp);
+< 			fclose(fp);
+< 			}
+< 		}
+< 	}
+---
+>     {
+> #ifndef SMALL_MEM
+>     if ( diag_flags[DIAG_MEM_DUMP] )
+>         {
+>         FILE *fp;
+>         byte buf[0x10000];
+>         /* Can't read 0x10000 in one go */
+>         mem_read_block(0x0000,0xffff,buf);
+>         buf[0xffff] = mem_read_byte(0xffff);
+>         if ( (fp = fopen("memu.mem", "wb")) != NULL )
+>             {
+>             fwrite(buf, 1, sizeof(buf), fp);
+>             fclose(fp);
+>             }
+>         }
+> #endif
+>     }
+508a513
+> #ifndef SMALL_MEM
+514,517c519,522
+< 	{
+< 	int mask = mem_n_subpages[rom]-1;
+< 	return mem_subpages[rom][mem_subpage&mask];
+< 	}
+---
+>     {
+>     int mask = mem_n_subpages[rom]-1;
+>     return mem_subpages[rom][mem_subpage&mask];
+>     }
+521a527,541
+>     if ( rom < 0 || rom > 7 )
+>         fatal("ROM must be between 0 and 7");
+> #ifdef SMALL_MEM
+>     FILE *fp;
+>     size_t size;
+>     byte subpage_write = 0;
+>     while ( subpage_write <= mem_n_subpages[rom] )
+>         {
+>         size = fread(mem_subpages[rom][subpage_write], 1, 0x2000, fp);
+>         diag_message (DIAG_INIT, "load_rom: Loaded 0x%04X bytes from %s into ROM %d, sub-page %d",
+>             size, fname, rom, subpage_write);
+>         if ( size < 0x2000 ) break;
+>         ++subpage_write;
+>         }
+> #else
+530,531d549
+<     if ( rom < 0 || rom > 7 )
+<         fatal("ROM must be between 0 and 7");
+549a568
+> #endif // SMALL_MEM
+553a573,589
+>     if ( rom != 2 && rom != 4 && rom != 6 )
+>         fatal("ROM-pair base must be 2, 4 or 6");
+> #ifdef SMALL_MEM
+>     FILE *fp;
+>     size_t size;
+>     byte subpage_write = 0;
+>     while ( subpage_write <= mem_n_subpages[rom] )
+>         {
+>         size = fread(mem_subpages[rom][subpage_write], 1, 0x2000, fp);
+>         diag_message (DIAG_INIT, "load_rompair: Loaded 0x%04X bytes from %s into ROM %d, sub-page %d",
+>             size, fname, rom, subpage_write);
+>         if ( size < 0x2000 ) break;
+>         rom ^= 1;
+>         if ( (rom & 1) == 0 )
+>             subpage_write++;
+>         }
+> #else
+562,563d597
+<     if ( rom != 2 && rom != 4 && rom != 6 )
+<         fatal("ROM-pair base must be 2, 4 or 6");
+583a618,656
+> #endif // SMALL_MEM
+>     }
+> #endif
+> 
+> #ifdef SMALL_MEM
+> byte *mem_ram_ptr (word addr, word *psize)
+>     {
+>     byte *ptr = mem_update[addr>>13];
+>     if ( ptr == NULL ) *psize = 0;
+>     else
+>         {
+>         int ofs = addr & (ROM_SIZE - 1);
+>         ptr += ofs;
+>         *psize = ROM_SIZE - ofs;
+>         }
+>     // printf ("mem_ram_ptr(0x%04X): ptr = %p, size = %d\n", addr, ptr, *psize);
+>     if ( ptr == NULL ) fatal ("No memory");
+>     return ptr;
+>     }
+> 
+> int mem_file_load (FILE *f, word addr, word len)
+>     {
+>     int nrd = 0;
+>     while ( len > 0 )
+>         {
+>         byte *ptr = mem_update[addr>>13];
+>         if ( ptr == NULL ) fatal ("attempt to load file into read-only memory");
+>         int ofs = addr & (ROM_SIZE - 1);
+>         ptr += ofs;
+>         int blen = ROM_SIZE - ofs;
+>         if ( blen > len ) blen = len;
+>         int nin = fread (ptr, 1, blen, f);
+>         if ( nin < 0 ) return nin;
+>         nrd += nin;
+>         if ( nin < blen ) break;
+>         addr += blen;
+>         len -= blen;
+>         }
+>     return nrd;
+584a658
+> #endif
+memu.c
+8c8
+< #include <stdio.h>
+---
+> #include "ff_stdio.h"
+15c15
+< #else
+---
+> #elif defined(__circle__)
+16a17,18
+> #elif defined(__Pico__)
+> #include "display_pico.h"
+42c44,45
+< #ifndef NO_JOY
+---
+> #include "config.h"
+> #ifdef HAVE_JOY
+45c48
+< #ifndef NO_DART
+---
+> #ifdef HAVE_DART
+51a55
+> #ifdef HAVE_SID
+52a57
+> #endif
+53a59
+> #ifdef HAVE_SPEC
+54a61,62
+> #endif
+> #ifdef HAVE_OSFS
+55a64,65
+> #endif
+> #ifdef HAVE_DISASS
+56a67,68
+> #endif
+> #ifdef HAVE_UI
+57a70,73
+> #endif
+> #ifdef HAVE_VDEB
+> #include "vdeb.h"
+> #endif
+65,68d80
+< #ifdef HAVE_NFX
+< #include "nfx.h"
+< #endif
+< #include "vdeb.h"
+102a115,116
+> const char *psExe = "memu";
+> 
+105,106c119,128
+< 	fprintf(stderr, "usage: memu [flags]\n");
+< 	fprintf(stderr, "flags: -iobyte iobyte       specify IOBYTE (initially 0x00)\n");
+---
+> 	fprintf(stderr, "usage: %s [flags]\n", psExe);
+>     fprintf(stderr, "Flags may be specified on command line or in files\n");
+>     fprintf(stderr, "\"memu.cfg\" or \"memu0.cfg\" in the program folder.\n");
+> 	fprintf(stderr, "flags: -help                display this list\n");
+>     fprintf(stderr, "       -ignore              Allow flags for unimplemented features\n");
+> #ifdef ALT_USAGE
+> 	ALT_USAGE ();
+> #endif
+> 	fprintf(stderr, "       -iobyte iobyte       specify IOBYTE (initially 0x00)\n");
+> #ifndef SMALL_MEM
+107a130
+> #endif
+111a135
+> #ifndef SMALL_MEM
+114a139
+> #endif
+126c151
+< #ifndef NO_TH
+---
+> #ifdef HAVE_TH
+129c154
+< #ifndef NO_CONSOLE
+---
+> #ifdef HAVE_CONSOLE
+140a166
+> #ifndef __Pico__
+143c169,170
+< #ifndef NO_JOY
+---
+> #endif
+> #ifdef HAVE_JOY
+148c175
+< #ifndef	NO_DART
+---
+> #ifdef HAVE_DART
+159a187
+> #ifdef HAVE_SID
+162a191
+> #endif
+170a200
+> #ifdef HAVE_SPEC
+172a203
+> #endif
+174a206
+> #ifdef HAVE_OSFS
+181a214
+> #endif
+192,197c225
+< #ifdef HAVE_NFX
+< 	fprintf(stderr, "       -nfx-port-offset off offset to add to NFX port numbers\n");
+< #endif
+< #ifdef ALT_USAGE
+< 	ALT_USAGE ();
+< #endif
+---
+> #ifndef SMALL_MEM
+199a228
+> #endif
+208a238,245
+> static BOOLEAN bIgnore = FALSE;
+> 
+> void unimplemented (const char *psErr)
+>     {
+>     if ( bIgnore ) diag_message (DIAG_ALWAYS, "Feature %s is not implemented in this version", psErr);
+>     else usage (psErr);
+>     }
+> 
+268a306,309
+> #ifdef SMALL_MEM
+> FILE *fp_tape = NULL;
+> static byte tape_buf[512];
+> #else
+269a311
+> #endif
+277a320,323
+> #ifdef SMALL_MEM
+> static BOOLEAN bTapePatch = TRUE;
+> #endif
+> 
+279a326,328
+> #ifdef SMALL_MEM
+>     bTapePatch = bPatch;
+> #else
+296a346
+> #endif
+313a364
+>         printf ("Tape prefix: %s\n", fn_buf);
+319a371
+>     printf ("MTX name length = %d\n", i);
+320a373
+>         {
+321a375
+>         }
+322a377,378
+>         {
+>         printf ("cfg.tape_fn = %s\n", cfg.tape_fn);
+323a380
+>         }
+324a382
+>         {
+325a384,385
+>         }
+>     printf ("fn_buf = %s\n", fn_buf);
+333a394,395
+> void hexdump (byte *ptr, int n);
+> 
+338a401
+>     // printf ("mtx_tape: base = 0x%04X, length = %d\n", base, length);
+358a422,435
+> #ifdef SMALL_MEM
+> 		if ( (fp = fopen(tape_name_fn, "ab+")) == NULL )
+> 			fatal("can't append to file %s", tape_name_fn);
+> 		while ( length > 0 )
+> 		    {
+> 		    word len;
+> 		    byte *ptr = mem_ram_ptr (base, &len);
+> 		    if ( len > length ) len = length;
+> 		    fwrite (ptr, 1, len, fp);
+> 		    base += len;
+> 		    length -= len;
+> 		    }
+> 		fclose(fp);
+> #else
+365a443
+> #endif
+376a455,458
+> #ifdef SMALL_MEM
+> 			if ( fp_tape != NULL ) fclose (fp_tape);
+> 			fp_tape = efopen (tape_name_fn, "rb");
+> #else
+377a460
+> #endif
+380a464,504
+> #ifdef SMALL_MEM
+> 		size_t l1 = 0;
+> 		byte *b1 = NULL;
+> 		word l2 = 0;
+> 		byte *b2 = NULL;
+> 		while ( length > 0 )
+> 			{
+> 			if ( l1 == 0 )
+> 				{
+> 				b1 = tape_buf;
+> 				l1 = fread (tape_buf, 1, sizeof (tape_buf), fp_tape);
+> 				if ( l1 < sizeof (tape_buf) )
+> 					{
+> 					fclose (fp_tape);
+> 					fp_tape = NULL;
+> 					if ( l1 < length )
+> 						{
+> 						r->PC.W = 0x0adb;
+> 						break;
+> 						}
+> 					}
+> 				}
+> 			if ( l2 == 0 )
+> 				{
+> 				b2 = mem_ram_ptr (base, &l2);
+> 				}
+> 			size_t l3 = l1;
+> 			if ( l2 < l3 ) l3 = l2;
+> 			if ( memcmp (b1, b2, l3) )
+> 				{
+> 				r->PC.W = 0x0adb;
+> 				break;
+> 				}
+> 			l1 -= l3;
+> 			l2 -= l3;
+> 			length -= l3;
+> 			b1 += l3;
+> 			b2 += l3;
+> 			base += l3;
+> 			}
+> #else
+394a519
+> #endif
+403a529,532
+> #ifdef SMALL_MEM
+> 			if ( fp_tape != NULL ) fclose (fp_tape);
+> 			fp_tape = efopen (tape_name_fn, "rb");
+> #else
+404a534
+> #endif
+407a538,552
+> #ifdef SMALL_MEM
+> 		while ( length > 0 )
+> 			{
+> 		    word len;
+> 		    byte *ptr = mem_ram_ptr (base, &len);
+> 		    if ( len > length ) len = length;
+> 		    if ( fread (ptr, 1, len, fp_tape) < len )
+> 				fatal("attempt to LOAD 0x%04x byte chunk from tape and only 0x%04x remaining",
+> 					length, tape_len);
+>             // printf ("0x%04X:", base);
+>             // hexdump (ptr, ( len > 20 ) ? 20 : len);
+> 		    base += len;
+> 		    length -= len;
+> 			}
+> #else
+412a558
+> #endif
+444a591
+> #ifdef HAVE_SPEC
+454d600
+< 
+782a929,931
+> #endif  // HAVE_SPEC
+> 
+> #ifdef HAVE_OSFS
+847a997
+> #endif
+865a1016,1036
+> /*...svdp_read\47\write:0:*/
+> static byte vdp_read(word addr)
+> 	{
+> 	if ( addr < VID_MEMORY_SIZE )
+> 		return vid_vram_read(addr);
+> 	else if ( addr < VID_MEMORY_SIZE+8 )
+> 		return vid_reg_read(addr-VID_MEMORY_SIZE);
+> 	else if ( addr == VID_MEMORY_SIZE+8 )
+> 		return vid_status_read();
+> 	else
+> 		return 0xff;
+> 	}
+> static void vdp_write(word addr, byte b)
+> 	{
+> 	if ( addr < VID_MEMORY_SIZE )
+> 		vid_vram_write(addr, b);
+> 	else if ( addr < VID_MEMORY_SIZE+8 )
+> 		vid_reg_write(addr-VID_MEMORY_SIZE, b);
+> 	}
+> /*...e*/
+> 
+952a1124,1183
+> /*...s0x02 \45\ read bytes from VDP:32:*/
+> case 0x02:
+> 	{
+> 	word addr;
+> 	word len;
+> #if defined(UNIX)
+> 	read(fd_be_in, buf, 4);
+> #elif defined(WIN32)
+> 	ReadFile(hf_be, buf, 4, &cb, NULL);
+> #endif
+> 	addr = get_word(buf);
+> 	len = get_word(buf+2);
+> 	while ( len > 0 )
+> 		{
+> 		word thisgo = ( len > (word)sizeof(buf) ) ? (word)sizeof(buf) : len;
+> 		word i;
+> 		for ( i = 0; i < thisgo; i++ )
+> 			buf[i] = vdp_read(addr+i);
+> #if defined(UNIX)
+> 		write(fd_be_out, buf, thisgo);
+> #elif defined(WIN32)
+> 		WriteFile(hf_be, buf, thisgo, &cb, NULL);
+> #endif
+> 		addr += thisgo;
+> 		len  -= thisgo;
+> 		}
+> 	}
+> 	break;
+> /*...e*/
+> /*...s0x03 \45\ write bytes to VDP:32:*/
+> case 0x03:
+> 	{
+> 	word addr;
+> 	word len;
+> #if defined(UNIX)
+> 	read(fd_be_in, buf, 4);
+> #elif defined(WIN32)
+> 	ReadFile(hf_be, buf, 4, &cb, NULL);
+> #endif
+> 	addr = get_word(buf);
+> 	len = get_word(buf+2);
+> 	while ( len-- > 0 )
+> 		{
+> 		byte b;
+> #if defined(UNIX)
+> 		read(fd_be_in, &b, 1);
+> #elif defined(WIN32)
+> 		ReadFile(hf_be, &b, 1, &cb, NULL);
+> #endif
+> 		vdp_write(addr++, b);
+> 		}
+> 	cmd = 0; /* Dummy byte */
+> #if defined(UNIX)
+> 	write(fd_be_out, &cmd, 1);
+> #elif defined(WIN32)
+> 	WriteFile(hf_be, &cmd, 1, &cb, NULL);
+> #endif
+> 	}
+> 	break;
+> /*...e*/
+1033a1265,1293
+> #ifdef SMALL_MEM
+>     if (( (mem_get_iobyte() & 0x80) == 0 ) && ( r->PC.W-2 == 0x0AAE ))
+>         {
+>         if ( bTapePatch )
+>             {
+>             mtx_tape(r);
+>             }
+>         else
+>             {
+>             // Emulate original instructions
+>             // ld a,d
+>             r->AF.B.h = r->DE.B.h;
+> 			// or e
+>             r->AF.B.h |= r->DE.B.l;
+> 			// ret z
+>             if ( r->AF.B.h == 0 )
+>                 {
+>                 r->PC.B.l = RdZ80(r->SP.W++);
+>                 r->PC.B.h = RdZ80(r->SP.W++);
+>                 }
+>             else
+>                 {
+>                 ++r->PC.W;
+>                 }
+>             }
+>         }
+>     else
+>         fatal("magic instruction unexpectedly encountered at 0x%04x", (word)(r->PC.W-2));
+> #else
+1041a1302
+> #ifdef HAVE_SPEC
+1053a1315
+> #endif
+1084a1347
+> #endif
+1120c1383
+< #ifndef NO_DART
+---
+> #ifdef HAVE_DART
+1136a1400,1409
+> static unsigned long long clock_speed = 4000000;
+> #ifdef __Pico__
+> word LoopZ80(Z80 *r)
+>     {
+>     win_handle_events ();
+> 	display_wait_for_frame ();
+>     ctc_trigger (0);
+>     return INT_NONE;
+>     }
+> #else
+1141d1413
+< static unsigned long long clock_speed = 4000000;
+1144c1416
+< #ifndef NO_DART
+---
+> #ifdef HAVE_DART
+1274c1546
+< #ifndef NO_JOY
+---
+> #ifdef HAVE_JOY
+1309c1581
+< #ifndef NO_DART
+---
+> #ifdef HAVE_DART
+1318a1591
+> #ifdef HAVE_SPEC
+1341c1614,1615
+< 
+---
+> #endif
+>     
+1383a1658,1660
+> #endif
+> 
+> #ifdef Z80_DEBUG
+1456a1734
+> /*...e*/
+1471c1749,1750
+< /*...e*/
+---
+> #endif
+> 
+1552,1558c1831,1837
+< {
+< ctc_reload(2); /* Get consistent behaviour */
+< clk_skipped = z80.ICount; /* Be sure not to forget to account for this time */
+< z80.ICount = 13*16+3; /* Took some fiddling to get this right */
+< panel_hack = TRUE;
+< diag_message(DIAG_PANEL_HACK, "panelHack ARMED pc=0x%04x", z80.PC.W);
+< }
+---
+>                     {
+>                     ctc_reload(2); /* Get consistent behaviour */
+>                     clk_skipped = z80.ICount; /* Be sure not to forget to account for this time */
+>                     z80.ICount = 13*16+3; /* Took some fiddling to get this right */
+>                     panel_hack = TRUE;
+>                     diag_message(DIAG_PANEL_HACK, "panelHack ARMED pc=0x%04x", z80.PC.W);
+>                     }
+1566c1845
+< #ifndef NO_DART
+---
+> #ifdef HAVE_DART
+1593a1873
+> #ifdef HAVE_SPEC
+1594a1875
+> #endif
+1639a1921
+> #ifdef HAVE_SID
+1640a1923,1925
+> #else
+>             OutZ80_bad("Silicon Disc", port, value, TRUE);
+> #endif
+1661a1947
+> #ifdef HAVE_SPEC
+1668,1674d1953
+< #ifdef HAVE_NFX
+<         case 0xa0:
+<         case 0xa1:
+<         case 0xa2:
+<         case 0xa3:
+<             nfx_out(port & 0x03, value);
+<             break;
+1713a1993
+> #ifdef HAVE_SPEC
+1730a2011
+> #endif
+1785c2066
+< #ifndef NO_DART
+---
+> #ifdef HAVE_DART
+1795a2077
+> #ifdef HAVE_SPEC
+1797a2080
+> #endif
+1832a2116
+> #ifdef HAVE_SID
+1833a2118,2121
+> #else
+>             InZ80_bad("Silicon disc", port, TRUE);
+>             return 0xFF;
+> #endif
+1847a2136
+> #ifdef HAVE_SPEC
+1852,1857d2140
+< #ifdef HAVE_NFX
+<         case 0xa0:
+<         case 0xa1:
+<         case 0xa2:
+<         case 0xa3:
+<             return nfx_in(port & 0x03);
+1892a2176
+> #ifdef HAVE_SPEC
+1896a2181
+> #endif
+1939,1943c2224
+< #ifdef ALT_ENTRY
+< int ALT_ENTRY (int argc, const char *argv[])
+< #else
+< int main (int argc, const char *argv[])
+< #endif
+---
+> int memu (int argc, const char *argv[])
+1947a2229
+>     psExe = argv[0];
+1953a2236,2238
+> #ifdef __Pico__
+>     cfg.iperiod = 4000000 / 50;
+> #else
+1954a2240
+> #endif
+1962a2249,2250
+>     // diag_methods = DIAGM_CONSOLE;
+>     // diag_flags[DIAG_INIT] = TRUE;
+1963a2252,2260
+> #ifdef SMALL_MEM
+>     // Set minimum working configuration
+>     static char sTapeDir[] = "tapes";
+>     mem_alloc(2);
+>     cfg.vid_emu |= VIDEMU_WIN;
+>     cfg.tape_name_prefix = sTapeDir;
+>     cfg_set_disk_dir ("disks");
+> #endif
+> #ifdef HAVE_DISASS
+1964a2262
+> #endif
+1969c2267,2275
+< 		/* printf ("argv[%d] = \"%s\"\n", i, argv[i]); */
+---
+> 		// printf ("argc = %d argv[%d] = \"%s\"\n", argc, i, argv[i]);
+>         if ( !strcmp(argv[i], "-help") )
+> 			{
+>             usage (NULL);
+>             }
+>         else if ( !strcmp(argv[i], "-ignore") )
+> 			{
+>             bIgnore = TRUE;
+>             }
+1971,1973c2277,2279
+< 		if ( ALT_OPTIONS (&argc, &argv, &i) )
+< 			;
+< 		else
+---
+>         else if ( ALT_OPTIONS (&argc, &argv, &i) )
+> 			{
+>             }
+1975c2281
+< 			if ( !strcmp(argv[i], "-iobyte") )
+---
+>         else if ( !strcmp(argv[i], "-iobyte") )
+1984a2291
+> #ifndef SMALL_MEM
+1989a2297,2300
+> #else
+>             unimplemented (argv[i]);
+>             ++i;
+> #endif
+1992a2304
+> #ifndef SMALL_MEM
+1995a2308,2311
+> #else
+>             unimplemented (argv[i]);
+>             ++i;
+> #endif
+1998a2315
+> #ifndef SMALL_MEM
+2004a2322,2325
+> #else
+>             unimplemented (argv[i]);
+>             ++i;
+> #endif
+2017a2339
+> #ifndef SMALL_MEM
+2022a2345,2348
+> #else
+>             unimplemented (argv[i]);
+>             ++i;
+> #endif
+2025a2352
+> #ifndef SMALL_MEM
+2047a2375,2378
+> #else
+>             unimplemented (argv[i]);
+>             i += 2;
+> #endif
+2050a2382
+> #ifndef SMALL_MEM
+2055a2388,2391
+> #else
+>             unimplemented (argv[i]);
+>             ++i;
+> #endif
+2058a2395
+> #ifndef SMALL_MEM
+2064a2402,2405
+> #else
+>             unimplemented (argv[i]);
+>             ++i;
+> #endif
+2079a2421
+> #ifdef HAVE_AUTOTYPE
+2082a2425,2428
+> #else
+>             unimplemented (argv[i]);
+>             ++i;
+> #endif
+2085a2432
+> #ifdef HAVE_AUTOTYPE
+2088a2436,2439
+> #else
+>             unimplemented (argv[i]);
+>             ++i;
+> #endif
+2090d2440
+< #ifndef NO_JOY
+2092a2443,2444
+>             {
+> #ifdef HAVE_JOY
+2093a2446,2449
+> #else
+>             unimplemented (argv[i]);
+> #endif
+>             }
+2095a2452
+> #ifdef HAVE_JOY
+2099a2457,2460
+> #else
+>             unimplemented (argv[i]);
+>             ++i;
+> #endif
+2102a2464
+> #ifdef HAVE_JOY
+2107c2469,2471
+< 			}
+---
+> #else
+>             unimplemented (argv[i]);
+>             ++i;
+2108a2473
+> 			}
+2118a2484
+>             {
+2119a2486
+>             }
+2120a2488
+>             {
+2121a2490
+>             }
+2123a2493
+> #ifdef HAVE_VID_TIMING
+2128a2499,2502
+> #else
+>             unimplemented (argv[i]);
+>             ++i;
+> #endif
+2131a2506
+>             {
+2132a2508
+>             }
+2148a2525
+>             {
+2149a2527
+>             }
+2152c2530,2531
+< #ifndef NO_TH
+---
+>             {
+> #ifdef HAVE_TH
+2155c2534
+< 			fatal("this version of MEMU compiled without TH support");		
+---
+>             unimplemented (argv[i]);
+2157c2536
+< #ifndef NO_CONSOLE
+---
+>             }
+2159a2539,2540
+>             {
+> #ifdef HAVE_CONSOLE
+2160a2542,2545
+> #else
+>             unimplemented (argv[i]);
+> #endif
+>             }
+2162a2548,2549
+>             {
+> #ifdef HAVE_CONSOLE
+2163a2551,2552
+> #else
+>             unimplemented (argv[i]);
+2164a2554
+>             }
+2165a2556
+>             {
+2166a2558
+>             }
+2191a2584,2585
+>             {
+> #ifdef HAVE_SID
+2192a2587,2590
+> #else
+>             unimplemented (argv[i]);
+> #endif
+>             }
+2193a2592,2593
+>             {
+> #ifdef HAVE_SID
+2194a2595,2598
+> #else
+>             unimplemented (argv[i]);
+> #endif
+>             }
+2196a2601
+> #ifdef HAVE_SID
+2206a2612,2615
+> #else
+>             unimplemented (argv[i]);
+>             i += 2;
+> #endif
+2208d2616
+< #ifdef HAVE_CFX2
+2210a2619
+> #ifdef HAVE_CFX2
+2218a2628,2631
+> #else
+>             unimplemented (argv[i]);
+>             ++i;
+> #endif
+2221a2635
+> #ifdef HAVE_CFX2
+2235,2236c2649,2651
+<             cfg.bCFX2 = TRUE;
+<             }
+---
+> #else
+>             unimplemented (argv[i]);
+>             i += 2;
+2238c2653
+< #ifdef HAVE_VGA
+---
+>             }
+2240a2656
+> #ifdef HAVE_VGA
+2242c2658,2659
+<             }
+---
+> #else
+>             unimplemented (argv[i]);
+2243a2661
+>             }
+2277a2696
+> #ifdef HAVE_SPEC
+2280a2700,2703
+> #else
+>             unimplemented (argv[i]);
+>             ++i;
+> #endif
+2283a2707
+> #ifdef HAVE_SPEC
+2286a2711,2714
+> #else
+>             unimplemented (argv[i]);
+>             ++i;
+> #endif
+2289a2718
+> #ifdef HAVE_OSFS
+2292a2722,2724
+> #else
+>             unimplemented (argv[i]);
+> #endif
+2295a2728
+> #ifdef HAVE_OSFS
+2298a2732,2735
+> #else
+>             unimplemented (argv[i]);
+>             ++i;
+> #endif
+2300a2738,2739
+>             {
+> #ifdef HAVE_OSFS
+2301a2741,2744
+> #else
+>             unimplemented (argv[i]);
+> #endif
+>             }
+2303a2747
+> #ifdef HAVE_OSFS
+2306a2751,2754
+> #else
+>             unimplemented (argv[i]);
+>             ++i;
+> #endif
+2308a2757,2758
+>             {
+> #ifdef HAVE_OSFS
+2309a2760,2763
+> #else
+>             unimplemented (argv[i]);
+> #endif
+>             }
+2310a2765,2766
+>             {
+> #ifdef HAVE_OSFS
+2311a2768,2771
+> #else
+>             unimplemented (argv[i]);
+> #endif
+>             }
+2312a2773,2774
+>             {
+> #ifdef HAVE_OSFS
+2313a2776,2779
+> #else
+>             unimplemented (argv[i]);
+> #endif
+>             }
+2314a2781,2782
+>             {
+> #ifdef HAVE_OSFS
+2315a2784,2787
+> #else
+>             unimplemented (argv[i]);
+> #endif
+>             }
+2322a2795,2797
+> #ifdef __Pico__
+>             cfg.iperiod = clock_speed / 60;
+> #endif
+2324a2800
+>             {
+2325a2802
+>             }
+2326a2804
+> 			{
+2330d2807
+< 			{
+2337a2815,2816
+>             {
+> #ifdef HAVE_OSFS
+2339c2818,2821
+< #ifndef NO_DART
+---
+> #else
+>             unimplemented (argv[i]);
+> #endif
+>             }
+2341a2824
+> #ifdef HAVE_DART
+2345a2829,2832
+> #else
+>             unimplemented (argv[i]);
+>             ++i;
+> #endif
+2348a2836
+> #ifdef HAVE_DART
+2351a2840,2843
+> #else
+>             unimplemented (argv[i]);
+>             ++i;
+> #endif
+2354a2847
+> #ifdef HAVE_DART
+2357a2851,2854
+> #else
+>             unimplemented (argv[i]);
+>             ++i;
+> #endif
+2360a2858
+> #ifdef HAVE_DART
+2364a2863,2866
+> #else
+>             unimplemented (argv[i]);
+>             ++i;
+> #endif
+2367a2870
+> #ifdef HAVE_DART
+2370a2874,2877
+> #else
+>             unimplemented (argv[i]);
+>             ++i;
+> #endif
+2373a2881
+> #ifdef HAVE_DART
+2377,2387c2885,2887
+< 			}
+< #endif
+< #ifdef HAVE_NFX
+< 		else if ( !strcmp(argv[i], "-nfx-port-offset") )
+< 			{
+< 			int offset;
+< 			if ( ++i == argc )
+< 				usage(argv[i-1]);
+< 			sscanf(argv[i], "%i", &offset);
+<             nfx_port_offset (offset);
+<             }
+---
+> #else
+>             unimplemented (argv[i]);
+>             ++i;
+2388a2889
+> 			}
+2390a2892
+> #ifdef Z80_DEBUG
+2396a2899,2902
+> #else
+>             unimplemented (argv[i]);
+>             ++i;
+> #endif
+2399a2906
+> #ifdef Z80_DEBUG
+2405a2913,2916
+> #else
+>             unimplemented (argv[i]);
+>             ++i;
+> #endif
+2408a2920
+> #ifdef HAVE_GUI
+2411a2924,2927
+> #else
+>             unimplemented (argv[i]);
+>             ++i;
+> #endif
+2414a2931
+> #ifdef HAVE_GUI
+2417a2935,2938
+> #else
+>             unimplemented (argv[i]);
+>             ++i;
+> #endif
+2420a2942
+> #ifdef HAVE_GUI
+2423a2946,2949
+> #else
+>             unimplemented (argv[i]);
+>             ++i;
+> #endif
+2426a2953
+> #ifdef HAVE_GUI
+2429a2957,2960
+> #else
+>             unimplemented (argv[i]);
+>             ++i;
+> #endif
+2432a2964
+> #ifdef HAVE_UI
+2435a2968,2971
+> #else
+>             unimplemented (argv[i]);
+>             ++i;
+> #endif
+2438a2975
+> #ifdef HAVE_UI
+2441a2979,2982
+> #else
+>             unimplemented (argv[i]);
+>             ++i;
+> #endif
+2444a2986
+> #ifdef HAVE_UI
+2447a2990,2993
+> #else
+>             unimplemented (argv[i]);
+>             ++i;
+> #endif
+2450a2997
+> #ifdef HAVE_UI
+2453a3001,3004
+> #else
+>             unimplemented (argv[i]);
+>             ++i;
+> #endif
+2456a3008
+> #ifdef HAVE_UI
+2459a3012,3015
+> #else
+>             unimplemented (argv[i]);
+>             ++i;
+> #endif
+2462a3019
+> #ifdef HAVE_UI
+2465a3023,3026
+> #else
+>             unimplemented (argv[i]);
+>             ++i;
+> #endif
+2467a3029,3030
+>             {
+> #ifdef HAVE_UI
+2468a3032,3035
+> #else
+>             unimplemented (argv[i]);
+> #endif
+>             }
+2469a3037,3038
+>             {
+> #ifdef HAVE_UI
+2470a3040,3043
+> #else
+>             unimplemented (argv[i]);
+> #endif
+>             }
+2471a3045,3046
+>             {
+> #ifdef HAVE_UI
+2472a3048,3051
+> #else
+>             unimplemented (argv[i]);
+> #endif
+>             }
+2496a3076
+> #ifdef HAVE_AUTOTYPE
+2497a3078
+> #endif
+2506c3087,3092
+< 		if ( !strcmp(dot, ".com") || !strcmp(dot, ".COM") )
+---
+>         if ( !strcmp(dot, ".mtx") || !strcmp(dot, ".MTX") )
+>             {
+> 			/* Save the filename for later LOAD "" */
+> 			cfg.tape_fn = argv[i++];
+>             }
+> 		else if ( !strcmp(dot, ".com") || !strcmp(dot, ".COM") )
+2507a3094
+> #ifdef HAVE_OSFS
+2525a3113,3116
+> #else
+>             unimplemented (argv[i]);
+>             i = argc;
+> #endif
+2528a3120
+> #ifdef HAVE_OSFS
+2548a3141,3144
+> #else
+>             unimplemented (argv[i]);
+>             ++i;
+> #endif
+2550,2552d3145
+< 		else if ( !strcmp(dot, ".mtx") || !strcmp(dot, ".MTX") )
+< 			/* Save the filename for later LOAD "" */
+< 			cfg.tape_fn = argv[i++];
+2560c3153,3157
+<     if ( ( cfg.vid_emu == 0 ) && ( ( cfg.mon_emu & ~MONEMU_IGNORE_INIT ) == 0 ) && ( ! cfg.bVGA ) )
+---
+>     if ( ( cfg.vid_emu == 0 ) && ( ( cfg.mon_emu & ~MONEMU_IGNORE_INIT ) == 0 )
+> #ifdef HAVE_VGA
+>         && ( ! cfg.bVGA )
+> #endif
+>         )
+2563c3160
+< #ifndef NO_TH
+---
+> #ifdef HAVE_TH
+2572c3169
+< #ifndef __circle__
+---
+> #if ! (defined(__circle__) || defined(__Pico__))
+2593c3190
+< #ifndef NO_JOY
+---
+> #ifdef HAVE_JOY
+2601c3198
+< #ifndef NO_DART
+---
+> #ifdef HAVE_DART
+2622a3220
+> #ifdef HAVE_SPEC
+2624a3223
+> #endif
+2653a3253
+> #ifdef HAVE_SID
+2655a3256
+> #endif
+2662a3264,3266
+> 	if ( !cfg.tape_disable ) tape_patch (TRUE);
+> 
+> #ifdef HAVE_UI
+2664a3269
+> #endif
+2666,2667c3271
+< 	if ( !cfg.tape_disable ) tape_patch (TRUE);
+< 
+---
+> #ifdef HAVE_OSFS
+2672a3277
+> #endif
+2673a3279
+> #ifndef SMALL_MEM
+2675a3282
+> #endif
+2683a3291
+>     diag_message (DIAG_INIT, "Z80Run Terminated");
+mon.c
+43c43
+< #ifndef NO_TH
+---
+> #ifdef HAVE_TH
+195c195
+< #ifndef NO_TH
+---
+> #ifdef HAVE_TH
+459c459
+< #ifndef NO_TH
+---
+> #ifdef HAVE_TH
+1037c1037
+< #ifndef NO_TH
+---
+> #ifdef HAVE_TH
+1146c1146
+< #ifndef NO_TH
+---
+> #ifdef HAVE_TH
+1166c1166
+< #ifndef NO_TH
+---
+> #ifdef HAVE_TH
+1179c1179
+< #ifndef NO_TH
+---
+> #ifdef HAVE_TH
+1345c1345
+< #ifndef NO_TH
+---
+> #ifdef HAVE_TH
+1481c1481
+< #ifndef NO_TH
+---
+> #ifdef HAVE_TH
+1517c1517
+< #ifndef NO_TH
+---
+> #ifdef HAVE_TH
+1537c1537
+< #ifndef NO_TH
+---
+> #ifdef HAVE_TH
+1560c1560
+< #ifndef NO_TH
+---
+> #ifdef HAVE_TH
+1614c1614
+< #ifndef NO_TH
+---
+> #ifdef HAVE_TH
+1650c1650
+< #ifndef NO_TH
+---
+> #ifdef HAVE_TH
+1726c1726
+< #ifndef NO_TH
+---
+> #ifdef HAVE_TH
+1744c1744
+< #ifndef NO_TH
+---
+> #ifdef HAVE_TH
+monprom.c
+nfx.c
+diff: nfx.c: No such file or directory
+printer.c
+12c12
+< #include <stdio.h>
+---
+> #include "ff_stdio.h"
+roms.c
+diff: roms.c: No such file or directory
+sdxfdc.c
+11c11
+< #include <stdio.h>
+---
+> #include "ff_stdio.h"
+sid.c
+snd.c
+spec.c
+tape.c
+TxtRead.c
+diff: TxtRead.c: No such file or directory
+ui.c
+vdeb.c
+vga.c
+vid.c
+25c25
+< #include "console.h"
+---
+> // #include "console.h"
+101d100
+< #define	VID_MEMORY_SIZE 0x4000
+141a141,143
+> static int vid_dump_vdp_number = 0;
+> // static BOOLEAN vid_auto_dump_vdp_enabled = FALSE;
+> 
+145a148,179
+> /*...svid_dump_vdp:0:*/
+> static BOOLEAN vid_dump_vdp(void)
+> 	{
+> 	char fn[100+1];
+> 	FILE *fp;
+> 	sprintf(fn, "memu%06d.vdp", vid_dump_vdp_number);
+> 	if ( (fp = fopen(fn, "wb")) == NULL )
+> 		return FALSE;
+> 	if ( fwrite(vid_memory, 1, VID_MEMORY_SIZE, fp) != VID_MEMORY_SIZE )
+> 		{
+> 		fclose(fp);
+> 		remove(fn);
+> 		return FALSE;
+> 		}
+> 	if ( fwrite(vid_regs, 1, 8, fp) != 8 )
+> 		{
+> 		fclose(fp);
+> 		remove(fn);
+> 		return FALSE;
+> 		}
+> 	if ( fwrite(&vid_status, 1, 1, fp) != 1 )
+> 		{
+> 		fclose(fp);
+> 		remove(fn);
+> 		return FALSE;
+> 		}
+> 	fclose(fp);
+> 	vid_dump_vdp_number++;
+> 	return TRUE;
+> 	}
+> /*...e*/
+> 
+847a882,893
+> 		/* Now lets VRAM to a file, if required */
+> 		if ( diag_flags[DIAG_ACT_VID_DUMP_VDP] )
+> 			{
+> 			if ( vid_dump_vdp() )
+> 				diag_message(DIAG_ALWAYS, "VDP dump");
+> 			diag_flags[DIAG_ACT_VID_DUMP_VDP] = FALSE;
+> 			}
+> 		else if ( diag_flags[DIAG_VID_AUTO_DUMP_VDP] )
+> 			{
+> 			if ( vid_dump_vdp() )
+> 				diag_message(DIAG_ALWAYS, "VDP auto dump");
+> 			}
+905a952,969
+> /*...svid_reg_read:0:*/
+> byte vid_reg_read(int reg)
+> 	{
+> 	return vid_regs[reg];
+> 	}
+> /*...e*/
+> /*...svid_reg_write:0:*/
+> void vid_reg_write(int reg, byte b)
+> 	{
+> 	vid_regs[reg] = b;
+> 	}
+> /*...e*/
+> /*...svid_status_read:0:*/
+> byte vid_status_read(void)
+> 	{
+> 	return vid_status;
+> 	}
+> /*...e*/
+1023,1028c1087,1092
+<     taddr[0] = ( regs[2] & 0x0F ) << 10;
+<     taddr[1] = regs[3] << 6;
+<     taddr[2] = ( regs[4] & 0x07 ) << 11;
+<     taddr[3] = ( regs[5] & 0x7F ) << 7;
+<     taddr[4] = ( regs[6] & 0x07 ) << 11;
+<     if ( ( ( regs[0] & 0x02 ) == 0x02 ) && ( ( regs[1] & 0x18 ) == 0 ) )
+---
+>     taddr[0] = ( vid_regs[2] & 0x0F ) << 10;
+>     taddr[1] = vid_regs[3] << 6;
+>     taddr[2] = ( vid_regs[4] & 0x07 ) << 11;
+>     taddr[3] = ( vid_regs[5] & 0x7F ) << 7;
+>     taddr[4] = ( vid_regs[6] & 0x07 ) << 11;
+>     if ( ( ( vid_regs[0] & 0x02 ) == 0x02 ) && ( ( vid_regs[1] & 0x18 ) == 0 ) )
+1041c1105
+<         for ( j = 0; j < 5; ++j )
+---
+>         for ( int j = 0; j < 5; ++j )
+win_cir.c
+diff: win_cir.c: No such file or directory
+win_fb.c
+win_vc.c
+diff: win_vc.c: No such file or directory
+win_w32.c
+diff: win_w32.c: No such file or directory
+win_x.c
+144a145,154
+> #if 0
+> void win_max_size (const char *display, int *pWth, int *pHgt)
+>     {
+>     DPY *dpy = dpy_connect (display);
+>     *pWth = XDisplayWidth (dpy->disp, dpy->scrn);
+>     *pHgt = XDisplayHeight (dpy->disp, dpy->scrn);
+>     dpy_disconnect (dpy);
+>     }
+> #endif
+> 
+Z80.c
+diff: Z80.c: No such file or directory

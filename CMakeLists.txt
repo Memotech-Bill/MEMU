@@ -1,9 +1,10 @@
-cmake_minimum_required(VERSION 3.12)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 
 if("${TARGET}" STREQUAL "Pico")
+  cmake_minimum_required(VERSION 3.12)
+  
   set(PICO_BOARD vgaboard)
 
   # Pull in PICO SDK (must be before project)
@@ -19,21 +20,23 @@ if("${TARGET}" STREQUAL "Pico")
 
   add_executable(memu-pico)
 
-#  add_compile_options(-g)
-#  add_link_options(-g)
+  #  add_compile_options(-g)
+  #  add_link_options(-g)
 
   target_compile_definitions(memu-pico PUBLIC
     -DPICO_SCANVIDEO_MAX_SCANLINE_BUFFER_WORDS=322
     -DPICO_SCANVIDEO_SCANLINE_BUFFER_COUNT=8
-    -DPICO_SD_CARD_EXTRA_CLOCK_DIVIDER=16
     -DLSB_FIRST
     -D__Pico__
     -DSMALL_MEM
     -DDYNAMIC_ROMS
-    -DALT_ENTRY=memu
+    -DALT_EXIT=exit_pico
     -DALT_KEYPRESS=test_cfg_key
     -DALT_OPTIONS=cfg_options
-    _DALT_USAGE=cfg_usage
+    -DALT_PRINTF=printf_pico
+    -DALT_USAGE=cfg_usage
+    -DROM_PATCH_KBD
+    -DROM_PATCH_TAPE
     )
 
   target_include_directories(memu-pico PUBLIC
@@ -54,6 +57,94 @@ if("${TARGET}" STREQUAL "Pico")
     tinyusb_host
     )
 
+elseif("${TARGET}" STREQUAL "XWin")
+  set(src_defs
+    -DLSB_FIRST
+    -DDYNAMIC_ROMS
+    -DALT_KEYPRESS=test_cfg_key
+    -DALT_OPTIONS=cfg_options
+    -DALT_USAGE=cfg_usage
+    -DDEBUG
+    -DUNIX
+    -DHAVE_AUTOTYPE
+    -DHAVE_CFX2
+    -DHAVE_CONSOLE
+    -DHAVE_DART
+    -DHAVE_DISASS
+    -DHAVE_JOY
+    -DHAVE_OSFS
+    -DHAVE_SID
+    -DHAVE_SPEC
+    -DHAVE_UI
+    -DHAVE_VDEB
+    -DHAVE_VGA
+    -DZ80_DEBUG
+    )
+  
+  if(NOT (${CMAKE_VERSION} VERSION_LESS "3.12.0"))
+    
+    project(memu C)
+    
+    add_executable(memu-x)
+    
+    #  add_compile_options(-g)
+    #  add_link_options(-L/usr/lib/X11/lib)
+    
+    target_compile_definitions(memu-x PUBLIC ${src_defs})
+    
+    target_link_libraries(memu-x PUBLIC
+      memu_src
+      Z80_emu
+      portaudio
+      X11
+      m
+      )
+  endif()
+
+elseif("${TARGET}" STREQUAL "FBuf")
+
+  set(src_defs
+    -DLSB_FIRST
+    -DDYNAMIC_ROMS
+    -DALT_KEYPRESS=test_cfg_key
+    -DALT_OPTIONS=cfg_options
+    -DALT_USAGE=cfg_usage
+    -DDEBUG
+    -DUNIX
+    -DHAVE_CFX2
+    -DHAVE_CONSOLE
+    -DHAVE_DART
+    -DHAVE_DISASS
+    -DHAVE_JOY
+    -DHAVE_OSFS
+    -DHAVE_SID
+    -DHAVE_SPEC
+    -DHAVE_UI
+    -DHAVE_VDEB
+    -DHAVE_VGA
+    -DZ80_DEBUG
+    )
+  
+  if(NOT (${CMAKE_VERSION} VERSION_LESS "3.12.0"))
+    
+    project(memu C)
+    
+    add_executable(memu-fb)
+    
+    #  add_compile_options(-g)
+    #  add_link_options(-L/usr/lib/X11/lib)
+    
+    target_compile_definitions(memu-fb PUBLIC ${src_defs})
+    
+    target_link_libraries(memu-fb PUBLIC
+      memu_src
+      Z80_emu
+      portaudio
+      X11
+      m
+      )
+  endif()
+  
 endif()
 
 # Specify the source files

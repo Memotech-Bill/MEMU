@@ -9,12 +9,13 @@ mon.h - 80 column card and its monitor
 
 #include "win.h"
 
-#define	MONEMU_WIN           0x01
-#define	MONEMU_WIN_MONO      0x02
-#define	MONEMU_TH            0x04
-#define	MONEMU_CONSOLE       0x08
-#define	MONEMU_CONSOLE_NOKEY 0x10
-#define	MONEMU_IGNORE_INIT   0x20
+#define	MONEMU_WIN              0x01
+#define	MONEMU_WIN_MONO         0x02
+#define	MONEMU_TH               0x04
+#define	MONEMU_CONSOLE          0x08
+#define	MONEMU_CONSOLE_NOKEY    0x10
+#define	MONEMU_IGNORE_INIT      0x20
+#define MONEMU_WIN_MAX          0x80
 
 extern void mon_out30(byte value);
 extern void mon_out31(byte value);
@@ -43,6 +44,7 @@ extern BOOLEAN mon_kbd_status(void);
 extern void mon_init(int emu, int width_scale, int height_scale);
 extern void mon_show (void);
 extern void mon_term(void);
+extern void mon_max_scale (int *pxscl, int *pyscl);
 
 extern void mon_set_title (const char *title);
 extern const char * mon_get_title (void);

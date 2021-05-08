@@ -538,7 +538,7 @@ word RunZ80(Z80 *R)
 
   for(;;)
   {
-#ifdef DEBUG
+#ifdef Z80_DEBUG
     /* Turn tracing on when reached trap address */
     if(R->PC.W==R->Trap) R->Trace=1;
     /* Call single-step debugger, exit if requested */
@@ -621,7 +621,7 @@ word Z80Run (Z80 *R)
 		R->ICntLast = R->ICount;
 
 		/* Execute Instruction */
-#ifdef DEBUG
+#ifdef Z80_DEBUG
 		/* Turn tracing on when reached trap address */
 		if ( R->PC.W == R->Trap ) R->Trace = 1;
 		/* Call single-step debugger, exit if requested */

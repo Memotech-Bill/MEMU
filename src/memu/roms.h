@@ -15,13 +15,14 @@ roms.h - MTX ROMs
 
 #define	ROM_SIZE 0x2000
 
-#ifdef SMALL_MEM
+//#ifdef SMALL_MEM
 extern const byte rom_os   [ROM_SIZE];
 extern const byte rom_basic[ROM_SIZE];
 extern const byte rom_assem[ROM_SIZE];
 extern const byte rom_cpm  [ROM_SIZE];
 extern const byte rom_sdx  [ROM_SIZE];
-#else
+//#else
+#if 0
 extern byte rom_os   [ROM_SIZE];
 extern byte rom_basic[ROM_SIZE];
 extern byte rom_assem[ROM_SIZE];

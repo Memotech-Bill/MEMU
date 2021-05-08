@@ -1,0 +1,1044 @@
+<html>
+  <head>
+    <title>MEMU - Memotech EMUlator</title>
+    <link rel="stylesheet" href="memu.css"/>
+  </head>
+  <body>
+    <h1><img src="memu-logo.gif" alt="MEMU"> - Memotech EMUlator</h1>
+    <h2>Contents</h2>
+    <ul>
+      <li><a href="#Intro">Introduction</a></li>
+      <li><a href="#Building">Building</a>
+        <ul>
+          <li><a href="#Build-Pico">Raspberry Pi Pico Build</a></li>
+          <li><a href="#Build-Linux">Linux Build</a></li>
+        </ul>
+      </li>
+      <li><a href="#Usage">Usage</a>
+        <ul>
+          <li><a href="#Usage-Basic">Basic Usage</a></li>
+          <li><a href="#Usage-Advanced">Advanced Usage</a></li>
+        </ul>
+      </li>
+      <li><a href="#Keyboard">Keyboard</a></li>
+      <li><a href="#VDeb">Visual Debugger</a></li>
+      <li><a href="#Diagnostics">Diagnostics</a>
+        <ul>
+          <li><a href="#Diag-Options">Diagnostic Options</a></li>
+          <li><a href="#Diag-RunTime">Run Time Diagnostics</a></li>
+          <li><a href="#Diag-Windows">Diagnostic Windows</a></li>
+        </ul>
+      </li>
+    </ul>
+    
+    <h2 id="Intro">Introduction</h2>
+    <p>The <a href="https://en.wikipedia.org/wiki/Memotech_MTX">Memotech MTX</a> series of computers
+      were superior 8-bit computers of the 1980s. Although initially supplied with a ROM BASIC later
+      addons included disk drives of various formats, which could be accessed from extensions to the
+      ROM BASIC or the system could boot CP/M 2.2. The definitive source of information about Memotech
+      computers is
+      <a href="http://primrosebank.net/computers/mtx/mtx512.htm">Dave Stevenson's site</a>.</p>
+
+    <p>MEMU is a full featured emulator of the MTX systems originally written by
+      Andy Key. Andy's version of MEMU is available for Microsoft Windows or Linux from
+      <a href="http://www.nyangau.org/memu/memu.htm">here</a>. Discussion of MEMU can be found
+      <a href="http://www.mtxworld.dk/memorum/viewforum.php?f=3"> here</a>.</p>
+
+    <p>This code is a fork of Andy's original to include some additional features and support
+      different patforms. This release currently supports:</p>
+    <ul>
+      <li>Raspberry Pi Pico: This has the main features of MEMU, but size constraints
+        require omitting some features. Each display is shown full screen.</li>
+      <li>Linux X-Window: This uses multiple GUI windows to display Memotech screens and
+        dialogs.</li>
+      <li>Linux Framebuffer: This does not require a GUI. Instead each display is shown
+        full-screen and it is necessary to toggle between screens.</li>
+    </ul>
+    <p>An earlier version of this fork can be found
+      <a href="http://primrosebank.net/computers/mtx/emulators/Bills_MEMU_ds.htm">here</a>.
+      That version provides support for these additional platforms:</p>
+    <ul>
+      <li>Raspberry Pi: Although the Linux versions run perfectly well on Raspberry Pi,
+        this version uses the GPU for display updating, and can use the GPIOs to interface
+        to real hardware.</li>
+      <li>Bare Metal Pi: Uses the <a href="https://github.com/rsta2/circle">Circle</a>
+        library to produce versions of MEMU that run bare-metal on a Raspberry Pi.</li>
+      <li>Microsoft Windows: A version for Microsoft Windows with most of the additional
+        features.</li>
+    </ul>
+    <p>It is intended to eventually merge all the code from the earlier version into this
+      release. As a result, this code is very much a work in progress.</p>
+    <p>The full (Linux) version of MEMU provides just about complete emulation of the
+      original hardware, including:</p>
+    <ul>
+      <li>Up to 576K of RAM</li>
+      <li>Up to 8 banked ROMs, each with sub-pages</li>
+      <li>Video Display Processor (VDP, TMS9929A)</li>
+      <li>80-column display (both colour and monochrome modes)</li>
+      <li>Tape interface</li>
+      <li>Floppy disks</li>
+      <li>Silicon disks</li>
+      <li>Counter Timer Chip (CTC)</li>
+      <li>Dual serial ports (DART)</li>
+    </ul>
+    <p>It provides emulation of some modern hardware add-ons:</p>
+    <ul>
+      <li><a href="http://primrosebank.net/computers/mtx/projects/bb80col/bb80col.htm">
+          Enhanced 80-column display</a> using Parallax Propeller chip</li>
+      <li><a href="http://primrosebank.net/computers/mtx/projects/sfx/cfxii.htm">
+          CFX-II</a> providing Compact Flash storage, Propeller 80-column display,
+        ROM BASIC enhancements</li>
+      <li><a href="http://primrosebank.net/computers/mtx/projects/nfx/nfx.htm">
+          NFX</a> network interface based upon a Wiznet W5100 chip</li>
+    </ul>
+    <p>There are also features to assist Z80 software development and debugging:</p>
+    <ul>
+      <li>Visual monitor and debugger - trace and singe step code</li>
+      <li>CPU and video RAM displays</li>
+      <li>Extensive and configurable diagnostic reporting</li>
+    </ul>
+    <p>Discussion of MEMU can be found <a href="http://www.mtxworld.dk/memorum/viewforum.php?f=3">
+        here</a>.</p>
+
+    <h2 id="Building">Building</h2>
+    <h3 id="Build-Pico">Raspberry Pi Pico Build</h3>
+    <p>Hardware Requirements:</p>
+    <ul>
+      <li>Raspberry Pi Pico with headers</li>
+      <li>Pimoroni Pico VGA Demo Base</li>
+      <li>VGA Monitor</li>
+      <li>VGA Cable</li>
+      <li>USB keyboard - Not all keyboards work with tinyusb. A cheap one may be best</li>
+      <li>USB to Micro-USB adaptor to connect the keybord to the Pico</li>
+      <li>5V Power Supply with Micro-USB connector</li>
+      <li>Micro-SD Card</li>
+      <li>Optional: Headphones or Amplified Speakers</li>
+    </ul>
+    
+    <p>It is recommended that the code be compiled on a Raspberry Pi. This is the only build
+      that has been tested.</p>
+    <pre><code>
+        mkdir pico
+        cd pico
+        wget https://raw.githubusercontent.com/raspberrypi/pico-setup/master/pico_setup.sh
+        chmod +x pico_setup.sh
+        ./pico_setup.sh
+        git clone https://github.com/Memotech-Bill/MEMU.git
+        cd MEMU
+        mkdir build-pico
+        cd build-pico
+        cmake -DTARGET=Pico ..
+        make
+    </code></pre>
+
+    <p>The resulting memu-pico.uf2 file can then be copied onto the Pico, or the memu-pico.elf
+      file loaded using the debug connector on the Pico. See
+      <a href="https://datasheets.raspberrypi.org/pico/getting-started-with-pico.pdf">
+        "Getting Started with Raspberry Pi Pico"</a>.</p>
+
+    <p>The hardware is configured as follows:</p>
+    <ul>
+      <li>Copy the contents of the "run_time" folder to the root of a FAT formatted SD card.</li>
+      <li>Plug the Pico into the VGA Demo Base.</li>
+      <li>Connect the keyboard to the USB socket on the Pico.</li>
+      <li>Connect the Power Supply to the USB socket on the VGA Demo Base.</li>
+      <li>Connect the Monitor.</li>
+      <li>Insert the SD card into the socket on the VGA Demo Base.</li>
+      <li>If used, connect the headphones or speaker to the DAC socket on the VGA Demo Base
+        (not the PWM) socket.</li>
+    </ul>
+    
+    <h3 id="Build-Linux">Linux Builds</h3>
+    <p>The following pre-requisites are required when building on a Raspberry Pi:</p>
+    <ul>
+      <li>build-essentials</li>
+      <li>cmake</li>
+      <li>libx11-dev (for the X-Window build)</li>
+      <li>portaudio19-dev</li>
+    </ul>
+    
+    <p>To build the X-Window version of MEMU:</p>
+    <pre><code>
+        git clone https://github.com/Memotech-Bill/MEMU.git
+        cd MEMU
+        mkdir build-x
+        cd build-x
+        cmake -DTARGET=XWin ..
+        make
+    </code></pre>
+    
+    <p>To build the Framebuffer version of MEMU:</p>
+    <pre><code>
+        git clone https://github.com/Memotech-Bill/MEMU.git
+        cd MEMU
+        mkdir build-fb
+        cd build-fb
+        cmake -DTARGET=FBuf ..
+        make
+    </code></pre>
+
+    <p>Depending upon the age of your version of cmake, the executables "memu-x" or "memu-fb"
+      will either be in the root of the build folder, or in the "src/memu" sub-folder.
+      Copy the executable into the root of the "run_time" folder.</p>
+
+    <h2 id="Usage">Usage</h2>
+    <h3 id="Usage-Basic">Basic Usage</h3>
+    <p>If MEMU is started without any command line arguments, it will usually start in whichever
+      emulation mode it was last used in. When first installed that will be emulating a
+      Memotech MTX512 running ROM BASIC.</p>
+    <p>For instructions on using MEMU as a Memotech, please read the Memotech manuals, copies
+      of which can be found <a href="http://primrosebank.net/computers/mtx/mtxmanuals.htm">
+        here</a>.</p>
+    <p>To configure MEMU for different emulation modes, open the configuration screen or window.
+      Because different operating environments capture different keys, a number of different key
+      presses may be used to open this screen:</p>
+    <ul>
+      <li>The &lt;SysRq&gt; key.</li>
+      <li>Either of the "Meta", "GUI" or "Windows" keys. (Different names for the same keys.)</li>
+      <li>The "Applications" or "Menu" key.</li>
+      <li>The &lt;F11&gt; key.</li>
+    </ul>
+    <img class="centre" src="Config_Screen.png" alt="Configuration Screen">
+    <p>Use the arrow keys to navigate the options and either &lt;space&gt; or &lt;Enter&gt; to
+      select an option. The &lt;Esc&gt; key can be used to exit sub-menus.</p>
+    <p>The top row of the screen is used to select the basic emulation mode:</p>
+    <dl>
+      <dt>MTX500</dt>
+      <dd>32K RAM, ROM BASIC, 40 column VDP display, Tape interface</dd>
+      <dt>MTX512</dt>
+      <dd>64K RAM, ROM BASIC, 40 column VDP display, Tape interface</dd>
+      <dt>SDX</dt>
+      <dd>512K RAM, ROM BASIC, 40 column VDP display, Single disk drive (type07, 640KB)</dd>
+      <dt>CPM MONO</dt>
+      <dd>576K RAM, CP/M & ROM BASIC, 40 column VDP display, 80 column monochrome display,
+        Two type07 disk drives, Four Silicon Drives (optional)</dd>
+      <dt>CPM COLR</dt>
+      <dd>576K RAM, CP/M & ROM BASIC, 40 column VDP display, 80 column colour display,
+        Two type07 disk drives, Four Silicon Drives (optional)</dd>
+      <dt>CFX-II (Not Pico)</dt>
+      <dd>576K RAM, CP/M & ROM BASIC, 40 column VDP display, 80 column VGA display,
+        Two Compact Flash drives (up to 8 partitions each), Four Silicon Drives (optional)</dd>
+    </dl>
+    <p>The body of the screen is used to provide details:</p>
+    <dl>
+      <dt>Keyboard Remapping</dt>
+      <dd>Remapping adjusts for differences between the Memotech keyboard layout and modern
+        keyboards. It is usually most convenient to have remapping enabled, but this will
+        not work for programs with their own keyboard drivers.</dd>
+      <dt>Sound</dt>
+      <dd>Generation of sound may be turned on or off.</dd>
+      <dt>Tapes</dt>
+      <dd>For the emulator, most program tapes are supplied in a binary format (*.mtx).
+        These will load quickly. However for use with real hardware, tapes may be
+        in the format of audio files (*.wav). These can also be loaded into the emulator
+        and will take a realistic time to load. To prevent accidental overwriting
+        of existing programs, overwriting can be disabled. The file names for tapes to
+        be loaded or saved can be selected.</dd>
+      <dt>Silicon Disks</dt>
+      <dd>In real hardware, silicon disks loose their contents when turned off. To emulate
+        this, saving the contents of silicon disks on exiting MEMU can be disabled. For
+        the real hardware, silicon disks were limited to a maximum of 8MB. However,
+        one <a href="http://www.nyangau.org/hextrain/hextrain.htm">modern game</a> by Andy Key
+        requires more storage. Therefore to enable this to be run in MEMU, he extended
+        the simulated silicon disk interface to support much larger capacities.</dd>
+    </dl>
+    <p>The lowest line on the screen provides some brief help. The line above is used to
+      exit the configuration:</p>
+    <dl>
+      <dt>Apply</dt>
+      <dd>Makes the requested changes and returns to the existing emulation. Only changes
+        to the tape or floppy disks may be made.</dd>
+      <dt>Cancel</dt>
+      <dd>Returns to the existing emulation without making any changes.</dd>
+      <dt>Restart</dt>
+      <dd>Restarts the emulation in the requested mode. The new configuration is written
+        to the configuration file so that MEMU will start in the new mode next time it is
+        used.</dd>
+      <dt>Exit</dt>
+      <dd>Exits MEMU. In bare-metal versions it will be necessary to reset the processor
+        to restart the program.</dd>
+      <p>In order to be used by MEMU, disk images should be placed in the "disks" sub-folder
+        below the folder containing MEMU and the configuration files. Similarly, tapes should
+        be placed in the "tapes" sub-folder. This repositry only contains a few example tape
+        and disk image files. Many more can be obtained from:</p>
+      <ul>
+        <li>Tape images
+          <ul>
+            <li><a href="http://www.nyangau.org/memu/download.htm">Andy Key's
+                MEMU distribution</a></li>
+            <li><a href="http://primrosebank.net/computers/mtx/mtxsoftware_dl.htm">
+                Dave Stevenson's site</a></li>
+            <li><a href="http://www.mtxworld.dk/download.php">The MTXWorld site</a>.
+              These files are in audio format.</li>
+          </ul>
+        </li>
+        <li>Disk images
+          <ul>
+            <li><a href="http://www.nyangau.org/diskimages/diskimages.htm">Andy Key's
+                disk images</a></li>
+          </ul>
+        </li>
+      </ul>
+    </dl>
+    <h4>Typical configuration for SDX emulation</h4>
+    <p>The image below shows a typical configuration for SDX emulation, with a tape file ready
+      for loading with the command <b>LOAD ""</b>, and a disk of games available for
+      <b>USER LOAD "game"</b>. Any user programs can be saved with <b>USER SAVE "name"</b></p>
+    <img class="Centre" src="MEMU_SDX_Configuration.png"
+         alt="SDX Selected, Keyboard: Remapped, Sound: Yes, Audio tapes: No, Overwite tapes: No, Tape file selected, Floppy drive B file selected">
+    <h4>Typical configuration for CP/M emulation</h4>
+    <p>A typical configuration for CP/M emulation, with two floppy disks, is shown below.</p>
+    <img class="Centre" src="MEMU_CPM_Configuration.png"
+         alt="CP/M Colour Selected, Keyboard: Remapped, Sound: Yes, Files for floppy drives B and C selected">
+    
+    <h3 id="Usage-Advanced">Advanced Usage</h3>
+    <p>MEMU configuration is controlled by a large number of option flags or switches. These
+      may be either in configuration files or specified on the command line.</p>
+    <p>If MEMU is started without any command line options, then it will read the configuration
+      from two files "memu0.cfg" and "memu.cfg". For systems with an operating system
+      these files will be in the same folder as the program executable. For bare-metal systems
+      the files will be in the root of the storage media. The contents of the "memu0.cfg"
+      file remain constant, while the "memu.cfg" file is re-written by the interactive
+      configuration screen.</p>
+    <p>If there are any options specified on the command line, then the above configuration
+      files will not be read automatically. Command line options may be used to read these
+      (or other) configuration files.</p>
+    <p>The following options are supported on all versions of MEMU:</p>
+    <dl>
+      <dt>-help</dt>
+      <dd>Show a short summary of the options and then exit MEMU.</dd>
+      <dt>-ignore</dt>
+      <dd>Ignore options for features that are not implemented. It allows versions with
+        fewer features (such as the Pico version) to use a configuration file intended
+      for a more fully featured version. The options must still be syntacticly correct.</dd>
+      <dt>-config-file file</dt>
+      <dd>Read configuration options from the specified file. The option may be repeated
+        to read multiple configuration files. The last configuration file specified is used
+      to save changes made from the configuration screen.</dd>
+      <dt>-no-ignore-faults</dt>
+      <dd>In order to make the program more robust, reading from a configuration file
+        disables checking for a couple of faults in Z80 programs being run (accessing
+        invalid I/O ports, and incompletely initialised file control block). This
+      option re-enables those checks.</dd>
+      <dt>-mem-blocks n</dt>
+      <dd>Number of 16KB memory blocks emulated (default 4)</dd>
+      <dt>-mem-mtx500</dt>
+      <dd>equivelent to -mem-blocks 2</dd>
+      <dt>-vid-win</dt>
+      <dd>Enable emulating VDP and TV using a graphical window</dd>
+      <dt>-mon-win</dt>
+      <dd>Emulate the 80 column card display using a graphical window</dd>
+      <dt>-mon-win-mono</dt>
+      <dd>Emulate the 80-column display as green screen monochrome (instead of colour)</dd>
+      <dt>-mon-no-ignore-init</dt>
+      <dd>don't ignore writes to non-emulated registers</dd>
+      <dt>-kbd-remap</dt>
+      <dd>Enables remapping of keyboard</dd>
+      <dt>-kbd-country n</dt>
+      <dd>sets the country code switches to n (default 0)</dd>
+      <dt>-snd-portaudio,-s</dt>
+      <dd>Emulate sound chip (using portaudio on Linux & Windows)</dd>
+      <dt>-snd-latency value</dt>
+      <dd>Instruct portaudio to use a given latency</dd>
+      <dt>-disk-dir dir</dt>
+      <dd>Specify the directory containg disk images</dd>
+      <dt>-tape-dir dir</dt>
+      <dd>Specify the directory containg tape files</dd>
+      <dt>-tape-overwrite</dt>
+      <dd>SAVE can overwrite an existing file</dd>
+      <dt>-tape-disable</dt>
+      <dd>Disable rapid loading of binary (*.mtx) tape files. This enables loading
+        of audio (*.wav) files. Binary (*.mtx) files are loaded by converting them
+      back to audio.</dd>
+      <dt>-cassette-in</dt>
+      <dd>hardware emulation - MTX or WAV file to load</dd>
+      <dt>-cassette-out</dt>
+      <dd>hardware emulation - MTX or WAV file to save</dd>
+      <dt>-sdx-mfloppy file</dt>
+      <dd>specify .mfloppy file in SDX first drive</dd>
+      <dt>-sdx-mfloppy2 file</dt>
+      <dd>specify .mfloppy file in SDX second drive</dd>
+      <dt>-rom-enable rom_bits</dt>
+      <dd>Bit flags to enable (1) or disable (0) the Z80 accessing the ROMS in each
+      of the ROM banks in the address range 0x2000 to 0x3FFF.</dd>
+      <dt>-sdx-tracks n</dt>
+      <dd>specify tracks of first drive (default 80)</dd>
+      <dt>-sdx-tracks2 n</dt>
+      <dd>specify tracks of second drive (default 80)</dd>
+      <dt>-prn-file file</dt>
+      <dd>specify file to receive printer output</dd>
+      <dt>file.mtx</dt>
+      <dd>subsequent LOAD/SAVE/VERIFY "" will use this file</dd>
+    </dl>
+    <p>The following options only have any effect for resizeable windows (X-Window or
+      Microsoft Windows):</p>
+    <dl>
+      <dt>-vid-win-big,-v</dt>
+      <dd>Increase the size of the VDP window. Repeat to further enlarge.</dd>
+      <dt>-vid-win-max</dt>
+      <dd>VDP window the largest size that will fit on the screen.</dd>
+      <dt>-mon-win-big,-mw</dt>
+      <dd>Increase the size of the 80-column display. Repeat to further enlarge.</dd>
+      <dt>-mon-size</dt>
+      <dd>Sets the size of the 80-column display (but does not enable it).</dd>
+      <dt>-mon-win-max</dt>
+      <dd>Maximises the size of the 80-column display (but does not enable it).</dd>
+      <dt>-vid-win-title</dt>
+      <dd>set title for VDP window</dd>
+      <dt>-vid-win-display</dt>
+      <dd>set display to use for VDP window</dd>
+      <dt>-mon-win-title</dt>
+      <dd>set title for 80 column window</dd>
+      <dt>-mon-win-display</dt>
+      <dd>set display to use for 80 column window</dd>
+      <dt>-speed hz</dt>
+      <dd>set CPU speed (default is 4000000, ie: 4MHz. Pico default: 4.8MHz)</dd>
+    </dl>
+    <p>The following options are supported on the Linux and Microsoft Windows versions:</p>
+    <dl>
+      <dt>-romX file</dt>
+      <dd>Load banked ROM X image from file</dd>
+      <dt>-vid-win-hw-palette</dt>
+      <dd>Use an alternate palette for the emulation of the VDP display.</dd>
+      <dt>-sidisc-huge</dt>
+      <dd>enable Silicon Disk huge mode</dd>
+      <dt>-sidisc-no-save</dt>
+      <dd>don't save Silicon Disk content on termination</dd>
+      <dt>-sidisc-file n file</dt>
+      <dd>specify Silicon Disk content for a drive</dd>
+      <dt>-cfx2 rom_file</dt>
+      <dd>enable CFX-II emulation and specify ROM image file</dd>
+      <dt>-vga</dt>
+      <dd>emulate Propeller VGA display (enabled by default for CFX-II)</dd>
+      <dt>-cf-image c:p file</dt>
+      <dd>specify data image for partition (p) on card (c)</dd>
+      <dt>-no-cfx2 rom_file</dt>
+      <dd>Disable CFX-II emulation but remember the ROM image file name.</dd>
+      <dt>-iobyte iobyte</dt>
+      <dd>Specify the MTX memory mapping (IOBYTE, initially 0x00)</dd>
+      <dt>-addr addr</dt>
+      <dd>Set the address for loading data or starting execution (initially 0x0000)</dd>
+      <dt>-n-subpages rom n</dt>
+      <dd>The banked ROMS may also have sub-pages. Set number of subpages for a bank</dd>
+      <dt>-subpage subpage</dt>
+      <dd>Set ROM subpage for loading memory (initially 0)</dd>
+      <dt>-mem file</dt>
+      <dd>Load file into memory at address</dd>
+      <dt>-rompairX file</dt>
+      <dd>load a file into an adjacent pair of ROM banks X and X+1. If the file is more
+      than 16KB, then load it into successive sub-pages.</dd>
+      <dt>-vid-ntsc</dt>
+      <dd>refresh at 60Hz (instead of 50Hz)</dd>
+      <dt>-mon-console,-mc</dt>
+      <dd>emulate 80 column card using console only</dd>
+      <dt>-mon-console-nokey</dt>
+      <dd>keyboard status shows no keys pressed</dd>
+      <dt>-kbd-type string</dt>
+      <dd>auto type keys in this string</dd>
+      <dt>-kbd-type-file fn</dt>
+      <dd>auto type keys in this file</dd>
+      <dt>-joy,-j</dt>
+      <dd>enable joystick support</dd>
+      <dt>-joy-buttons string</dt>
+      <dd>define left,right,up,down and fire buttons</dd>
+      <dt>-joy-central n</dt>
+      <dd>percentage off-centre to press direction</dd>
+      <dt>-tap-file fn</dt>
+      <dd>specify ZX tape file (default memu.tap)</dd>
+      <dt>-sna-file fn</dt>
+      <dd>specify ZX snapshot file (default memu.sna)</dd>
+      <dt>-cpm</dt>
+      <dd>emulate CP/M BDOS</dd>
+      <dt>-cpm-drive-a path</dt>
+      <dd>where CP/M BDOS finds A: files (default: .)</dd>
+      <dt>-cpm-invert-case</dt>
+      <dd>invert between CP/M and host filenames</dd>
+      <dt>-cpm-tail tail</dt>
+      <dd>construct CP/M command tail</dd>
+      <dt>-cpm-open-hack</dt>
+      <dd>don't insist on EX,S1,S2,RC being 0</dd>
+      <dt>-sdx</dt>
+      <dd>SDX support in ROM 5 (or -sdx3 for ROM 3)</dd>
+      <dt>-fdxb</dt>
+      <dd>FDXB CP/M support</dd>
+      <dt>-fast</dt>
+      <dd>don't limit speed, run as fast as possible</dd>
+      <dt>file.com tail ...</dt>
+      <dd>-cpm -iobyte 0x80 -addr 0x0100 -mem file.com</dd>
+      <dt>file.run</dt>
+      <dd>-iobyte 0x00 -addr 0xAAAA (from header)</dd>
+    </dl>
+    <p>The following options are currently for the Linux versions only:</p>
+    <dl>
+      <dt>-serial1-dev dev</dt>
+      <dd>serial 1 in/out from device</dd>
+      <dt>-serial1-in fn</dt>
+      <dd>serial 1 input from file/pipe</dd>
+      <dt>-serial1-out fn</dt>
+      <dd>serial 1 output to file/pipe</dd>
+      <dt>-serial2-dev dev</dt>
+      <dd>serial 2 in/out from device</dd>
+      <dt>-serial2-in fn</dt>
+      <dd>serial 2 input from file/pipe</dd>
+      <dt>-serial2-out fn</dt>
+      <dd>serial 2 output to file/pipe</dd>
+      <dt>-nfx-port-offset off</dt>
+      <dd>offset to add to NFX port numbers</dd>
+    </dl>
+    <h2 id="Keyboard">Keyboard</h2>
+    <img class="centre" src="MTX_Keyboard_100.png" alt="MTX Keyboard layout">
+    <p>The layout of the MTX keyboard (illustrated above) differs somewhat from that of
+      typical modern keyboards.</p>
+    <p>The two unlabelled keys either side of the space bar are reset keys. Pressing both
+      simultaneously resets the MTX. In MEMU this is emulated by simultaneously pressing
+      the &lt;Alt&gt; and &lt;Alt Gr&gt; keys to reset the emulated MTX.</p>
+    <p>On difference that causes a few problems is that there are a few symbols which have
+      different shift states compared to modern keyboards. MEMU translates each key press
+      into pressing the corresponding key on the emulated MTX keyboard. However, for these
+      symbols the wrong shift state will be selected.</p>
+    <p>The original solution to this was to require typing a different key to produce the
+      required symbol, as follows:</p>
+    <table>
+      <tr><th>To produce symbol</th><th>Type the following key</th></tr>
+      <tr><td>^</td><td>=</td></tr>
+      <tr><td>:</td><td>#</td></tr>
+      <tr><td>@</td><td>' (quote)</td></tr>
+      <tr><td>=</td><td>^ (shift 6)</td></tr>
+      <tr><td>' (quote)</td><td>@ (shift quote)</td></tr>
+      <tr><td>#</td><td>&pound; (shift 3)</td></tr>
+      <tr><td>` (back quote)</td><td>(shift back quote)</td></tr>
+    </table>
+    <p>To improve on this, the emulation is modified slightly compared to the original
+      hardware. The MTX keyboard is wired as an 8x10 matrix. However the keyboard only
+      has 77 keys (plus the two reset keys). Thus there are three gaps in the matrix.
+      The emulation fills these three spaces with three new keys which have most of the
+      above symbols at shift states corresponding to modern keyboards. These new pseudo
+      keys are:</p>
+    <table>
+      <tr><th>Drive Line</th><th>Sense Line</th><th>Unshifted symbol</th><th>Shifted Symbol</th></tr>
+      <tr><td>4</td><td>8</td><td>=</td><td>^</td></tr>
+      <tr><td>5</td><td>8</td><td>'</td><td>@</td></tr>
+      <tr><td>6</td><td>8</td><td>#</td><td>:</td></tr>
+    </table>
+    <p>If keyboard remapping is enabled, and &lt;Shift Lock&gt; is set on the keyboard
+      then pressing one of these symbols on the keyboard activates one of these new keys
+      in the emulation rather than the original keys. The BASIC and CP/M ROMs are patched
+      to recognise these new keys. However any programs with their own keyboard drivers
+      will not know about these new keys and so will not work properly. Turning off
+      &lt;Scroll Lock&gt; reverts to using the original MTX keys.</p>
+    <p>It is still necessary to press &lt:Shift&gt; to produce a back-quote symbol, but
+      this is rarely needed.</p>
+    <p>The cursor keys on the keyboard are mapped onto the MTX cursor keys as expected,
+      and the other navigation keys are:</p>
+    <table>
+      <tr><th>Keyboard</th><th>MTX Key</th></tr>
+      <tr><td>Insert</td><td>Ins</td></tr>
+      <tr><td>Delete</td><td>Del</td></tr>
+      <tr><td>Home</td><td>Home</td></tr>
+      <tr><td>End</td><td>EOL</td></tr>
+      <tr><td>Page Up</td><td>Page</td></tr>
+      <tr><td>Page Down</td><td>Cls</td></tr>
+    </table>
+    <p>For game playing, the physical layout of the keys is often important. For this
+      reason, by default MEMU maps the top left portion of the keypad onto the MTX keypad
+      as shown.</p>
+    <img class="lfloat" src="MTX_Keypad_Overlay.png" alt="Keypad overlay illustration">
+    <table>
+      <tr><th colspan="2">PC Keypad</th><th colspan="2">MTX Keypad</th></tr>
+      <tr><th>Normal</th><th>Shifted</th><th>Normal</th><th>Shifted</th></tr>
+      <tr><td>Num Lock</td><td>&nbsp;</td><td>Page</td><td>7</td></tr>
+      <tr><td>/</td><td>&nbsp;</td><td>EOL</td><td>8</td></tr>
+      <tr><td>*</td><td>&nbsp;</td><td>Break</td><td>9</td></tr>
+      <tr><td>Home</td><td>7</td><td>Tab</td><td>4</td></tr>
+      <tr><td>Up</td><td>8</td><td>Up</td><td>5</td></tr>
+      <tr><td>Page Up</td><td>9</td><td>Del</td><td>6</td></tr>
+      <tr><td>Left</td><td>4</td><td>Left</td><td>1</td></tr>
+      <tr><td>&nbsp;</td><td>5</td><td>Home</td><td>2</td></tr>
+      <tr><td>Right</td><td>6</td><td>Right</td><td>3</td></tr>
+      <tr><td>End</td><td>1</td><td>Ins</td><td>0</td></tr>
+      <tr><td>Down</td><td>2</td><td>Down</td><td>. (Decimal)</td></tr>
+      <tr><td>Page Down</td><td>3</td><td>Cls</td><td>Ent</td></tr>
+    </table>
+    <p class="clear">However this again results in some of the keys not having the effect indicated by
+      the keycap. The &lt;F12&gt; key toggles the "Num Lock" LED. If this is illuminated
+      then the the key mapping is changed to correspond to the labels on the keycaps.
+      In particular the keys produce the expected numbers when the shift key is pressed.
+      The &lt;Num Lock&gt key can not be used for the toggle as it is part of the keypad
+      mapping.</p>
+    <p>On versions of MEMU where each display is shown full screen, ideally use the combination
+      of the &lt;Alt&gt; key and a function key to select the different displays. Unfortunately
+      in some environments the operating system grabs those key combinations. In that case use
+      the left &lt;Ctrl&gt; key in combination with a function key. To send a &lt;Ctrl&gt; and
+      function key to a program running on MEMU, use the right &lt;Ctrl&gt; key.</p>
+
+    <h2 id="VDeb">MEMU Visual Debugger</h2>
+    <img class="centre" src="MEMU_vdeb.png" alt="MEMU Visual Debugger screenshot">
+    <p>The MEMU Visual Debugger is a machine code inspector and debugger similar to the
+      MTX PANEL command or the CP/M VDEB utility. However it offers a number of advantages
+      over those tools:</p>
+    <ul>
+      <li>It has a separate display window / screen, so that does not corrupt the normal
+        VDU or Monitor displays, simplifying the debugging of display code.</li>
+      <li>It does not depend upon Z80 interrupts, so it can be used to debug interrupt code.</li>
+      <li>It does not occupy any Z80 memory, leaving all memory free for the program being
+        tested.</li>
+      <li>It can follow code in all MTX ROMS.</li>
+      <li>It has more advanced features for stepping through Z80 code.</li>
+    </ul>
+    <p>To open the Visual Debugger, press and hold the &lt;F9&gt; key and press the "h" key.</p>
+    <p>Visual Debugger commands are invoked by pressing the key corresponding to the capital
+      letter of the command.</p>
+    <h3>Break</h3>
+    <p>Sets an address at which program execution will halt. Enter the required address
+      as a hex number, and type &ltReturn&gt;. It is now possibe to specify a specific ROM
+      number or RAM page for the break. To do this type the two hex digit PAGE port selector
+      (e.g. 40 for ROM 4, or 01 for RAM page 1), followed by a colon and then the address
+      within that page. For example, to set a break at the start of the CRSPR routine enter
+      10:3E09. The page selector does not have to exactly match that specified for the break
+      to occur, as long as they both point to the same location. Thus within the ROM region
+      the RAM bits are ignored, while within RAM the ROM bits are ignored. If no page selector
+      is specified, the current PAGE value is assumed.</p>
+    <p>When prompted for the Break Condition (COND&gt;) there are a number of options:</p>
+    <ul>
+      <li>Just type &lt;Return&gt;. This will create an unconditional break point. Execution
+        will halt every time this address is reached, until the break point is manually
+        cleared.</li>
+      <li>Type N= followed by a number in hex. Execution will only halt when this address
+        has been reached the specified number of times. This break point will then be
+        automatically cleared.</li>
+      <li>Type a register name (single register or pair) followed by an equals sign and then
+        a value in hex (e.g. "HL=0123" or "B'=C0"). Execution will then stop at this
+        address every time the specified register has the specified value.</li>
+    </ul>
+    <p>Note that the Break command can only set one break condition at each address. However
+      there may be breaks set for a number of different addresses.</p>
+    <h3>Clear</h3>
+    <p>Clears a break condition set at a specified address.</p>
+    <h3>Display</h3>
+    <p>Displays a block of memory starting at the specified address. The values starting at
+      this location may then be changed by typing two digit hex values followed by &lt;Return&gt;.
+      Use &lt;Esc&gt; to stop editing values.</p>
+    <h3>Go</h3>
+    <p>Starts program execution at specified address. If no address is specified (just
+      &lt;Return&gt;) then start at the current value of the program counter (i.e continue
+      execution). Optionally ("TO&gt;" prompt) specify an address where execution is to halt
+      again. The halt address may include a page specifier, as for the Break command.</p>
+    <h3>Invert</h3>
+    <p>Toggle between displaying memory in hex or ASCII.</p>
+    <h3>List</h3>
+    <p>List machine code starting at a specified address. If an address is specified, then the
+      listing will remain fixed, starting at this address. If no address is given, then the
+      listing will start at the location of the program counter, and will be updated whenever
+      the program counter leaves the displayed listing.</p>
+    <h3>Next</h3>
+    <p>Sets a temporary break point at the next instruction, and then starts execution.</p>
+    <ul>
+      <li>For most instructions this will have the effect of single-stepping.</li>
+      <li>It will treat most CALL instructions as a single step. This will fail if the
+        subroutine call instruction is followed by parameter bytes (see the Trace command).</li>
+      <li>For loops formed by the DJNZ instruction or other conditional jumps, it will run
+        until the end of the loop.</li>
+    </ul>
+    <h3>Profile</h3>
+    <p>Toggles on and off collection of an execution profile.</p>
+    <p>When turned on, all the counts are reset to zero, and a count of the number of instructions
+      executed is shown to the right of the prompt line.</p>
+    <p>When turned off, the number of times each instruction was executed since profiling was
+      turned on is saved to a file with the name "Profile_&lt;date&gt;_&lt;time&gt;.txt" in
+      the current folder, with the format:</p>
+    <pre>
+Address    	     Count
+DBFD - DC00	      1920
+FC65 - FC6D	      1542
+FC6F - FC71	      1536
+FE1D - FE1E	       450
+DD20 - DD22	       290
+DE53 - DE55	       241
+DE58 - DE61	       228
+DE64 - DE67	       227
+      </pre>
+    <h3>Quit</h3>
+    <p>Quits the Visual Debugger. The window will be closed and all breakpoints will be inactive
+      until the Visual Debugger is re-opened.</p>
+    <h3>Register</h3>
+    <p>Updates the value of the register pair pointed to by the register cursor. This cursor is
+      moved by the stop "." key. Note that there is one step in the cycle when no register is
+      selected.</p>
+    <h3>Step</h3>
+    <p>Executes a single machine code instruction then updates the display.</p>
+    <h3>Trace</h3>
+    <p>For most machine code instructions, this is the same as "Step". For a subroutine call
+      (one that is taken for a conditional call), execute until a return statement brings the
+      stack pointer back to the current value. For most subroutines, this will execute the routine
+      as a single step, even if the call is followed by parameter bytes. It will fail if the
+      routine does not finish with a return statement (e.g. finishes with "JP (HL)").</p>
+    <h3>eXit</h3>
+    <p>Attempts to exit the current subroutine. Works by running until a return statement is
+      executed with the stack pointer at the current value. This will usually work if you have
+      just mistakenly stepped into a routine you are not interested in. It will fail if there
+      have been mis-matched PUSH and POP statements since the subroutine call.</p>
+    
+    <h2 id="Diagnostics">Diagnostics</h2>
+    <h3 id="Diag-Options">Diagnostic Options</h3>
+    <p>MEMU includes many diagnostic features to assist developing and debugging Z80 code.
+      Most of these are activated by the following additional options on the command line or
+      in a configuration file:</p>
+    <dl>
+      <dt>-diag-console </dt>
+      <dd>Log diagnostic information to the console. Cannot be used with -mon-th as this would
+        cause the diagnostic information to interfere with the text mode screen output.</dd>
+      <dt>-diag-file </dt>
+      <dd>Append diagnostic information to a file called memu.log.</dd>
+      <dt>-diag-file=filename </dt>
+      <dd>As above, but to file of your choice.</dd>
+      <dt>-diag-ring </dt>
+      <dd>Log diagnostic information to a ring buffer in memory. When MEMU terminates, dump
+        this to memu.ring. A great way to avoid filling the disk with memu.log when all you care
+        about is recent activity prior to failure.</dd>
+      <dt>-diag-ring=filename </dt>
+      <dd>As above, but to file of your choice.</dd>
+      <dt>-diag-time</dt>
+      <dd>Preceed all diagnostic messages by a timestamp.</dd>
+      <dt>-diag-win-unknown-key </dt>
+      <dd>Displays host operating system specific keycodes typed in the windows which are not
+        recognised by MEMUs window handling code. These will be XWindows KeySym values or Windows
+        virtual keycodes. Recognised values are passed on to the emulation of the MTX
+        keyboard.</dd>
+      <dt>-diag-win-hw</dt>
+      <dd>Show communication with low-level devices.</dd>
+      <dt>-diag-win </dt>
+      <dd>Turn on all diagnostic options with names starting with -diag-win</dd>
+      <dt>-diag-mem-iobyte </dt>
+      <dd>Show when the IOBYTE is written to.</dd>
+      <dt>-diag-mem-subpage </dt>
+      <dd>Show when the ROM subpage register is written to.</dd>
+      <dt>-diag-mem-dump </dt>
+      <dd>When the program terminates, write the Z80 address space to a file called
+        memu.mem.</dd>
+      <dt>-diag-mem </dt>
+      <dd>Turn on all diagnostic options with names starting with -diag-mem.</dd>
+      <dt>-diag-vid-status </dt>
+      <dd>Show when the VDP status register is read.</dd>
+      <dt>-diag-vid-registers </dt>
+      <dd>Show when VDP registers are written to.</dd>
+      <dt>-diag-vid-address </dt>
+      <dd>Show when the VDP address register is set, and whether for read or write.</dd>
+      <dt>-diag-vid-data </dt>
+      <dd>Show all data transferred to/from the VDP memory. Tries to log the data in formats
+        allowing you to recognise which graphics data is being uploaded. Will cause a lot of
+        logging.</dd>
+      <dt>-diag-vid-refresh </dt>
+      <dd>Show when the VDP screen is repainted to the Window on the host screen. This is the
+        point at which the VDP interrupt bit becomes set.</dd>
+      <dt>-diag-vid-markers </dt>
+      <dd>Show additional markers on the Window. One is a line which moves down the screen, one
+        pixel per frame, which can be observed to see if time is progressing smoothly in the
+        emulation. Another shows on which scan lines there are >=5 sprites.</dd>
+      <dt>-vid-time-check parm</dt>
+      <dd>Set the parameters for performing timing checks on VDP access. The parameter consists
+        of three values, separated by commas, giving:
+        <ul>
+          <li>Required Z80 T-states between VDP accesses during vertical blanking (default 8).</li>
+          <li>Required Z80 T-states between VDP accesses during active video (default 32).</li>
+          <li>Duration of vertical blanking in Z80 T-states (default 30769).</li>
+        </ul>
+      </dd>
+      <dt>-diag-vid-time-check </dt>
+      <dd>Perform VDP timing sanity checks.</dd>
+      <dt>-diag-vid-time-check-abort </dt>
+      <dd>Terminate if timing check fails.</dd>
+      <dt>-diag-vid-time-check-drop </dt>
+      <dd>Fail to store the data in VRAM, or return 0xff, if timing check fails.</dd>
+      <dt>-diag-vid </dt>
+      <dd>Turn on all diagnostic options with names starting with -diag-vid.</dd>
+      <dt>-diag-kbd-win-key </dt>
+      <dd>Show recognised key presses and releases in the VDP window which are not
+        understood.</dd>
+      <dt>-diag-kbd-drive </dt>
+      <dd>Show keyboard drive values returned.</dd>
+      <dt>-diag-kbd-sense </dt>
+      <dd>Show keyboard drive and sense values returned.</dd>
+      <dt>-diag-kbd-auto-type </dt>
+      <dd>Show the workings of the auto-type mechanism.</dd>
+      <dt>-diag-kbd-remap </dt>
+      <dd>Show diagnostics relating to the keyboard remapping feature.</dd>
+      <dt>-diag-kbd-hw</dt>
+      <dd>Show communication with low-level device.</dd>
+      <dt>-diag-kbd </dt>
+      <dd>Turn on all diagnostic options with names starting with -diag-kbd.</dd>
+      <dt>-diag-joy-init </dt>
+      <dd>Show joystick initialisation messages.</dd>
+      <dt>-diag-joy-usage </dt>
+      <dd>Show joystick messages generated as joystick data is read.</dd>
+      <dt>-diag-joy </dt>
+      <dd>Turn on all diagnostics options with names starting with -diag-joy.</dd>
+      <dt>-diag-dart-ports </dt>
+      <dd>Show accesses to DART ports.</dd>
+      <dt>-diag-dart-config </dt>
+      <dd>Show DART configuration.</dd>
+      <dt>-diag-dart-data </dt>
+      <dd>Show DART data transfer.</dd>
+      <dt>-diag-dart-hw</dt>
+      <dd>Show communication with low-level hardware.</dd>
+      <dt>-diag-dart </dt>
+      <dd>Turn on all diagnostics options with names starting with -diag-dart.</dd>
+      <dt>-diag-snd-registers </dt>
+      <dd>Show accesses to the sound chip registers.</dd>
+      <dt>-diag-snd-latency </dt>
+      <dd>Show information relating to the latency parameters passed to PortAudio.</dd>
+      <dt>-diag-snd-init </dt>
+      <dd>Don't suppress stderr during Pa_Initialize() call.</dd>
+      <dt>-diag-snd </dt>
+      <dd>Turn on all diagnostic options with names starting with -diag-snd.</dd>
+      <dt>-diag-ctc-registers </dt>
+      <dd>Show when CTC registers are written to.</dd>
+      <dt>-diag-ctc-pending </dt>
+      <dd>Show when an interrupt becomes pending on a channel.</dd>
+      <dt>-diag-ctc-interrupt </dt>
+      <dd>Show when the fact the interrupt is pending is communicated to the Z80 chip.</dd>
+      <dt>-diag-ctc </dt>
+      <dd>Turn on all diagnostic options with names starting with -diag-ctc.</dd>
+      <dt>-diag-mon-hw </dt>
+      <dd>Show diagnostics relating to the hardware level emulation of the 6845 CRTC card and
+        underlying memory.</dd>
+      <dt>-diag-mon-kbd-win-key </dt>
+      <dd>Show recognised key presses and releases sent to 80-column window. Only applies if
+        -mon-win is being used.</dd>
+      <dt>-diag-mon-kbd-map-th </dt>
+      <dd>Show keycodes read from TH. Only applies if -mon-th is being used.</dd>
+      <dt>-diag-mon </dt>
+      <dd>Turn on all diagnostic options with names starting with -diag-mon.</dd>
+      <dt>-diag-sdxfdc-port </dt>
+      <dd>Turn on all diagnostic relating to SDX FDC port access.</dd>
+      <dt>-diag-sdxfdc-hw </dt>
+      <dd>Turn on all diagnostic relating to SDX FDC hardware.</dd>
+      <dt>-diag-sdxfdc-data </dt>
+      <dd>Turn on all diagnostic relating to SDX FDC data.</dd>
+      <dt>-diag-sdxfdc-status </dt>
+      <dd>Turn on all diagnostic relating to SDX FDC status.</dd>
+      <dt>-diag-sdxfdc </dt>
+      <dd>Turn on all diagnostic options with names starting with -diag-sdxfdc.</dd>
+      <dt>-diag-sidisc-file </dt>
+      <dd>Turn on all diagnostic relating to Silicon Disc file reading and writing.</dd>
+      <dt>-diag-sidisc-address </dt>
+      <dd>Turn on all diagnostic relating to Silicon Disc sector address control.</dd>
+      <dt>-diag-sidisc-data </dt>
+      <dd>Turn on all diagnostic relating to Silicon Disc data transfer.</dd>
+      <dt>-diag-sidisc </dt>
+      <dd>Turn on all diagnostic options with names starting with -diag-sidisc.</dd>
+      <dt>-diag-print </dt>
+      <dd>Show characters that are printed.</dd>
+      <dt>-diag-spec-ports </dt>
+      <dd>Log accesses to Speculator ports.</dd>
+      <dt>-diag-spec-interrupts </dt>
+      <dd>Log things relating to Speculator interrupts.</dd>
+      <dt>-diag-spec </dt>
+      <dd>Turn on all diagnostic options with names starting with -diag-spec.</dd>
+      <dt>-diag-cpm-driver </dt>
+      <dd>Log all calls to driver code in high memory.</dd>
+      <dt>-diag-cpm-cbios </dt>
+      <dd>Log all calls to CBIOS routines.</dd>
+      <dt>-diag-cpm-bdos-file </dt>
+      <dd>Log all calls to CP/M BDOS relating to file access.</dd>
+      <dt>-diag-cpm-bdos-other </dt>
+      <dd>Log other calls to CP/M BDOS.</dd>
+      <dt>-diag-cpm-bdos </dt>
+      <dd>Turn on all diagnostic options with names starting with -diag-cpm-bdos.</dd>
+      <dt>-diag-cpm </dt>
+      <dd>Turn on all diagnostic options with names starting with -diag-cpm.</dd>
+      <dt>-diag-z80-instructions </dt>
+      <dd>Log CPU registers and disassemble instruction prior to executing each
+        instruction. Will cause a lot of logging.</dd>
+      <dt>-diag-z80-instructions-exclude from-to </dt>
+      <dd>Turn off logging CPU registers and disassemble instructions for instructions at
+        addresses between from and to (eg: 0x0000-0x3fff).</dd>
+      <dt>-diag-z80-instructions-include from-to </dt>
+      <dd>Turn on logging CPU registers and disassemble instructions for instructions at
+        addresses between from and to.</dd>
+      <dt>-diag-z80-interrupts </dt>
+      <dd>Log when the Z80 takes an interrupt, and show the peripheral supplied low byte of the
+        vector table address.</dd>
+      <dt>-diag-z80-time </dt>
+      <dd>Include timing information in the Z80 instructions logged.</dd>
+      <dt>-diag-z80 </dt>
+      <dd>Turn on all diagnostic options with names starting with -diag-z80 (except
+        -diag-z80-instructions-exclude).</dd>
+      <dt>-diag-bad-port-display </dt>
+      <dd>Display when unemulated ports are accessed.</dd>
+      <dt>-diag-bad-port-ignore </dt>
+      <dd>Do not halt MEMU when certain unemulated ports are accessed. By default, termination
+        happens for ports which are known to be used by particular hardware.</dd>
+      <dt>-diag-bad-port </dt>
+      <dd>Turn on all diagnostic options with names starting with -diag-bad-port.</dd>
+      <dt>-diag-tape </dt>
+      <dd>Diagnostics relating to the MTX BASIC LOAD/SAVE/VERIFY commands. It also shows
+        diagnostics relating to the Z ZX Spectrum LOAD/SAVE/VERIFY commands.</dd>
+      <dt>-diag-speed </dt>
+      <dd>Every second, output an estimate of the emulated chip speed. If running with -fast
+        this could be much higher than 4MHz. If running with -mon-console and the program waits
+        for keyboard input, because the simulation is suspended this could to drop to near
+        zero.</dd>
+      <dt>-diag-vga-mode</dt>
+      <dd>Report configuration of the emulated Propeller VGA display for different modes.</dd>
+      <dt>-diag-vga-port</dt>
+      <dd>Report access of ports used by the Propeller VGA display.</dd>
+      <dt>-diag-vga-refresh</dt>
+      <dd>Report refresh of the VGA display screen.</dd>
+      <dt>-diag-vga</dt>
+      <dd>Enable all the -diag-vga options.</dd>
+      <dt>-diag-node-pkt-tx</dt>
+      <dd>Log all NODE network packets transmitted.</dd>
+      <dt>-diag-node-pkt-rx</dt>
+      <dd>Log all NODE network packets received.</dd>
+      <dt>-diag-node</dt>
+      <dd>Enable all NODE network logging.</dd>
+      <dt>-diag-log-type</dt>
+      <dd>Log text entered into MEMU.</dd>
+      <dt>-diag-chip-log</dt>
+      <dd>Log diagnostic messages from programs running on MEMU.</dd>
+      <dt>-diag-nfx_port</dt>
+      <dd>Log data written to or read from Z80 ports on NFX board.</dd>
+      <dt>-diag-nfx_reg</dt>
+      <dd>Log data written to or read from Wiznet registers.</dd>
+      <dt>-diag-nfx_event</dt>
+      <dd>Log events on network connection sockets.</dd>
+      <dt>-diag-nfx_data</dt>
+      <dd>Log data sent or received over network.</dd>
+      <dt>-diag-nfx</dt>
+      <dd>Enable all NFX diagnostics.</dd>
+      <dt>-diag-init</dt>
+      <dd>Log MEMU initialisation</dd>
+      <dt>-diag-exit </dt>
+      <dd>Display the reason for the termination of MEMU.</dd>
+      <dt>-diag-all </dt>
+      <dd>Turn on all of the above (except -diag-console and -diag-file).</dd>
+    </dl>
+    <h3 id="Diag-RunTime">Run Time Diagnostics</h3>
+    <p>A number of these diagnostics (and other features) may be turned on or off at run-time
+      by pressing the &lt;F9&gt; key and a letter (the &lt;F9&gt; acting as a kind of shift
+      key) as follows:</p>
+    <dl>
+      <dt>F9+a</dt>
+      <dd>Toggles accelerated mode</dd>
+      <dt>F9+b</dt>
+      <dd>Toggles -diag-mem-iobyte</dd>
+      <dt>F9+c</dt>
+      <dd>Toggles -diag-console</dd>
+      <dt>F9+d</dt>
+      <dd>Dump memory to memu.mem</dd>
+      <dt>F9+f</dt>
+      <dd>Toggles -diag-cpm-bdos-file</dd>
+      <dt>F9+h</dt>
+      <dd>Opens the <a href="#VDeb">Visual Debugger</a></dd>
+      <dt>F9+i</dt>
+      <dd>Toggles -diag-z80-interrupts</dd>
+      <dt>F9+k</dt>
+      <dd>Toggles -diag-kbd-sense</dd>
+      <dt>F9+l</dt>
+      <dd>Loads ZX snapshot file, as specified by -sna-file</dd>
+      <dt>F9+m</dt>
+      <dd>Toggles -diag-speed</dd>
+      <dt>F9+p</dt>
+      <dd>Toggles -diag-bad-port-display</dd>
+      <dt>F9+q</dt>
+      <dd>Toggles -diag-bad-port-ignore</dd>
+      <dt>F9+r</dt>
+      <dd>Dumps a snapshot of the Z80 registers</dd>
+      <dt>F9+s</dt>
+      <dd>Saves ZX snapshot file, as specified by -sna-file</dd>
+      <dt>F9+t</dt>
+      <dd>Rewinds to the start of a ZX tape file</dd>
+      <dt>F9+v</dt>
+      <dd>Dumps a snapshot of the VDP registers</dd>
+      <dt>F9+n</dt>
+      <dd>Dumps the VDP to "memuNNNNNN.vdp". This writes 16KB VRAM, 8 register bytes,
+        and 1 status register byte.</dd>
+      <dt>F9+o</dt>
+      <dd>Toggles auto VDP dump mode on or off</dd>
+      <dt>F9+w</dt>
+      <dd>Snapshots the VDP screen to "memuNNNNNN.bmp"</dd>
+      <dt>F9+x</dt>
+      <dd>Toggles auto VDP snapshot mode on or off</dd>
+      <dt>F9+y</dt>
+      <dd>Toggles -diag-spec-ports</dd>
+      <dt>F9+z</dt>
+      <dd>Toggles -diag-z80-instructions</dd>
+    </dl>
+
+    <h3 id="Diag-Windows">Diagnostic Windows</h3>
+    <p>In addition to the above, MEMU supports three diagnostic windows:</p>
+    <dl>
+      <dt>-diag-ui-mem</dt>
+      <dd>The <B>Memu Memory Inspector</B> window allows you to specify
+        an IOBYTE (and ROM subpage) and then to show what the Z80
+        processor sees at various addresses.
+        <ul>
+          <li>i - focus on the IOBYTE</li>
+          <li>u - focus on the ROM subpage</li>
+          <li>s - focus on the start address</li>
+          <li>p - focus on the highlighted address</li>
+          <li>t - focus on the data table</li>
+          <li>o - take a RAM snapshot</li>
+          <li>v - toggle whether current or snapshot RAM is shown</li>
+          <li>Tab - move focus</li>
+          <li>Left,Right,Up,Down,PageUp,PageDown - move the highlighted address</li>
+          <li>hex digits - edit the value where the cursor is</li>
+        </ul>
+      </dd>
+      <dt>-diag-ui-vram</dt>
+      <dd>The <B>Memu VRAM Inspector</B> window allows you to show
+        the contents of VRAM.
+        <ul>
+          <li>s - focus on the start address</li>
+          <li>p - focus on the highlighted address</li>
+          <li>t - focus on the data table</li>
+          <li>Tab - move focus</li>
+          <li>Left,Right,Up,Down,PageUp,PageDown - move the highlighted address</li>
+          <li>hex digits - edit the value where the cursor is</li>
+        </ul>
+      </dd>
+      <dt>-diag-ui-dis</dt>
+      <dd>The <B>Memu Disassembly Inspector</B> window allows you to
+        specify an IOBYTE (and ROM subpage) and disassemble the code
+        seen by the Z80 at various addresses.
+        <ul>
+          <li>i - focus on the IOBYTE</li>
+          <li>u - focus on the ROM subpage</li>
+          <li>s - focus on the start address</li>
+          <li>Tab - move focus</li>
+          <li>j - jump to indicated address</li>
+          <li>k or Right - push current listing, list from indicated address</li>
+          <li>l - toggle display of illegal instruction infomation</li>
+          <li>m - toggle MTX specific disassembly</li>
+          <li>Escape or Left - pop to previous listing</li>
+          <li>Up,Down,PageUp,PageDown - move the highlighted address</li>
+        </ul>
+        When an instruction references (ie: jumps or calls) another
+        address, an indication is given to the right of the
+        instruction where the jump or call will go.
+      </dd>
+    </dl>
+
+    <p>MEMU has a special <b>RAM snapshot</b> feature.
+    First, you tell MEMU how many of the RAM pages are to be included in
+    the snapshot using the -mem-blocks-snapshot N command line
+    argument.
+    N is the number of 16KB RAM pages.
+    This number is normally 0, but might reasonably be 4 when debugging.
+    MEMU takes a snapshot just before the Z80 is started, and if
+    you're running a RUN file from the MEMU command line,
+    just before it is given control. 
+    In the <b>Memu Memory Inspector</b> window colours communicate the
+    following:</p>
+    <ul>
+      <li>blue - no memory present here</li>
+      <li>magenta - ROM</li>
+      <li>cyan - RAM, but not a part that has a snapshot</li>
+      <li>green - RAM, which matches the snapshot</li>
+      <li>white - RAM, different to the snapshot</li>
+    </ul>
+    <p>Pressing <b>o</b> takes a new snapshot.
+    Pressing <b>v</b> toggles whether you are looking at the
+    current value, or the value in the snapshot.</p>
+  </body>
+</html>

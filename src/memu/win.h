@@ -131,6 +131,7 @@ extern void win_kbd_leds (BOOLEAN bCaps, BOOLEAN bNum, BOOLEAN bScroll);
 #ifdef WIN32
 extern void win_leds_state (BOOLEAN *bCaps, BOOLEAN *bNum, BOOLEAN *bScroll);
 #endif
+void win_max_size (const char *display, int *pWth, int *pHgt);
 
 /* Handle any pending events for any of our windows.
    A no-op on Windows, where we use separate threads. */

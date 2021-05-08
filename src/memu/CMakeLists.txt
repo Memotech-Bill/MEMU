@@ -13,6 +13,7 @@ if("${TARGET}" STREQUAL "Pico")
     ${CMAKE_CURRENT_LIST_DIR}/cfgwin_pico.c
     ${CMAKE_CURRENT_LIST_DIR}/common.c
     ${CMAKE_CURRENT_LIST_DIR}/config.c
+    ${CMAKE_CURRENT_LIST_DIR}/console_pico.c
     ${CMAKE_CURRENT_LIST_DIR}/ctc.c
     ${CMAKE_CURRENT_LIST_DIR}/diag.c
     ${CMAKE_CURRENT_LIST_DIR}/dirt_ff.c
@@ -37,4 +38,149 @@ if("${TARGET}" STREQUAL "Pico")
     ${CMAKE_CURRENT_LIST_DIR}/tape.c
     ${CMAKE_CURRENT_LIST_DIR}/vid_pico.c
     )
-endif ()
+
+elseif("${TARGET}" STREQUAL "XWin")
+  set (xwin_src
+      ${CMAKE_CURRENT_LIST_DIR}/cfgwin.c
+      ${CMAKE_CURRENT_LIST_DIR}/cfx2.c
+      ${CMAKE_CURRENT_LIST_DIR}/common.c
+      ${CMAKE_CURRENT_LIST_DIR}/config.c
+      ${CMAKE_CURRENT_LIST_DIR}/cpm.c
+      ${CMAKE_CURRENT_LIST_DIR}/ctc.c
+      ${CMAKE_CURRENT_LIST_DIR}/dart.c
+      ${CMAKE_CURRENT_LIST_DIR}/diag.c
+      ${CMAKE_CURRENT_LIST_DIR}/dirt_unix.c
+      ${CMAKE_CURRENT_LIST_DIR}/dis.c
+      ${CMAKE_CURRENT_LIST_DIR}/joy_lin.c
+      ${CMAKE_CURRENT_LIST_DIR}/kbd2.c
+      ${CMAKE_CURRENT_LIST_DIR}/main.c
+      ${CMAKE_CURRENT_LIST_DIR}/mem.c
+      ${CMAKE_CURRENT_LIST_DIR}/memu.c
+      ${CMAKE_CURRENT_LIST_DIR}/mon.c
+      ${CMAKE_CURRENT_LIST_DIR}/monprom.c
+      ${CMAKE_CURRENT_LIST_DIR}/printer.c
+      ${CMAKE_CURRENT_LIST_DIR}/rom_os.c
+      ${CMAKE_CURRENT_LIST_DIR}/rom_assem.c
+      ${CMAKE_CURRENT_LIST_DIR}/rom_basic.c
+      ${CMAKE_CURRENT_LIST_DIR}/rom_boot_type07.c
+      ${CMAKE_CURRENT_LIST_DIR}/rom_sdx_type07.c
+      ${CMAKE_CURRENT_LIST_DIR}/sdxfdc.c
+      ${CMAKE_CURRENT_LIST_DIR}/sid.c
+      ${CMAKE_CURRENT_LIST_DIR}/snd.c
+      ${CMAKE_CURRENT_LIST_DIR}/spec.c
+      ${CMAKE_CURRENT_LIST_DIR}/tape.c
+      ${CMAKE_CURRENT_LIST_DIR}/ui.c
+      ${CMAKE_CURRENT_LIST_DIR}/vdeb.c
+      ${CMAKE_CURRENT_LIST_DIR}/vga.c
+      ${CMAKE_CURRENT_LIST_DIR}/vid.c
+      ${CMAKE_CURRENT_LIST_DIR}/win_x.c
+      )
+  
+  if( NOT (${CMAKE_VERSION} VERSION_LESS "3.12.0"))
+    
+    add_library(memu_src INTERFACE)
+    
+    target_include_directories(memu_src INTERFACE
+      ${CMAKE_CURRENT_LIST_DIR}
+      )
+    
+    target_sources(memu_src INTERFACE ${xwin_src})
+
+  else()
+    cmake_minimum_required(VERSION 3.5)
+
+    project(memu C)
+
+    add_executable(memu-x ${xwin_src})
+
+    target_include_directories(memu-x PUBLIC
+      ${CMAKE_CURRENT_LIST_DIR}
+      )
+
+    #  add_compile_options(-g)
+    #  add_link_options(-L/usr/lib/X11/lib)
+
+    target_compile_definitions(memu-x PUBLIC ${src_defs})
+    
+    target_link_libraries(memu-x PUBLIC
+      Z80_emu
+      portaudio
+      X11
+      m
+      )
+    
+  endif ()
+
+elseif("${TARGET}" STREQUAL "FBuf")
+  
+  set (fbuf_src
+      ${CMAKE_CURRENT_LIST_DIR}/cfgwin.c
+      ${CMAKE_CURRENT_LIST_DIR}/cfx2.c
+      ${CMAKE_CURRENT_LIST_DIR}/common.c
+      ${CMAKE_CURRENT_LIST_DIR}/config.c
+      ${CMAKE_CURRENT_LIST_DIR}/cpm.c
+      ${CMAKE_CURRENT_LIST_DIR}/ctc.c
+      ${CMAKE_CURRENT_LIST_DIR}/dart.c
+      ${CMAKE_CURRENT_LIST_DIR}/diag.c
+      ${CMAKE_CURRENT_LIST_DIR}/dirt_unix.c
+      ${CMAKE_CURRENT_LIST_DIR}/dis.c
+      ${CMAKE_CURRENT_LIST_DIR}/joy_lin.c
+      ${CMAKE_CURRENT_LIST_DIR}/kbd2.c
+      ${CMAKE_CURRENT_LIST_DIR}/main.c
+      ${CMAKE_CURRENT_LIST_DIR}/mem.c
+      ${CMAKE_CURRENT_LIST_DIR}/memu.c
+      ${CMAKE_CURRENT_LIST_DIR}/mon.c
+      ${CMAKE_CURRENT_LIST_DIR}/monprom.c
+      ${CMAKE_CURRENT_LIST_DIR}/printer.c
+      ${CMAKE_CURRENT_LIST_DIR}/rom_os.c
+      ${CMAKE_CURRENT_LIST_DIR}/rom_assem.c
+      ${CMAKE_CURRENT_LIST_DIR}/rom_basic.c
+      ${CMAKE_CURRENT_LIST_DIR}/rom_boot_type07.c
+      ${CMAKE_CURRENT_LIST_DIR}/rom_sdx_type07.c
+      ${CMAKE_CURRENT_LIST_DIR}/sdxfdc.c
+      ${CMAKE_CURRENT_LIST_DIR}/sid.c
+      ${CMAKE_CURRENT_LIST_DIR}/snd.c
+      ${CMAKE_CURRENT_LIST_DIR}/spec.c
+      ${CMAKE_CURRENT_LIST_DIR}/tape.c
+      ${CMAKE_CURRENT_LIST_DIR}/ui.c
+      ${CMAKE_CURRENT_LIST_DIR}/vdeb.c
+      ${CMAKE_CURRENT_LIST_DIR}/vga.c
+      ${CMAKE_CURRENT_LIST_DIR}/vid.c
+      ${CMAKE_CURRENT_LIST_DIR}/win_fb.c
+      )
+    
+  if( NOT (${CMAKE_VERSION} VERSION_LESS "3.12.0"))
+    
+    add_library(memu_src INTERFACE)
+    
+    target_include_directories(memu_src INTERFACE
+      ${CMAKE_CURRENT_LIST_DIR}
+      )
+    
+    target_sources(memu_src INTERFACE ${fbuf_src})
+
+  else()
+    cmake_minimum_required(VERSION 3.5)
+
+    project(memu C)
+
+    add_executable(memu-fb ${fbuf_src})
+
+    target_include_directories(memu-fb PUBLIC
+      ${CMAKE_CURRENT_LIST_DIR}
+      )
+
+    #  add_compile_options(-g)
+    #  add_link_options(-L/usr/lib/X11/lib)
+
+    target_compile_definitions(memu-fb PUBLIC ${src_defs})
+    
+    target_link_libraries(memu-fb PUBLIC
+      Z80_emu
+      portaudio
+      X11
+      m
+      )
+    
+  endif ()
+endif()

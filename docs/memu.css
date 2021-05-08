@@ -1,0 +1,37 @@
+h1 { border:2px solid; }
+h1 img { vertical-align:middle; }
+h1 span { vertical-align:middle; }
+h2 {
+    color:red;
+    border-bottom:1px solid red;
+}
+h3 { color:red; }
+table {
+    margin: 5px auto;
+    border:1px solid;
+    border-collapse:collapse;
+}
+th { font-weight:bold; }
+th, td {
+    border:1px solid;
+    padding:2px 5px;
+    text-align:center;
+}
+.centre {
+    display:block;
+    margin-left: auto;
+    margin-right:auto;
+}
+.lfloat {
+    float:left;
+    padding-bottom:16px;
+}
+.clear {
+    clear:both;
+}
+dt {
+    font-weight:bold;
+    margin-left:50px;
+    margin-top:16px;
+}
+dd { margin-left:75px; }

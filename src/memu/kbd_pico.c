@@ -286,6 +286,7 @@ static int kbd_mode = 0;
 static int kbd_drive;
 static word kbd_sense[8];
 
+static byte mod_keys = 0;
 static byte rst_keys = 0;
 BOOLEAN kbd_diag = FALSE;
 
@@ -381,6 +382,12 @@ void kbd_win_keypress (int hk)
     const struct s_keyinfo *pki;
     int wk;
     byte *prel;
+
+    if ( ( hk >= HID_KEY_CONTROL_LEFT ) && ( hk < hk <= HID_KEY_GUI_RIGHT ) )
+        {
+        mod_keys |= 1 << ( hk - HID_KEY_CONTROL_LEFT );
+        }
+    
     kbd_find (hk, &pki, &wk, &prel);
 #ifdef ALT_KEYPRESS
     if ( ALT_KEYPRESS(wk) )
@@ -474,6 +481,12 @@ void kbd_win_keyrelease(int hk)
     const struct s_keyinfo *pki;
     int wk;
     byte *prel;
+
+    if ( ( hk >= HID_KEY_CONTROL_LEFT ) && ( hk < hk <= HID_KEY_GUI_RIGHT ) )
+        {
+        mod_keys &= ~ (1 << ( hk - HID_KEY_CONTROL_LEFT ));
+        }
+    
     kbd_find (hk, &pki, &wk, &prel);
 #ifdef ALT_KEYRELEASE
     if ( ALT_KEYRELEASE (wk) ) return;
@@ -690,7 +703,7 @@ void tuh_hid_keyboard_isr(uint8_t dev_addr, xfer_result_t event)
     (void) event;
     }
 
-void kbd_periodic (void)
+void win_handle_events (void)
     {
     if ( n_key_queue == 0 )
         {

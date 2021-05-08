@@ -30,6 +30,9 @@
 #include "common.h"
 #include "roms.h"
 #include "mem.h"
+#ifdef HAVE_VDEB
+#include "vdeb.h"
+#endif
 
 #include "Z80.h"
 extern Z80 *GetZ80 (void);
@@ -64,6 +67,9 @@ static byte *mem_update[8]; /* Allow emulator to update ROMS */
 static byte mem_iobyte; /* IOBYTE */
 static byte mem_subpage = 0x00;
 static int mem_blocks;
+#ifdef HAVE_VDEB
+static BOOLEAN bWrChk = FALSE;
+#endif
 
 /* If enabled, you can snapshot RAM, and query from it */
 static byte *mem_ram_snapshot[MAX_BLOCKS];
@@ -75,14 +81,14 @@ static int rom_enable = 0xff;
 /*...smem_get_rom_enable:0:*/
 int mem_get_rom_enable (void)
     {
-    printf ("mem_get_rom_enable() = 0x%02X\n", rom_enable);
+    // printf ("mem_get_rom_enable() = 0x%02X\n", rom_enable);
     return  rom_enable;
     }
 /*...e*/
 /*...smem_set_rom_enable:0:*/
 void mem_set_rom_enable (int ienable)
     {
-    printf ("mem_set_rom_enable (0x%02X)\n", ienable);
+    // printf ("mem_set_rom_enable (0x%02X)\n", ienable);
     rom_enable  =  ienable;
     }
 /*...e*/
@@ -92,6 +98,13 @@ int mem_get_alloc (void)
     return  mem_blocks;
     }
 /*...e*/
+#endif
+
+#ifdef HAVE_VDEB
+void mem_wrchk (BOOLEAN bChk)
+    {
+    bWrChk = bChk;
+    }
 #endif
 
 #ifndef SMALL_MEM
@@ -145,6 +158,9 @@ void WrZ80(word addr, byte value)
     if ( (addr>>13) != 0 || (mem_iobyte&0x80) != 0 )
         /* Normal write */
         mem_write[addr>>13][addr&0x1fff] = value;
+#ifdef HAVE_VDEB
+        if ( bWrChk ) vdeb_mwrite (mem_iobyte, addr);
+#endif
     else
         /* Write to first 8KB in RELCPMH=0 mode, sets sub-page */
         {
@@ -245,6 +261,9 @@ void mem_set_iobyte(byte val)
         diag_message(DIAG_MEM_IOBYTE, "memory IOBYTE set to 0x%02x", val);
         }
     mem_iobyte = val;
+#ifdef HAVE_VDEB
+    vdeb_iobyte (mem_iobyte);
+#endif
     mem_read[7] = mem_write[7] = mem_update[7] = mem_ram[0] + ROM_SIZE;
     mem_read[6] = mem_write[6] = mem_update[6] = mem_ram[0];
     if ( mem_iobyte & 0x80 )
@@ -285,11 +304,12 @@ void mem_set_iobyte(byte val)
 #endif
             {
             int mask = mem_n_subpages[irom]-1;
-            mem_read[1] = mem_subpages[irom][mem_subpage&mask];
 #ifdef SMALL_MEM
+            mem_read[1] = mem_subpages[irom][mem_subpage&mask];
             mem_update[1] = NULL;
 #else
-            mem_update[1] = mem_read[1];
+            mem_update[1] = mem_subpages[irom][mem_subpage&mask];
+            mem_read[1] = mem_update[1];
 #endif
             /*
               diag_message (DIAG_INIT, "iobyte = 0x%02X, subpage = 0x%02X, mask = 0x%02X, ptr = %p",
@@ -389,7 +409,7 @@ void mem_snapshot(void)
 /*...smem_read_byte_snapshot:0:*/
 byte mem_read_byte_snapshot(word addr)
     {
-    byte *p = mem_read[addr>>13];
+    const byte *p = mem_read[addr>>13];
     int i;
     for ( i = 0; i < mem_blocks && i < mem_blocks_snapshot; i++ )
         if ( p >= mem_ram[i] && p < mem_ram[i]+0x4000 )
@@ -404,7 +424,7 @@ byte mem_read_byte_snapshot(word addr)
 /*...smem_type_at_address:0:*/
 int mem_type_at_address(word addr)
     {
-    byte *p = mem_read[addr>>13];
+    const byte *p = mem_read[addr>>13];
     int i, j;
     for ( i = 0; i < mem_blocks && i < mem_blocks_snapshot; i++ )
         if ( p >= mem_ram[i] && p < mem_ram[i]+0x4000 )
@@ -610,7 +630,7 @@ byte *mem_ram_ptr (word addr, word *psize)
         ptr += ofs;
         *psize = ROM_SIZE - ofs;
         }
-    printf ("mem_ram_ptr(0x%04X): ptr = %p, size = %d\n", addr, ptr, *psize);
+    // printf ("mem_ram_ptr(0x%04X): ptr = %p, size = %d\n", addr, ptr, *psize);
     if ( ptr == NULL ) fatal ("No memory");
     return ptr;
     }

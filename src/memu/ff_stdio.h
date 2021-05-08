@@ -5,6 +5,8 @@
 
 #include <stdio.h>
 
+#ifdef __Pico__
+
 #define fopen       fio_fopen
 #define fclose      fio_fclose
 #define fputc       fio_fputc
@@ -70,6 +72,8 @@ int ungetc (int iCh, FILE *pf);
 
 #ifdef __cplusplus
     }
+#endif
+
 #endif
 
 #endif

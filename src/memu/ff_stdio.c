@@ -6,6 +6,10 @@
 #include <ff_stdio.h>
 #include <fatfs/ff.h>
 
+#ifdef ALT_PRINTF
+void ALT_PRINTF (const char *ps);
+#endif
+
 // #define DEBUG
 
 static FATFS   vol;
@@ -127,7 +131,14 @@ int fputc (char ch, FILE *pf)
 int fputs (const char *ps, FILE *pf)
     {
     if ( pf == NULL ) return EOF;
-    else if ( ( pf == stdout ) || ( pf ==stderr ) ) printf ("%s", ps);
+    else if ( ( pf == stdout ) || ( pf ==stderr ) )
+        {
+#ifdef ALT_PRINTF
+        ALT_PRINTF (ps);
+#else
+        printf ("%s", ps);
+#endif
+        }
     else if ( f_puts (ps, (FIL *) pf) != FR_OK ) return EOF;
     return 1;
     }
@@ -170,22 +181,9 @@ int fprintf (FILE *pf, const char *fmt, ...)
     {
     int nByte;
     va_list va;
-    if ( pf == NULL ) return EOF;
-    else if ( ( pf == stdout ) || ( pf ==stderr ) )
-        {
-        const char *sOut;
-        va_start (va, fmt);
-        sOut = MakeString (fmt, va);
-        va_end (va);
-        nByte = strlen (sOut);
-        printf ("%s", sOut);
-        }
-    else
-        {
-        va_start (va, fmt);
-        nByte = vfprintf (pf, fmt, va);
-        va_end (va);
-        }
+    va_start (va, fmt);
+    nByte = vfprintf (pf, fmt, va);
+    va_end (va);
     return nByte;
     }
 
@@ -193,9 +191,21 @@ int vfprintf (FILE *pf, const char *fmt, va_list va)
     {
     size_t out;
     const char *sOut;
-    if ( ( pf == NULL ) || ( pf == stdout ) || ( pf ==stderr ) ) return EOF;
+    if ( pf == NULL ) return EOF;
     sOut = MakeString (fmt, va);
-    f_write ((FIL *) pf, sOut, strlen (sOut), &out);
+    if ( ( pf == stdout ) || ( pf ==stderr ) )
+        {
+        out = strlen (sOut);
+#ifdef ALT_PRINTF
+        ALT_PRINTF (sOut);
+#else
+        printf ("%s", sOut);
+#endif
+        }
+    else
+        {
+        f_write ((FIL *) pf, sOut, strlen (sOut), &out);
+        }
     return out;
     }
 

@@ -86,8 +86,6 @@ void terminate(const char *reason)
     if ( fine )
         timeEndPeriod(1);
 #endif
-    diag_message(DIAG_EXIT, reason);
-    diag_message (DIAG_INIT, "Terminate");
 #ifndef SMALL_MEM
     diag_message (DIAG_INIT, "vdeb_term");
     vdeb_term();
@@ -139,6 +137,7 @@ void terminate(const char *reason)
     mon_term();
     diag_message (DIAG_INIT, "vid_term");
     vid_term();
+    diag_message (DIAG_ALWAYS, "Terminate: %s", reason);
     diag_message (DIAG_INIT, "diag_term");
     diag_term();
 #ifdef BEMEMU
@@ -204,8 +203,13 @@ char * make_path (const char *psDir, const char *psFile)
     {
     char *psPath   =  emalloc (strlen (psDir) + strlen (psFile) + 2);
     strcpy (psPath, psDir);
-    strcat (psPath, "/");
-    strcat (psPath, psFile);
+    int n = strlen (psPath);
+    if ( n > 0 )
+        {
+        char ch = psPath[n - 1];
+        if (( ch != '/' ) && ( ch != '\\' ))  strcat (psPath, "/");
+        }
+    strcpy (&psPath[n], psFile);
     return  psPath;
     }
 

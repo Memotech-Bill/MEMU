@@ -41,6 +41,7 @@ memu.c - Memotech Emulator
 #include "vid.h"
 #include "kbd.h"
 #include "tape.h"
+#include "config.h"
 #ifdef HAVE_JOY
 #include "joy.h"
 #endif
@@ -77,6 +78,9 @@ memu.c - Memotech Emulator
 #ifdef HAVE_VGA
 #include "vga.h"
 #endif
+#ifdef HAVE_NFX
+#include "nfx.h"
+#endif
 
 /*...vZ80\46\h:0:*/
 /*...vtypes\46\h:0:*/
@@ -111,10 +115,19 @@ extern void ALT_USAGE (void);
 extern void ALT_EXIT (int reason);
 #endif
 
+const char *psExe = "memu";
+
 void usage(const char *psErr)
 	{
-	fprintf(stderr, "usage: memu [flags]\n");
-	fprintf(stderr, "flags: -iobyte iobyte       specify IOBYTE (initially 0x00)\n");
+	fprintf(stderr, "usage: %s [flags]\n", psExe);
+    fprintf(stderr, "Flags may be specified on command line or in files\n");
+    fprintf(stderr, "\"memu.cfg\" or \"memu0.cfg\" in the program folder.\n");
+	fprintf(stderr, "flags: -help                display this list\n");
+    fprintf(stderr, "       -ignore              Allow flags for unimplemented features\n");
+#ifdef ALT_USAGE
+	ALT_USAGE ();
+#endif
+	fprintf(stderr, "       -iobyte iobyte       specify IOBYTE (initially 0x00)\n");
 #ifndef SMALL_MEM
 	fprintf(stderr, "       -subpage subpage     set ROM subpage (initially 0)\n");
 #endif
@@ -128,7 +141,8 @@ void usage(const char *psErr)
 	fprintf(stderr, "       -rompairX file       load ROM X and X+1 from file\n");
 #endif
 	fprintf(stderr, "       -vid-win             emulate VDP and TV using a graphical window\n");
-	fprintf(stderr, "       -vid-win-big,-v      make window twice as large (realistic size)\n");
+	fprintf(stderr, "       -vid-win-big,-v      increase size of VDP window (repeat as necessary)\n");
+	fprintf(stderr, "       -vid-win-max         make VDP window maximum size\n");
 	fprintf(stderr, "       -vid-win-hw-palette  use an alternate palette\n");
 	fprintf(stderr, "       -vid-win-title       set title for VDP window\n");
 	fprintf(stderr, "       -vid-win-display     set display to use for VDP window\n");
@@ -136,7 +150,8 @@ void usage(const char *psErr)
 	fprintf(stderr, "       -snd-portaudio,-s    emulate sound chip using portaudio\n");
 	fprintf(stderr, "       -snd-latency value   instruct portaudio to use a given latency\n");
 	fprintf(stderr, "       -mon-win             emulate 80 column card using a graphical window\n");
-	fprintf(stderr, "       -mon-win-big,-mw     make window twice as high (realistic aspect ratio)\n");
+	fprintf(stderr, "       -mon-win-big,-mw     increase size of MON window (repeat as necessary)\n");
+	fprintf(stderr, "       -mon-win-max         make MON window maximum size\n");
 	fprintf(stderr, "       -mon-win-mono        green screen monochrome\n");
 #ifdef HAVE_TH
 	fprintf(stderr, "       -mon-th,-mt          emulate 80 column card using full screen text mode\n");
@@ -202,6 +217,9 @@ void usage(const char *psErr)
 	fprintf(stderr, "       -sdx                 SDX support in ROM 5 (or -sdx3 for ROM 3)\n");
 	fprintf(stderr, "       -fdxb                FDXB CP/M support\n");
 #endif
+#ifdef HAVE_NFX
+	fprintf(stderr, "       -nfx-port-offset off offset to add to NFX port numbers\n");
+#endif
 	fprintf(stderr, "       -speed hz            set CPU speed (default is 4000000, ie: 4MHz)\n");
 	fprintf(stderr, "       -fast                don't limit speed, run as fast as possible\n");
 	/*
@@ -212,9 +230,6 @@ void usage(const char *psErr)
 	fprintf(stderr, "       -ui-dis-title        set title for disassembly window\n");
 	fprintf(stderr, "       -ui-dis-display      set display to use for disassembly window\n");
 	*/
-#ifdef ALT_USAGE
-	ALT_USAGE ();
-#endif
 #ifndef SMALL_MEM
 	fprintf(stderr, "       file.com tail ...    -cpm -iobyte 0x80 -addr 0x0100 -mem file.com\n");
 	fprintf(stderr, "       file.run             -iobyte 0x00 -addr 0xAAAA (from header)\n");
@@ -228,6 +243,14 @@ void usage(const char *psErr)
 #endif
 	}
 /*...e*/
+static BOOLEAN bIgnore = FALSE;
+
+void unimplemented (const char *psErr)
+    {
+    if ( bIgnore ) diag_message (DIAG_ALWAYS, "Feature %s is not implemented in this version", psErr);
+    else usage (psErr);
+    }
+
 /*...sread_file:0:*/
 int read_file(const char *fn, byte *buf, int buflen)
 	{
@@ -998,6 +1021,27 @@ static int fd_be_out = -1;
 static HANDLE hf_be = INVALID_HANDLE_VALUE;
 #endif
 
+/*...svdp_read\47\write:0:*/
+static byte vdp_read(word addr)
+	{
+	if ( addr < VID_MEMORY_SIZE )
+		return vid_vram_read(addr);
+	else if ( addr < VID_MEMORY_SIZE+8 )
+		return vid_reg_read(addr-VID_MEMORY_SIZE);
+	else if ( addr == VID_MEMORY_SIZE+8 )
+		return vid_status_read();
+	else
+		return 0xff;
+	}
+static void vdp_write(word addr, byte b)
+	{
+	if ( addr < VID_MEMORY_SIZE )
+		vid_vram_write(addr, b);
+	else if ( addr < VID_MEMORY_SIZE+8 )
+		vid_reg_write(addr-VID_MEMORY_SIZE, b);
+	}
+/*...e*/
+
 static void be_poll(void)
 	{
 	byte cmd;
@@ -1076,6 +1120,66 @@ case 0x01:
 		len  -= thisgo;
 		}
 	mem_set_iobyte(b);
+	cmd = 0; /* Dummy byte */
+#if defined(UNIX)
+	write(fd_be_out, &cmd, 1);
+#elif defined(WIN32)
+	WriteFile(hf_be, &cmd, 1, &cb, NULL);
+#endif
+	}
+	break;
+/*...e*/
+/*...s0x02 \45\ read bytes from VDP:32:*/
+case 0x02:
+	{
+	word addr;
+	word len;
+#if defined(UNIX)
+	read(fd_be_in, buf, 4);
+#elif defined(WIN32)
+	ReadFile(hf_be, buf, 4, &cb, NULL);
+#endif
+	addr = get_word(buf);
+	len = get_word(buf+2);
+	while ( len > 0 )
+		{
+		word thisgo = ( len > (word)sizeof(buf) ) ? (word)sizeof(buf) : len;
+		word i;
+		for ( i = 0; i < thisgo; i++ )
+			buf[i] = vdp_read(addr+i);
+#if defined(UNIX)
+		write(fd_be_out, buf, thisgo);
+#elif defined(WIN32)
+		WriteFile(hf_be, buf, thisgo, &cb, NULL);
+#endif
+		addr += thisgo;
+		len  -= thisgo;
+		}
+	}
+	break;
+/*...e*/
+/*...s0x03 \45\ write bytes to VDP:32:*/
+case 0x03:
+	{
+	word addr;
+	word len;
+#if defined(UNIX)
+	read(fd_be_in, buf, 4);
+#elif defined(WIN32)
+	ReadFile(hf_be, buf, 4, &cb, NULL);
+#endif
+	addr = get_word(buf);
+	len = get_word(buf+2);
+	while ( len-- > 0 )
+		{
+		byte b;
+#if defined(UNIX)
+		read(fd_be_in, &b, 1);
+#elif defined(WIN32)
+		ReadFile(hf_be, &b, 1, &cb, NULL);
+#endif
+		vdp_write(addr++, b);
+		}
 	cmd = 0; /* Dummy byte */
 #if defined(UNIX)
 	write(fd_be_out, &cmd, 1);
@@ -1305,7 +1409,7 @@ static unsigned long long clock_speed = 4000000;
 #ifdef __Pico__
 word LoopZ80(Z80 *r)
     {
-    kbd_periodic ();
+    win_handle_events ();
 	display_wait_for_frame ();
     ctc_trigger (0);
     return INT_NONE;
@@ -1561,7 +1665,7 @@ word LoopZ80(Z80 *r)
 /*...e*/
 #endif
 
-#ifdef DEBUG
+#ifdef Z80_DEBUG
 /*...sDebugZ80:0:*/
 /*...sDebugZ80Instruction:0:*/
 /* Note: P and V flags are one and the same. */
@@ -1636,6 +1740,20 @@ byte DebugZ80(Z80 *r)
 	return 1;
 	}
 /*...e*/
+
+void show_instruction (void)
+    {
+    BOOLEAN save_flag = diag_flags[DIAG_Z80_INSTRUCTIONS];
+    byte save_last = last_trace;
+    word pc = z80.PC.W;
+    byte save_trace = no_trace[pc>>3];
+    diag_flags[DIAG_Z80_INSTRUCTIONS] = TRUE;
+    no_trace[pc>>3] = 0;
+    DebugZ80 (&z80);
+    diag_flags[DIAG_Z80_INSTRUCTIONS] = save_flag;
+    no_trace[pc>>3] = save_trace;
+    last_trace = save_last;
+    }
 #endif
 
 /*...sOutZ80:0:*/
@@ -1842,6 +1960,14 @@ void OutZ80(word port, byte value)
 			spec_out7F(value);
 			break;
 #endif
+#ifdef HAVE_NFX
+        case 0xa0:
+        case 0xa1:
+        case 0xa2:
+        case 0xa3:
+            nfx_out(port & 0x03, value);
+            break;
+#endif
 #ifdef HAVE_CFX2
         case 0xb0:
         case 0xb1:
@@ -2029,6 +2155,13 @@ byte InZ80(word port)
 		case 0x7f:
 			return spec_in7F();
 #endif
+#ifdef HAVE_NFX
+        case 0xa0:
+        case 0xa1:
+        case 0xa2:
+        case 0xa3:
+            return nfx_in(port & 0x03);
+#endif
 #ifdef HAVE_CFX2
         case 0xb0:
         case 0xb1:
@@ -2111,15 +2244,12 @@ extern BOOLEAN ALT_OPTIONS (int *pargc, const char ***pargv, int *pi);
 extern void ALT_INIT (void);
 #endif
 
-#ifdef ALT_ENTRY
-int ALT_ENTRY (int argc, const char *argv[])
-#else
-int main (int argc, const char *argv[])
-#endif
+int memu (int argc, const char *argv[])
 	{
 	int i;
 	unsigned addr = 0;
 	BOOLEAN fdxb = FALSE;
+    psExe = argv[0];
 	memset (&cfg, 0, sizeof (cfg));
 	cfg.vid_width_scale = 1;
 	cfg.vid_height_scale = 1;
@@ -2139,16 +2269,16 @@ int main (int argc, const char *argv[])
 		usage(NULL);
 
 	diag_init();
-    diag_methods = DIAGM_CONSOLE;
-    diag_flags[DIAG_INIT] = TRUE;
+    // diag_methods = DIAGM_CONSOLE;
+    // diag_flags[DIAG_INIT] = TRUE;
 	mem_init_mtx();
 #ifdef SMALL_MEM
     // Set minimum working configuration
-    static char sTapeDir[] = "/tapes/";
+    static char sTapeDir[] = "tapes";
     mem_alloc(2);
     cfg.vid_emu |= VIDEMU_WIN;
     cfg.tape_name_prefix = sTapeDir;
-    cfg_set_disk_dir ("/disks/");
+    cfg_set_disk_dir ("disks");
 #endif
 #ifdef HAVE_DISASS
 	dis_init();
@@ -2157,13 +2287,21 @@ int main (int argc, const char *argv[])
 	for ( i = 1; i < argc; i++ )
 		{
         diag_message (DIAG_INIT, "argc = %d, argv[%d] = \"%s\"", argc, i, argv[i]);
-		// printf ("argv[%d] = \"%s\"\n", i, argv[i]);
+		// printf ("argc = %d argv[%d] = \"%s\"\n", argc, i, argv[i]);
+        if ( !strcmp(argv[i], "-help") )
+			{
+            usage (NULL);
+            }
+        else if ( !strcmp(argv[i], "-ignore") )
+			{
+            bIgnore = TRUE;
+            }
 #ifdef ALT_OPTIONS
-		if ( ALT_OPTIONS (&argc, &argv, &i) )
-			;
-		else
+        else if ( ALT_OPTIONS (&argc, &argv, &i) )
+			{
+            }
 #endif
-			if ( !strcmp(argv[i], "-iobyte") )
+        else if ( !strcmp(argv[i], "-iobyte") )
 			{
 			unsigned iobyte;
 			if ( ++i == argc )
@@ -2171,31 +2309,44 @@ int main (int argc, const char *argv[])
 			sscanf(argv[i], "%i", &iobyte);
 			mem_set_iobyte((byte) iobyte);
 			}
-#ifndef SMALL_MEM
 		else if ( !strcmp(argv[i], "-subpage") )
 			{
+#ifndef SMALL_MEM
 			int subpage;
 			if ( ++i == argc )
 				usage(argv[i-1]);
 			sscanf(argv[i], "%i", &subpage);
 			mem_set_rom_subpage((byte) subpage);
+#else
+            unimplemented (argv[i]);
+            ++i;
+#endif
 			}
 		else if ( !strcmp(argv[i], "-addr") )
 			{
+#ifndef SMALL_MEM
 			if ( ++i == argc )
 				usage(argv[i-1]);
 			sscanf(argv[i], "%i", &addr);
+#else
+            unimplemented (argv[i]);
+            ++i;
+#endif
 			}
 		else if ( !strcmp(argv[i], "-mem") )
 			{
+#ifndef SMALL_MEM
 			byte buf[0x10000];
 			int len;
 			if ( ++i == argc )
 				usage(argv[i-1]);
 			len = read_file(argv[i], buf, sizeof(buf));
 			mem_write_block((word) addr, (word) len, buf);
-			}
+#else
+            unimplemented (argv[i]);
+            ++i;
 #endif
+			}
 		else if ( !strcmp(argv[i], "-mem-blocks") )
 			{
 			int nblocks;
@@ -2206,17 +2357,22 @@ int main (int argc, const char *argv[])
 			}
 		else if ( !strcmp(argv[i], "-mem-mtx500") )
 			mem_alloc(2);
-#ifndef SMALL_MEM
 		else if ( !strcmp(argv[i], "-mem-blocks-snapshot") )
 			{
+#ifndef SMALL_MEM
 			int nblocks;
 			if ( ++i == argc )
 				usage(argv[i-1]);
 			sscanf(argv[i], "%i", &nblocks);
 			mem_alloc_snapshot(nblocks);
+#else
+            unimplemented (argv[i]);
+            ++i;
+#endif
 			}
 		else if ( !strcmp(argv[i], "-n-subpages") )
 			{
+#ifndef SMALL_MEM
 			int rom, n_subpages;
 			if ( ++i == argc )
 				usage(argv[i-1]);
@@ -2239,25 +2395,38 @@ int main (int argc, const char *argv[])
 			else
 				fatal("n_subpages must be 1, 2, 4, 8, 16, 32, 64, 128 or 256");
 			mem_set_n_subpages(rom, n_subpages);
+#else
+            unimplemented (argv[i]);
+            i += 2;
+#endif
 			}
 		else if ( !strncmp(argv[i], "-rompair", 8) )
 			{
+#ifndef SMALL_MEM
 			int rom;
 			sscanf(argv[i]+8, "%i", &rom);
 			if ( ++i == argc )
 				usage(argv[i-1]);
             load_rompair (rom, argv[i]);
+#else
+            unimplemented (argv[i]);
+            ++i;
+#endif
 			}
 		else if ( !strncmp(argv[i], "-rom", 4) )
 			{
+#ifndef SMALL_MEM
 			int rom;
 			sscanf(argv[i]+4, "%i", &rom);
 			if ( ++i == argc )
 				usage(argv[i-1]);
 			cfg.rom_fn[rom] = argv[i];
             load_rom (rom, argv[i]);
-			}
+#else
+            unimplemented (argv[i]);
+            ++i;
 #endif
+			}
 		else if ( !strcmp(argv[i], "-kbd-remap") )
 			cfg.kbd_emu |= KBDEMU_REMAP;
 		else if ( !strcmp(argv[i], "-kbd-country") )
@@ -2270,41 +2439,65 @@ int main (int argc, const char *argv[])
 				usage (argv[i-1]);
 			cfg.kbd_emu |= ( country << 2 );
 			}
-#ifndef __Pico__
 		else if ( !strcmp(argv[i], "-kbd-type") )
 			{
+#ifdef HAVE_AUTOTYPE
 			if ( ++i == argc )
 				usage(argv[i-1]);
 			kbd_add_events(argv[i]);
+#else
+            unimplemented (argv[i]);
+            ++i;
+#endif
 			}
 		else if ( !strcmp(argv[i], "-kbd-type-file") )
 			{
+#ifdef HAVE_AUTOTYPE
 			if ( ++i == argc )
 				usage(argv[i-1]);
 			kbd_add_events_file(argv[i]);
-			}
+#else
+            unimplemented (argv[i]);
+            ++i;
 #endif
-#ifdef HAVE_JOY
+			}
 		else if ( !strcmp(argv[i], "-joy") ||
 		          !strcmp(argv[i], "-j")   )
+            {
+#ifdef HAVE_JOY
 			cfg.joy_emu |= JOYEMU_JOY;
+#else
+            unimplemented (argv[i]);
+#endif
+            }
 		else if ( !strcmp(argv[i], "-joy-buttons") )
 			{
+#ifdef HAVE_JOY
 			if ( ++i == argc )
 				usage(argv[i-1]);
 			cfg.joy_buttons = argv[i];
 			joy_set_buttons(argv[i]);
+#else
+            unimplemented (argv[i]);
+            ++i;
+#endif
 			}
 		else if ( !strcmp(argv[i], "-joy-central") )
 			{
+#ifdef HAVE_JOY
 			if ( ++i == argc )
 				usage(argv[i-1]);
 			sscanf(argv[i], "%d", &cfg.joy_central);
 			joy_set_central(cfg.joy_central);
-			}
+#else
+            unimplemented (argv[i]);
+            ++i;
 #endif
+			}
 		else if ( !strcmp(argv[i], "-vid-win") )
+            {
 			cfg.vid_emu |= VIDEMU_WIN;
+            }
 		else if ( !strcmp(argv[i], "-vid-win-big") ||
 			  !strcmp(argv[i], "-v")           )
 			{
@@ -2312,23 +2505,37 @@ int main (int argc, const char *argv[])
 			++cfg.vid_width_scale;
 			++cfg.vid_height_scale;
 			}
-#ifndef __Pico__
+		else if ( !strcmp(argv[i], "-vid-win-max") )
+            {
+			cfg.vid_emu |= VIDEMU_WIN_MAX;
+            vid_max_scale (&cfg.vid_width_scale, &cfg.vid_height_scale);
+            }
 		else if ( !strcmp(argv[i], "-vid-win-hw-palette") )
+            {
 			cfg.vid_emu |= (VIDEMU_WIN|VIDEMU_WIN_HW_PALETTE);
+            }
 		else if ( !strcmp(argv[i], "-vid-ntsc") )
+            {
 			cfg.screen_refresh = 60;
+            }
 		else if ( !strcmp(argv[i], "-vid-time-check") )
 			{
+#ifdef HAVE_VID_TIMING
 			unsigned t_2us, t_8us, t_blank;
 			if ( ++i == argc )
 				usage(argv[i-1]);
 			sscanf(argv[i], "%u,%u,%u", &t_2us, &t_8us, &t_blank);
 			vid_setup_timing_check(t_2us, t_8us, t_blank);
+#else
+            unimplemented (argv[i]);
+            ++i;
+#endif
 			}
-#endif // __Pico__
 		else if ( !strcmp(argv[i], "-snd-portaudio") ||
 			  !strcmp(argv[i], "-s")             )
+            {
 			cfg.snd_emu |= SNDEMU_PORTAUDIO;
+            }
 		else if ( !strcmp(argv[i], "-snd-latency") )
 			{
 			if ( ++i == argc )
@@ -2336,7 +2543,9 @@ int main (int argc, const char *argv[])
 			sscanf(argv[i], "%lf", &cfg.latency);
 			}
 		else if ( !strcmp(argv[i], "-mon-win") )
+            {
 			cfg.mon_emu |= MONEMU_WIN;
+            }
 		else if ( !strcmp(argv[i], "-mon-win-big") ||
 			  !strcmp(argv[i], "-mw")          )
 			{
@@ -2344,25 +2553,46 @@ int main (int argc, const char *argv[])
 			++cfg.mon_height_scale;
 			cfg.mon_width_scale = cfg.mon_height_scale/2;
 			}
+		else if ( !strcmp(argv[i], "-mon-win-max") )
+            {
+			cfg.mon_emu |= MONEMU_WIN_MAX;
+            mon_max_scale (&cfg.mon_width_scale, &cfg.mon_height_scale);
+            }
 		else if ( !strcmp(argv[i], "-mon-win-mono") )
+            {
 			cfg.mon_emu |= MONEMU_WIN_MONO;
+            }
 		else if ( !strcmp(argv[i], "-mon-th") ||
 			  !strcmp(argv[i], "-mt")     )
+            {
 #ifdef HAVE_TH
 			cfg.mon_emu |= MONEMU_TH;
 #else
-			fatal("this version of MEMU compiled without TH support");		
+            unimplemented (argv[i]);
 #endif
-#ifdef HAVE_CONSOLE
+            }
 		else if ( !strcmp(argv[i], "-mon-console") ||
 			  !strcmp(argv[i], "-mc")          )
+            {
+#ifdef HAVE_CONSOLE
 			cfg.mon_emu |= MONEMU_CONSOLE;
+#else
+            unimplemented (argv[i]);
+#endif
+            }
 		else if ( !strcmp(argv[i], "-mon-console-nokey") ||
 			  !strcmp(argv[i], "-mk")                )
+            {
+#ifdef HAVE_CONSOLE
 			cfg.mon_emu |= (MONEMU_CONSOLE|MONEMU_CONSOLE_NOKEY);
+#else
+            unimplemented (argv[i]);
 #endif
+            }
 		else if ( !strcmp(argv[i], "-mon-no-ignore-init") )
+            {
 			cfg.mon_emu &= ~MONEMU_IGNORE_INIT;
+            }
 		else if ( !strcmp(argv[i], "-sdx-tracks") )
 			{
 			if ( ++i == argc )
@@ -2387,13 +2617,25 @@ int main (int argc, const char *argv[])
 				usage(argv[i-1]);
 			cfg.fn_sdxfdc[1] = argv[i];
 			}
-#ifdef HAVE_SID
 		else if ( !strcmp(argv[i], "-sidisc-huge") )
+            {
+#ifdef HAVE_SID
 			cfg.sid_emu |= SIDEMU_HUGE;
+#else
+            unimplemented (argv[i]);
+#endif
+            }
 		else if ( !strcmp(argv[i], "-sidisc-no-save") )
+            {
+#ifdef HAVE_SID
 			cfg.sid_emu |= SIDEMU_NO_SAVE;
+#else
+            unimplemented (argv[i]);
+#endif
+            }
 		else if ( !strcmp(argv[i], "-sidisc-file") )
 			{
+#ifdef HAVE_SID
 			int drive;
 			if ( ++i == argc )
 				usage(argv[i-1]);
@@ -2404,11 +2646,14 @@ int main (int argc, const char *argv[])
 				usage(argv[i-2]);
 			cfg.sid_fn[drive] = argv[i];
 			sid_set_file(drive, argv[i]);
-			}
+#else
+            unimplemented (argv[i]);
+            i += 2;
 #endif
-#ifdef HAVE_CFX2
+			}
         else if ( !strcmp (argv[i], "-cfx2") )
             {
+#ifdef HAVE_CFX2
 			if ( ++i == argc )
 				usage(argv[i-1]);
 			cfg.rom_cfx2 = argv[i];
@@ -2417,9 +2662,14 @@ int main (int argc, const char *argv[])
 #ifdef HAVE_VGA
             cfg.bVGA = TRUE;
 #endif
+#else
+            unimplemented (argv[i]);
+            ++i;
+#endif
             }
         else if ( !strcmp (argv[i], "-cf-image") )
             {
+#ifdef HAVE_CFX2
             int iDrive;
             int iPart;
 			if ( ++i == argc )
@@ -2433,14 +2683,19 @@ int main (int argc, const char *argv[])
 				usage(argv[i-2]);
             cfx2_set_image (iDrive, iPart, argv[i]);
             cfg.fn_cfx2[iDrive][iPart] = argv[i];
+#else
+            unimplemented (argv[i]);
+            i += 2;
+#endif
             }
-#endif  // HAVE_CFX
-#ifdef HAVE_VGA
         else if ( !strcmp (argv[i], "-vga") )
             {
+#ifdef HAVE_VGA
             cfg.bVGA = TRUE;
-            }
+#else
+            unimplemented (argv[i]);
 #endif
+            }
 		else if ( !strcmp(argv[i], "-prn-file") )
 			{
 			if ( ++i == argc )
@@ -2473,50 +2728,100 @@ int main (int argc, const char *argv[])
 			tape_set_output (argv[i]);
 			cfg.tape_disable = TRUE;
 			}
-#ifdef HAVE_SPEC
 		else if ( !strcmp(argv[i], "-tap-file") )
 			{
+#ifdef HAVE_SPEC
 			if ( ++i == argc )
 				usage(argv[i-1]);
 			tap_fn = argv[i];
+#else
+            unimplemented (argv[i]);
+            ++i;
+#endif
 			}
 		else if ( !strcmp(argv[i], "-sna-file") )
 			{
+#ifdef HAVE_SPEC
 			if ( ++i == argc )
 				usage(argv[i-1]);
 			sna_fn = argv[i];
-			}
+#else
+            unimplemented (argv[i]);
+            ++i;
 #endif
-#ifdef HAVE_OSFS
+			}
 		else if ( !strcmp(argv[i], "-cpm") )
 			{
+#ifdef HAVE_OSFS
 			cpm_init();
 			mem_set_iobyte(0x80);
 			addr = 0x100;
+#else
+            unimplemented (argv[i]);
+#endif
 			}
 		else if ( !strcmp(argv[i], "-cpm-drive-a") )
 			{
+#ifdef HAVE_OSFS
 			if ( ++i == argc )
 				usage(argv[i-1]);
 			cpm_set_drive_a(argv[i]);
+#else
+            unimplemented (argv[i]);
+            ++i;
+#endif
 			}
 		else if ( !strcmp(argv[i], "-cpm-invert-case") )
+            {
+#ifdef HAVE_OSFS
 			cpm_set_invert_case();
+#else
+            unimplemented (argv[i]);
+#endif
+            }
 		else if ( !strcmp(argv[i], "-cpm-tail") )
 			{
+#ifdef HAVE_OSFS
 			if ( ++i == argc )
 				usage(argv[i-1]);
 			cpm_set_tail(argv[i]);
+#else
+            unimplemented (argv[i]);
+            ++i;
+#endif
 			}
 		else if ( !strcmp(argv[i], "-cpm-open-hack") )
+            {
+#ifdef HAVE_OSFS
 			cpm_allow_open_hack(TRUE);
-		else if ( !strcmp(argv[i], "-sdx5") || !strcmp(argv[i], "-sdx") )
-			setup_sdx(5);
-		else if ( !strcmp(argv[i], "-sdx3") )
-			setup_sdx(3);
-		else if ( !strcmp(argv[i], "-fdxb") )
-			fdxb = TRUE;
+#else
+            unimplemented (argv[i]);
 #endif
+            }
+		else if ( !strcmp(argv[i], "-sdx5") || !strcmp(argv[i], "-sdx") )
+            {
+#ifdef HAVE_OSFS
+			setup_sdx(5);
+#else
+            unimplemented (argv[i]);
+#endif
+            }
+		else if ( !strcmp(argv[i], "-sdx3") )
+            {
+#ifdef HAVE_OSFS
+			setup_sdx(3);
+#else
+            unimplemented (argv[i]);
+#endif
+            }
+		else if ( !strcmp(argv[i], "-fdxb") )
+            {
+#ifdef HAVE_OSFS
+			fdxb = TRUE;
+#else
+            unimplemented (argv[i]);
+#endif
+            }
 		else if ( !strcmp(argv[i], "-speed") )
 			{
 			if ( ++i == argc )
@@ -2529,12 +2834,14 @@ int main (int argc, const char *argv[])
 #endif
 			}
 		else if ( !strcmp(argv[i], "-fast") )
+            {
 			moderate_speed = FALSE;
+            }
 		else if ( !strcmp(argv[i], "-iperiod") )
+			{
 			/* Undocumented feature.
 			   I use this to investigate when I suspect a program
 			   may be very timing sensitive. */
-			{
 			if ( ++i == argc )
 				usage(argv[i-1]);
 			sscanf(argv[i], "%d", &cfg.iperiod);
@@ -2542,137 +2849,256 @@ int main (int argc, const char *argv[])
 				fatal("iperiod must be between 10 and 1000000");
 			}
 		else if ( !strcmp(argv[i], "-loadmtx") )
+            {
+#ifdef HAVE_OSFS
 			loadmtx_hack = TRUE;
-#ifdef HAVE_DART
+#else
+            unimplemented (argv[i]);
+#endif
+            }
 		else if ( !strcmp(argv[i], "-serial1-dev") )
 			{
+#ifdef HAVE_DART
 			if ( ++i == argc )
 				usage(argv[i-1]);
 			cfg.bSerialDev[0] = TRUE;
 			cfg.fn_serial_in[0] = argv[i];
+#else
+            unimplemented (argv[i]);
+            ++i;
+#endif
 			}
 		else if ( !strcmp(argv[i], "-serial1-in") )
 			{
+#ifdef HAVE_DART
 			if ( ++i == argc )
 				usage(argv[i-1]);
 			cfg.fn_serial_in[0] = argv[i];
+#else
+            unimplemented (argv[i]);
+            ++i;
+#endif
 			}
 		else if ( !strcmp(argv[i], "-serial1-out") )
 			{
+#ifdef HAVE_DART
 			if ( ++i == argc )
 				usage(argv[i-1]);
 			cfg.fn_serial_out[0] = argv[i];
+#else
+            unimplemented (argv[i]);
+            ++i;
+#endif
 			}
 		else if ( !strcmp(argv[i], "-serial2-dev") )
 			{
+#ifdef HAVE_DART
 			if ( ++i == argc )
 				usage(argv[i-1]);
 			cfg.bSerialDev[1] = TRUE;
 			cfg.fn_serial_in[1] = argv[i];
+#else
+            unimplemented (argv[i]);
+            ++i;
+#endif
 			}
 		else if ( !strcmp(argv[i], "-serial2-in") )
 			{
+#ifdef HAVE_DART
 			if ( ++i == argc )
 				usage(argv[i-1]);
 			cfg.fn_serial_in[1] = argv[i];
+#else
+            unimplemented (argv[i]);
+            ++i;
+#endif
 			}
 		else if ( !strcmp(argv[i], "-serial2-out") )
 			{
+#ifdef HAVE_DART
 			if ( ++i == argc )
 				usage(argv[i-1]);
 			cfg.fn_serial_out[1] = argv[i];
-			}
+#else
+            unimplemented (argv[i]);
+            ++i;
 #endif
-#ifdef DEBUG
+			}
 		else if ( !strcmp(argv[i], "-diag-z80-instructions-exclude") )
 			{
+#ifdef Z80_DEBUG
 			int addr_from, addr_to, addr;
 			if ( ++i == argc )
 				usage(argv[i-1]);
 			sscanf(argv[i], "%i-%i", &addr_from, &addr_to);
 			for ( addr = addr_from; addr <= addr_to; addr++ )
 				no_trace[(addr&0xffff)>>3] |= (0x01<<(addr&7));
+#else
+            unimplemented (argv[i]);
+            ++i;
+#endif
 			}
 		else if ( !strcmp(argv[i], "-diag-z80-instructions-include") )
 			{
+#ifdef Z80_DEBUG
 			int addr_from, addr_to, addr;
 			if ( ++i == argc )
 				usage(argv[i-1]);
 			sscanf(argv[i], "%i-%i", &addr_from, &addr_to);
 			for ( addr = addr_from; addr <= addr_to; addr++ )
 				no_trace[(addr&0xffff)>>3] &= ~(0x01<<(addr&7));
-			}
+#else
+            unimplemented (argv[i]);
+            ++i;
 #endif
-#if ! ( defined(__circle__) || defined(__Pico__) )
+			}
+		else if ( !strcmp(argv[i], "-nfx-port-offset") )
+			{
+#ifdef HAVE_NFX
+			int offset;
+			if ( ++i == argc )
+				usage(argv[i-1]);
+			sscanf(argv[i], "%i", &offset);
+            nfx_port_offset (offset);
+#else
+            unimplemented (argv[i]);
+            ++i;
+#endif
+            }
 		else if ( !strcmp(argv[i], "-vid-win-title") )
 			{
+#ifdef HAVE_GUI
 			if ( ++i == argc )
 				usage(argv[i-1]);
 			vid_set_title (argv[i]);
+#else
+            unimplemented (argv[i]);
+            ++i;
+#endif
 			}
 		else if ( !strcmp(argv[i], "-vid-win-display") )
 			{
+#ifdef HAVE_GUI
 			if ( ++i == argc )
 				usage(argv[i-1]);
 			vid_set_display (argv[i]);
+#else
+            unimplemented (argv[i]);
+            ++i;
+#endif
 			}
 		else if ( !strcmp(argv[i], "-mon-win-title") )
 			{
+#ifdef HAVE_GUI
 			if ( ++i == argc )
 				usage(argv[i-1]);
 			mon_set_title (argv[i]);
+#else
+            unimplemented (argv[i]);
+            ++i;
+#endif
 			}
 		else if ( !strcmp(argv[i], "-mon-win-display") )
 			{
+#ifdef HAVE_GUI
 			if ( ++i == argc )
 				usage(argv[i-1]);
 			mon_set_display (argv[i]);
+#else
+            unimplemented (argv[i]);
+            ++i;
+#endif
 			}
 		else if ( !strcmp(argv[i], "-diag-ui-mem-win-title") )
 			{
+#ifdef HAVE_UI
 			if ( ++i == argc )
 				usage(argv[i-1]);
 			ui_mem_set_title (argv[i]);
+#else
+            unimplemented (argv[i]);
+            ++i;
+#endif
 			}
 		else if ( !strcmp(argv[i], "-diag-ui-mem-win-display") )
 			{
+#ifdef HAVE_UI
 			if ( ++i == argc )
 				usage(argv[i-1]);
 			ui_mem_set_display (argv[i]);
+#else
+            unimplemented (argv[i]);
+            ++i;
+#endif
 			}
 		else if ( !strcmp(argv[i], "-diag-ui-vram-win-title") )
 			{
+#ifdef HAVE_UI
 			if ( ++i == argc )
 				usage(argv[i-1]);
 			ui_vram_set_title (argv[i]);
+#else
+            unimplemented (argv[i]);
+            ++i;
+#endif
 			}
 		else if ( !strcmp(argv[i], "-diag-ui-vram-win-display") )
 			{
+#ifdef HAVE_UI
 			if ( ++i == argc )
 				usage(argv[i-1]);
 			ui_vram_set_display (argv[i]);
+#else
+            unimplemented (argv[i]);
+            ++i;
+#endif
 			}
 		else if ( !strcmp(argv[i], "-diag-ui-dis-win-title") )
 			{
+#ifdef HAVE_UI
 			if ( ++i == argc )
 				usage(argv[i-1]);
 			ui_dis_set_title (argv[i]);
+#else
+            unimplemented (argv[i]);
+            ++i;
+#endif
 			}
 		else if ( !strcmp(argv[i], "-diag-ui-dis-win-display") )
 			{
+#ifdef HAVE_UI
 			if ( ++i == argc )
 				usage(argv[i-1]);
 			ui_dis_set_display (argv[i]);
+#else
+            unimplemented (argv[i]);
+            ++i;
+#endif
 			}
-#endif
-#ifdef HAVE_UI
 		else if ( !strcmp(argv[i], "-diag-ui-mem") )
+            {
+#ifdef HAVE_UI
 			cfg.ui_opts |= UI_MEM;
-		else if ( !strcmp(argv[i], "-diag-ui-vram") )
-			cfg.ui_opts |= UI_VRAM;
-		else if ( !strcmp(argv[i], "-diag-ui-dis") )
-			cfg.ui_opts |= UI_DIS;
+#else
+            unimplemented (argv[i]);
 #endif
+            }
+		else if ( !strcmp(argv[i], "-diag-ui-vram") )
+            {
+#ifdef HAVE_UI
+			cfg.ui_opts |= UI_VRAM;
+#else
+            unimplemented (argv[i]);
+#endif
+            }
+		else if ( !strcmp(argv[i], "-diag-ui-dis") )
+            {
+#ifdef HAVE_UI
+			cfg.ui_opts |= UI_DIS;
+#else
+            unimplemented (argv[i]);
+#endif
+            }
 		else if ( !strncmp(argv[i], "-diag-", 6) )
 			{
 			int m;
@@ -2697,7 +3123,7 @@ int main (int argc, const char *argv[])
 			break;
 		}
 
-#ifndef __Pico__
+#ifdef HAVE_AUTOTYPE
 	kbd_add_events_done();
 #endif
 
@@ -2713,9 +3139,9 @@ int main (int argc, const char *argv[])
 			/* Save the filename for later LOAD "" */
 			cfg.tape_fn = argv[i++];
             }
-#ifdef HAVE_OSFS
 		else if ( !strcmp(dot, ".com") || !strcmp(dot, ".COM") )
 			{
+#ifdef HAVE_OSFS
 			byte buf[0xfe00-0x0100];
 			int len = read_file_path(argv[i], buf, sizeof(buf), cpm_get_drive_a());
 			char tail[128+1];
@@ -2734,9 +3160,14 @@ int main (int argc, const char *argv[])
 				strcat(tail, argv[i]);
 				}
 			cpm_set_tail( (tail[1]!='\0') ? tail : "" );
+#else
+            unimplemented (argv[i]);
+            i = argc;
+#endif
 			}
 		else if ( !strcmp(dot, ".run") || !strcmp(dot, ".RUN") )
 			{
+#ifdef HAVE_OSFS
 			int len;
 			run_buf = emalloc(0x10000-0x4000);
 			len = read_file_path(argv[i], run_buf, 0x10000-0x4000, cpm_get_drive_a());
@@ -2757,11 +3188,13 @@ int main (int argc, const char *argv[])
 			addr = 0x0000;
 			++i;
 			// fflush(stdout);
-			}
+#else
+            unimplemented (argv[i]);
+            ++i;
 #endif
+			}
 		}
 
-    printf ("End of arguments: i = %d, argc = %d\n", i, argc);
 	if ( i != argc )
 		usage(argv[i]);
 

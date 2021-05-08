@@ -62,6 +62,7 @@ extern byte mem_get_iobyte(void);
 extern byte mem_get_rom_subpage(void);
 extern void mem_set_rom_subpage(byte subpage);
 extern void mem_out0(byte val);
+extern void mem_wrchk (BOOLEAN bChk);
 
 extern void mem_alloc(int nblocks);
 

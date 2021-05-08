@@ -50,9 +50,6 @@
 #define strcasecmp _stricmp
 #endif
 
-#define WINCFG_WTH          80
-#define WINCFG_HGT          24
-
 #define CFG_MTX500          0
 #define CFG_MTX512          1
 #define CFG_SDX             2
@@ -137,6 +134,72 @@ static BOOLEAN bNoApply     =   FALSE;
 static int     iCfgExit     =   0;
 static BOOLEAN bCfgExit     =   FALSE;
 static int     iRowHelp     =   ROW_HELP;
+static int  cfg_wk   =  -1;
+
+static int mods = 0;
+
+//  Key press event handler - record key pressed.
+void cfg_keypress(int wk)
+    {
+//    int mods = win_mod_keys ();
+    if ( wk == WK_Shift_L )         mods |= MKY_LSHIFT;
+    else if ( wk == WK_Shift_R )    mods |= MKY_RSHIFT;
+    else if ( wk == WK_Caps_Lock )  mods ^= MKY_CAPSLK;
+    if ( mods & ( MKY_LSHIFT | MKY_RSHIFT ) ) cfg_wk = win_shifted_wk (wk);
+    else if ( ( mods & MKY_CAPSLK ) && ( wk >= 'a' ) && ( wk <= 'z' ) ) cfg_wk = wk & 0x5F;
+    else cfg_wk =  wk;
+    }
+
+//  Key release event handler - does nothing.
+void cfg_keyrelease(int wk)
+    {
+    if ( wk == WK_Shift_L )         mods &= ~ MKY_LSHIFT;
+    else if ( wk == WK_Shift_R )    mods &= ~ MKY_RSHIFT;
+    }
+
+//  Wait for a key press
+#ifdef   ALT_KEYIN
+extern int ALT_KEYIN (void);
+#endif
+
+int cfg_key (void)
+    {
+    // diag_message (DIAG_INIT, "Entered cfg_key");
+    cfg_refresh ();
+    cfg_wk   =  -1;
+    while ( cfg_wk < 0 )
+        {
+        // diag_message (DIAG_INIT, "Call kbd_periodic");
+        win_handle_events ();
+#ifdef   ALT_KEYIN
+        if (cfg_wk >= 0 )  break;
+        cfg_wk =  ALT_KEYIN ();
+#endif
+        }
+    // diag_message (DIAG_INIT, "Return cfg_wk = %d", cfg_wk);
+    return   cfg_wk;
+    }
+
+//  Test for entering config mode
+BOOLEAN test_cfg_key (int wk)
+    {
+    if ( config_fn == NULL ) return FALSE;
+    // diag_message (DIAG_INIT, "Test key 0x%02X for Config key", wk);
+    switch (wk)
+        {
+//        case WK_Scroll_Lock:
+        case WK_Sys_Req:
+        case WK_PC_Windows_L:
+        case WK_PC_Windows_R:
+        case WK_PC_Menu:
+        case WK_F11:
+            // diag_message (DIAG_INIT, "Config Key found");
+            config ();
+            // diag_message (DIAG_INIT, "Config exit");
+            return TRUE;
+        }
+    return FALSE;
+    }
 
 //  Set configuration file name
 
@@ -1462,9 +1525,6 @@ static void cfg_save (const char *psConfig)
         int iDisk;
         FILE *pfil  =  fopen (psConfig, "w");
         if ( pfil == NULL )  { config_term (); fatal ("Unable to write configuration file"); }
-#ifdef ALT_SAVE_CFG
-        ALT_SAVE_CFG (pfil);
-#endif
         fprintf (pfil, "-mem-blocks %d\n", mem_get_alloc ());
         for ( rom = 0; rom < 8; ++rom )
             {
@@ -1478,11 +1538,18 @@ static void cfg_save (const char *psConfig)
         fprintf (pfil, "-kbd-country %d\n", ( cfg.kbd_emu & KBDEMU_COUNTRY ) >> 2);
         if ( cfg.vid_emu & VIDEMU_WIN )
             {
-            int   scale = cfg.vid_height_scale;
             fprintf (pfil, "-vid-win\n");
-            while ( --scale > 0 )
+            if ( cfg.vid_emu & VIDEMU_WIN_MAX )
                 {
-                fprintf (pfil, "-vid-win-big\n");
+                fprintf (pfil, "-vid-win-max\n");
+                }
+            else
+                {
+                int   scale = cfg.vid_height_scale;
+                while ( --scale > 0 )
+                    {
+                    fprintf (pfil, "-vid-win-big\n");
+                    }
                 }
             if ( cfg.vid_emu & VIDEMU_WIN_HW_PALETTE ) fprintf (pfil, "-vid-win-hw-palette\n");
             if ( cfg.screen_refresh == 60 ) fprintf (pfil, "-vid-ntsc\n");
@@ -1490,36 +1557,37 @@ static void cfg_save (const char *psConfig)
         if ( cfg.snd_emu & SNDEMU_PORTAUDIO )
             {
             fprintf (pfil, "-snd-portaudio\n");
-            if ( cfg.latency != 0.0 )   fprintf (pfil, "-snd-latency %f\n", cfg.latency);
+            // if ( cfg.latency != 0.0 )   fprintf (pfil, "-snd-latency %f\n", cfg.latency);
             }
         if ( cfg.mon_emu & MONEMU_WIN )
             {
-            int   scale = cfg.mon_height_scale;
             fprintf (pfil, "-mon-win\n");
-            while ( --scale > 0 )
+            if ( cfg.mon_emu & MONEMU_WIN_MAX )
                 {
-                fprintf (pfil, "-mon-win-big\n");
+                fprintf (pfil, "-mon-win-max\n");
+                }
+            else
+                {
+                int   scale = cfg.mon_height_scale;
+                while ( --scale > 0 )
+                    {
+                    fprintf (pfil, "-mon-win-big\n");
+                    }
                 }
             if ( cfg.mon_emu & MONEMU_WIN_MONO ) fprintf (pfil, "-mon-win-mono\n");
             if ( ! (cfg.mon_emu & MONEMU_IGNORE_INIT) ) fprintf (pfil, "-mon-no-ignore-init\n");
             }
-        else
+        else if ( cfg.mon_emu & MONEMU_WIN_MAX )
             {
-            if ( cfg.mon_height_scale > 1 )  fprintf (pfil, "-mon-size %d\n", cfg.mon_height_scale);
+            fprintf (pfil, "-mon-win-max\n");
             }
-#ifdef HAVE_JOY
-        if ( cfg.joy_emu & JOYEMU_JOY )
+        else if ( cfg.mon_height_scale > 1 )
             {
-            fprintf (pfil, "-joy\n");
-            if ( cfg.joy_central != 0 ) fprintf (pfil, "-joy-central %d\n", cfg.joy_central);
-            if ( cfg.joy_buttons != NULL ) fprintf (pfil, "-joy-buttons \"%s\"\n", cfg.joy_buttons);
+            fprintf (pfil, "-mon-size %d\n", cfg.mon_height_scale);
             }
-#endif
         if ( disk_dir != NULL ) fprintf (pfil, "-disk-dir \"%s\"\n", disk_dir);
         if ( cfg.fn_sdxfdc[0] != NULL ) fprintf (pfil, "-sdx-mfloppy \"%s\"\n", cfg.fn_sdxfdc[0]);
-        if ( cfg.tracks_sdxfdc[0] != 0 ) fprintf (pfil, "-sdx-tracks %d\n", cfg.tracks_sdxfdc[0]);
         if ( cfg.fn_sdxfdc[1] != NULL ) fprintf (pfil, "-sdx-mfloppy2 \"%s\"\n", cfg.fn_sdxfdc[1]);
-        if ( cfg.tracks_sdxfdc[1] != 0 ) fprintf (pfil, "-sdx-tracks2 %d\n", cfg.tracks_sdxfdc[1]);
 #ifdef HAVE_SID
         if ( cfg.sid_emu & SIDEMU_HUGE ) fprintf (pfil, "-sidisc-huge\n");
         if ( cfg.sid_emu & SIDEMU_NO_SAVE ) fprintf (pfil, "-sidisc-no-save\n");
@@ -1546,6 +1614,23 @@ static void cfg_save (const char *psConfig)
             if ( ( ps = tape_get_input () ) ) fprintf (pfil, "-cassette-in \"%s\"\n", ps);
             if ( ( ps = tape_get_output () ) ) fprintf (pfil, "-cassette-out \"%s\"\n", ps);
             }
+        rom_enable   =  mem_get_rom_enable ();
+        if ( rom_enable != 0xff )   fprintf (pfil, "-rom-enable 0x%02x\n", rom_enable);
+        
+#ifdef ALT_SAVE_CFG
+        ALT_SAVE_CFG (pfil);
+#endif
+#if 0
+        if ( cfg.tracks_sdxfdc[0] != 0 ) fprintf (pfil, "-sdx-tracks %d\n", cfg.tracks_sdxfdc[0]);
+        if ( cfg.tracks_sdxfdc[1] != 0 ) fprintf (pfil, "-sdx-tracks2 %d\n", cfg.tracks_sdxfdc[1]);
+#ifdef HAVE_JOY
+        if ( cfg.joy_emu & JOYEMU_JOY )
+            {
+            fprintf (pfil, "-joy\n");
+            if ( cfg.joy_central != 0 ) fprintf (pfil, "-joy-central %d\n", cfg.joy_central);
+            if ( cfg.joy_buttons != NULL ) fprintf (pfil, "-joy-buttons \"%s\"\n", cfg.joy_buttons);
+            }
+#endif
         if ( cfg.bSerialDev[0] ) fprintf (pfil, "-serial1-dev \"%s\"\n", cfg.fn_serial_in[0]);
         else
             {
@@ -1562,14 +1647,17 @@ static void cfg_save (const char *psConfig)
             if ( cfg.fn_serial_out[1] != NULL ) fprintf (pfil, "-serial2-out \"%s\"\n",
                 cfg.fn_serial_out[1]);
             }
-        rom_enable   =  mem_get_rom_enable ();
-        if ( rom_enable != 0xff )   fprintf (pfil, "-rom-enable 0x%02x\n", rom_enable);
 #ifdef HAVE_GUI
         if ( ( ps = vid_get_title () ) )    fprintf (pfil, "-vid-win-title \"%s\"\n", ps);
         if ( ( ps = vid_get_display () ) )  fprintf (pfil, "-vid-win-display \"%s\"\n", ps);
         if ( ( ps = mon_get_title () ) )    fprintf (pfil, "-mon-win-title \"%s\"\n", ps);
         if ( ( ps = mon_get_display () ) )  fprintf (pfil, "-mon-win-display \"%s\"\n", ps);
 #endif
+#endif
+        if ( ! cfg.tape_disable )
+            {
+            if ( ( ps = tape_get_input () ) ) fprintf (pfil, "\"%s\"\n", ps);
+            }
         fclose (pfil);
         }
     }
@@ -2064,7 +2152,7 @@ BOOLEAN cfg_options (int *pargc, const char ***pargv, int *pi)
     {
     if ( !strcmp((*pargv)[*pi], "-config-file") )
         {
-#ifndef SMALL_MEM
+#ifdef HAVE_OSFS
         cpm_allow_open_hack(TRUE);
 #endif
         diag_flags[DIAG_BAD_PORT_IGNORE] = TRUE;
@@ -2075,7 +2163,7 @@ BOOLEAN cfg_options (int *pargc, const char ***pargv, int *pi)
         }
     else if ( !strcmp((*pargv)[*pi], "-no-ignore-faults") )
         {
-#ifndef SMALL_MEM
+#ifdef HAVE_OSFS
         cpm_allow_open_hack(FALSE);
 #endif
         diag_flags[DIAG_BAD_PORT_IGNORE] = FALSE;
@@ -2087,14 +2175,17 @@ BOOLEAN cfg_options (int *pargc, const char ***pargv, int *pi)
         sscanf ((*pargv)[*pi], "%i", &rom_enable);
         mem_set_rom_enable (rom_enable);
         }
-#ifdef HAVE_CFX2
     else if ( !strcmp ((*pargv)[*pi], "-no-cfx2") )
         {
+#ifdef HAVE_CFX2
         if ( ++(*pi) == (*pargc) )
             usage((*pargv)[*pi-1]);
         cfg.rom_cfx2 = (*pargv)[*pi];
-        }
+#else
+        unimplemented ((*pargv)[*pi]);
+        ++(*pi);
 #endif
+        }
     else if ( !strcmp((*pargv)[*pi], "-mon-size") )
         {
         if ( ++(*pi) == (*pargc) )
@@ -2107,10 +2198,6 @@ BOOLEAN cfg_options (int *pargc, const char ***pargv, int *pi)
         if ( ++(*pi) == (*pargc) )
             usage((*pargv)[*pi-1]);
         disk_dir =  (*pargv)[*pi];
-        }
-    else if ( !strcmp((*pargv)[*pi], "-help") )
-        {
-        usage (NULL);
         }
     else
         {
@@ -2129,222 +2216,5 @@ void cfg_usage (void)
     fprintf(stderr, "       -no-cfx2 rom_file    disable CFX-II emulation but specify ROM image file\n");
 #endif
     fprintf(stderr, "       -mon-size            sets 80 col size (but does not enable it)\n");
-    fprintf(stderr, "       -disk-dir            directory containg disk images\n");
-    fprintf(stderr, "       -tape-dir            directory containg tape files\n");
-    fprintf(stderr, "       -help                display this usage message\n");
+    fprintf(stderr, "       -disk-dir dir        directory containg disk images\n");
     }
-
-//  Test for a regular file
-
-#ifdef WIN32
-#define S_ISREG(mode) (mode & _S_IFREG)
-#endif
-
-BOOLEAN cfg_test_file (const char *psPath)
-    {
-    struct stat st;
-    int iErr = stat (psPath, &st);
-    return ( ( iErr == 0 ) && ( S_ISREG (st.st_mode) ) );
-    }
-
-//  Find the configuration file
-#if 0
-#ifdef __circle__
-char * cfg_find_file (const char *argv0)
-    {
-    static char *psFile = "/memu.cfg";
-    return psFile;
-    }
-#else
-//  Combine directory and file names
-static char *cfg_make_path (const char *psDir, char chDirSep, const char *psFile)
-    {
-    char * psPath;
-    if ( psDir != NULL )
-        {
-        int nDir = strlen (psDir);
-        int nPath = nDir + strlen (psFile) + 2;
-        psPath = emalloc (nPath);
-        strcpy (psPath, psDir);
-        psPath[nDir] = chDirSep;
-        strcpy (&psPath[nDir+1], psFile);
-        }
-    else
-        {
-        psPath = estrdup (psFile);
-        }
-    return psPath;
-    }
-
-//  Find the configuration file
-char * cfg_find_file (const char *argv0)
-    {
-    char *psCfg, *ps1, *ps2;
-    char *psPath = getenv ("PATH");
-    int nProg = strlen (argv0);
-    char *psProg = (char *) emalloc (nProg+4);
-    char chPathSep, chDirSep;
-    // printf ("argv0 = %s\n", argv0);
-    // printf ("psPath = %s\n", psPath);
-    // printf ("nProg = %d\n", nProg);
-
-    /* Name of configuration file */
-
-    if ( argv0 == NULL ) return NULL;
-    strcpy (psProg, argv0);
-    if ( strcasecmp (&psProg[nProg - 4], ".exe") == 0 )
-        {
-        nProg -= 4;
-        psProg[nProg] = '\0';
-        }
-    strcpy (&psProg[nProg], ".cfg");
-    nProg += 4;
-    // printf ("psProg = %s\n", psProg);
-
-    /* Guess OS */
-
-    if ( ( strchr (argv0, '\\') != NULL ) || ( ( psPath != NULL ) && ( strchr (psPath, ';' ) != NULL ) ) )
-        {
-        // printf ("Windows OS\n");
-        chPathSep = ';';
-        chDirSep = '\\';
-        }
-    else
-        {
-        // printf ("Linux OS\n");
-        chPathSep = ':';
-        chDirSep = '/';
-        }
-
-    /* Direct location */
-
-    if ( strchr (psProg, chDirSep) != NULL )
-        {
-        if ( cfg_test_file (psProg) )
-            {
-            // printf ("Found config file.\n");
-            return psProg;
-            }
-        if ( ( psProg[0] == chDirSep ) || ( ( psProg[1] == ':' ) && ( psProg[2] == '\\' ) ) )
-            {
-            // printf ("Absolute path and no config file.\n");
-            free ((void *) psProg);
-            return NULL;
-            }
-        }
-
-    /* Search path */
-
-    if ( psPath == NULL ) return NULL;
-    psPath = estrdup (psPath);
-    ps2 = psPath - 1;
-    while ( ps2 != NULL )
-        {
-        ps1 = ps2 + 1;
-        ps2 = strchr (ps1, chPathSep);
-        if ( ps2 != NULL ) *ps2 = '\0';
-        // printf ("Try folder = %s\n", ps1);
-        psCfg = cfg_make_path (ps1, chDirSep, psProg);
-        if ( cfg_test_file (psCfg) )
-            {
-            // printf ("Found %s\n", psCfg);
-            free ((void *) psPath);
-            free ((void *) psProg);
-            return psCfg;
-            }
-        free ((void *) psCfg);
-        }
-    free ((void *) psPath);
-    free ((void *) psProg);
-    // printf ("No configuration file.\n");
-    return NULL;
-    }
-#endif
-#endif
-
-#ifdef ALT_MAIN
-char * cfg_exe_path (void)
-    {
-#ifdef UNIX    
-    static const char *psLink = "/proc/self/exe";
-    struct stat st;
-    char *psPath = NULL;
-    ssize_t n;
-    if ( lstat(psLink, &st) == -1 ) return NULL;
-    while (1)
-        {
-        psPath = realloc (psPath, st.st_size + 1);
-        if ( psPath == NULL ) return NULL;
-        n = readlink (psLink, psPath, st.st_size + 1);
-        if ( n == -1 )
-            {
-            free (psPath);
-            return NULL;
-            }
-        if ( n <= st.st_size ) break;
-        st.st_size = n;
-        }
-    psPath[n] = '\0';
-    return psPath;
-#endif
-#ifdef WIN32
-    char *psPath = malloc (MAX_PATH + 1);
-    DWORD n;
-    if ( psPath == NULL ) return NULL;
-    n = GetModuleFileName (NULL, psPath, MAX_PATH + 1);
-    if ( ( n == 0 ) || ( GetLastError () == ERROR_INSUFFICIENT_BUFFER ) )
-        {
-        free (psPath);
-        return NULL;
-        }
-    return psPath;
-#endif
-    }
-
-int memu (int argc, const char *argv[]);
-
-int main (int argc, const char *argv[])
-    {
-    if ( argc == 1 )
-        {
-        char *psExe = cfg_exe_path ();
-        if ( psExe != NULL )
-            {
-#ifdef WIN32
-            char *psDEnd = strrchr (psExe, '\\');
-#else
-            char *psDEnd = strrchr (psExe, '/');
-#endif
-            if ( psDEnd != NULL )
-                {
-                char *psCfg;
-                *(psDEnd + 1) = '\0';
-                psCfg = malloc (strlen (psExe) + 8);
-                if ( psCfg != NULL )
-                    {
-                    strcpy (psCfg, psExe);
-                    strcat (psCfg, "memu.cfg");
-                    if ( cfg_test_file (psCfg) )
-                        {
-                        const char **argn = malloc (3 * sizeof (char *));
-                        if ( argn != NULL )
-                            {
-                            argn[0] = argv[0];
-                            argn[1] = estrdup ("-config-file");
-                            argn[2] = psCfg;
-                            argc = 3;
-                            argv = argn;
-                            }
-                        else
-                            {
-                            free (psCfg);
-                            }
-                        }
-                    }
-                }
-            free (psExe);
-            }
-        }
-    return memu (argc, argv);
-    }
-#endif

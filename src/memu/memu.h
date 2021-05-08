@@ -75,20 +75,17 @@ extern "C"
     {
 #endif
 
-#ifdef ALT_ENTRY
-extern int ALT_ENTRY (int argc, const char *argv[]);
-#else
-extern int main (int argc, const char *argv[]);
-#endif
-
+extern int memu (int argc, const char *argv[]);
 extern void OutZ80_bad(const char *hardware, word port, byte value, BOOLEAN stop);
 extern byte InZ80_bad(const char *hardware, word port, BOOLEAN stop);
 extern void memu_reset(void);
 extern void usage(const char *psErr);
+extern void unimplemented (const char *psErr);
 extern void RaiseInt (const char *psSource);
 extern unsigned long long get_Z80_clocks (void);
 extern void tape_patch (BOOLEAN bPatch);
 extern int read_file(const char *fn, byte *buf, int buflen);
+extern void show_instruction (void);
     
 #include "Z80.h"
 extern Z80 *get_Z80_regs (void);
