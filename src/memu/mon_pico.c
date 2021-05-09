@@ -134,3 +134,9 @@ void mon_term(void)
     diag_message (DIAG_ALWAYS, "mon_term");
     display_vdp ();
     }
+
+void mon_max_scale (int *pxscl, int *pyscl)
+    {
+    *pxscl = 1;
+    *pyscl = 2;
+    }

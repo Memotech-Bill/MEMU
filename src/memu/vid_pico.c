@@ -564,3 +564,9 @@ void vid_reset (void)
 void vid_term(void)
     {
     }
+
+void vid_max_scale (int *pxscl, int *pyscl)
+    {
+    *pxscl = 2;
+    *pyscl = 2;
+    }

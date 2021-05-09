@@ -207,7 +207,11 @@ char * make_path (const char *psDir, const char *psFile)
     if ( n > 0 )
         {
         char ch = psPath[n - 1];
-        if (( ch != '/' ) && ( ch != '\\' ))  strcat (psPath, "/");
+        if (( ch != '/' ) && ( ch != '\\' ))
+            {
+            strcat (psPath, "/");
+            ++n;
+            }
         }
     strcpy (&psPath[n], psFile);
     return  psPath;

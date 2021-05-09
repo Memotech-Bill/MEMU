@@ -15,7 +15,9 @@ dirt.c - Directory Traversal - Circle FatFS system
 #include <fatfs/ff.h>
 #define	DIRT_C
 #include "dirt.h"
+#ifndef NULL
 #define NULL    0
+#endif
 
 /*...vdirt\46\h:0:*/
 /*...e*/
