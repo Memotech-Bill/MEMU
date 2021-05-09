@@ -22,9 +22,9 @@ progress to re-integrate versions for other platforms. It currently includes ver
 This version of the code is very much a work in progress as new ports are merged. There are
 probably bugs, and there is certainly diagnostic code.
 
-For build and usage information, see the [documentation]{docs.index.html}.
+For build and usage information, see the [documentation](docs/index.html).
 
-![MEMU on a Pico]{docs/MEMU_Pico.jpg}
+![MEMU on a Pico](docs/MEMU_Pico.jpg)
 
 ## Licence
 
