@@ -18,6 +18,7 @@ progress to re-integrate versions for other platforms. It currently includes ver
 * Raspberry Pi Pico: A cut-down version due to Pico capacity limits.
 * Linux X-Window: Displays in multiple windows.
 * Linux Framebuffer: No GUI required. One display at a time, full-screen.
+* Microsoft Windows: Does not have DART or Network emulation.
 
 This version of the code is very much a work in progress as new ports are merged. There are
 probably bugs, and there is certainly diagnostic code.
