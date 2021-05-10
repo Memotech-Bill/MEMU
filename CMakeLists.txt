@@ -64,7 +64,6 @@ elseif("${TARGET}" STREQUAL "XWin")
     -DALT_KEYPRESS=test_cfg_key
     -DALT_OPTIONS=cfg_options
     -DALT_USAGE=cfg_usage
-    -DDEBUG
     -DUNIX
     -DHAVE_AUTOTYPE
     -DHAVE_CFX2
@@ -109,7 +108,6 @@ elseif("${TARGET}" STREQUAL "FBuf")
     -DALT_KEYPRESS=test_cfg_key
     -DALT_OPTIONS=cfg_options
     -DALT_USAGE=cfg_usage
-    -DDEBUG
     -DUNIX
     -DHAVE_CFX2
     -DHAVE_CONSOLE
@@ -144,6 +142,49 @@ elseif("${TARGET}" STREQUAL "FBuf")
       m
       )
   endif()
+
+elseif("${TARGET}" STREQUAL "Win")
+  set(src_defs
+    -D_CRT_SECURE_NO_WARNINGS
+    -DLSB_FIRST
+    -DDYNAMIC_ROMS
+    -DALT_KEYPRESS=test_cfg_key
+    -DALT_OPTIONS=cfg_options
+    -DALT_USAGE=cfg_usage
+    -DWIN32
+    -DHAVE_AUTOTYPE
+    -DHAVE_CFX2
+    -DHAVE_CONSOLE
+    -DHAVE_DISASS
+    -DHAVE_JOY
+    -DHAVE_OSFS
+    -DHAVE_SID
+    -DHAVE_SPEC
+    -DHAVE_UI
+    -DHAVE_VDEB
+    -DHAVE_VGA
+    -DZ80_DEBUG
+    )
+    
+    project(memu C)
+    
+    add_executable(memu-win)
+
+    add_subdirectory(portaudio EXCLUDE_FROM_ALL)
+    
+    #  add_compile_options(-g)
+    #  add_link_options(-L/usr/lib/X11/lib)
+    
+    target_compile_definitions(memu-win PUBLIC ${src_defs})
+    
+    target_link_libraries(memu-win PUBLIC
+      memu_src
+      Z80_emu
+      portaudio
+      winmm
+      dinput8
+      Shcore
+      )
   
 endif()
 

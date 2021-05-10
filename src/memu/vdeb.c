@@ -129,7 +129,7 @@ static void vdeb_print (int iRow, int iCol, int iSty, const char *psTxt, int nCh
     int  ch;
     byte by;
     int  iScan, iPix, iCh;
-    if ( nCh <= 0 )   nCh   =  strlen (psTxt);
+    if ( nCh <= 0 )   nCh   =  (int) strlen (psTxt);
 
     for ( iScan = 0; iScan < GLYPH_HEIGHT; ++iScan )
         {
@@ -197,7 +197,7 @@ static int vdeb_key (void)
 //  Edit a line of text - exit on return or escape
 static int vdeb_edit (int iRow, int iCol, int nWth, int iSty, int nLen, char *psText, PVALID vld)
     {
-    int  nCh    =  strlen (psText);
+    int  nCh    =  (int) strlen (psText);
     int  iCsr   =  0;
     int  iScl   =  0;
     int  wk;
@@ -311,7 +311,7 @@ BOOLEAN HexVal (const char *psHex, int *pval)
 BOOLEAN GetHex (const char *psPrpt, int nHex, int *pval)
     {
     char sHex[5];
-    int nPr = strlen (psPrpt);
+    int nPr = (int) strlen (psPrpt);
     int wk;
     sHex[0] = '\0';
     vdeb_print (ROW_PR, COL_R, STY_NORMAL, psPrpt, nPr);
@@ -324,7 +324,7 @@ BOOLEAN GetHex (const char *psPrpt, int nHex, int *pval)
 BOOLEAN GetBreakLoc (const char *psPrpt, int *paddr, int *piob)
     {
     char sHex[8];
-    int nPr = strlen (psPrpt);
+    int nPr = (int) strlen (psPrpt);
     int wk;
     sHex[0] = '\0';
     vdeb_print (ROW_PR, COL_R, STY_NORMAL, psPrpt, nPr);
@@ -505,7 +505,7 @@ BOOLEAN BreakCond (BREAK *pbrk, const char *psCond)
     if ( *psCond == '\0' ) return TRUE;
     for ( i = 0; i < sizeof (psTest) / sizeof (psTest[0]); ++i )
         {
-        int n = strlen (psTest[i]);
+        int n = (int) strlen (psTest[i]);
         if ( strncmp (psCond, psTest[i], n) == 0 )
             {
             int val;

@@ -203,7 +203,7 @@ char * make_path (const char *psDir, const char *psFile)
     {
     char *psPath   =  emalloc (strlen (psDir) + strlen (psFile) + 2);
     strcpy (psPath, psDir);
-    int n = strlen (psPath);
+    int n = (int) strlen (psPath);
     if ( n > 0 )
         {
         char ch = psPath[n - 1];

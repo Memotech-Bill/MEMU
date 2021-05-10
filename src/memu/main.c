@@ -8,6 +8,8 @@
 #ifdef WIN32
 #define BOOLEAN BOOLEANx
 #include <windows.h>
+#include <direct.h>
+#define chdir(x) _chdir(x)
 #undef BOOLEAN
 #else
 #include <unistd.h>

@@ -68,7 +68,7 @@ static unsigned ptr[N_SIDISC] =
 	0
 	};
 
-static unsigned size[N_SIDISC] =
+static size_t size[N_SIDISC] =
 	{
 	SIDISC_SIZE,
 	SIDISC_SIZE,

@@ -227,7 +227,7 @@ static void cfx2_seek (void)
 
 static void cfx2_read (void)
     {
-    unsigned int nbyte = fread (sector, 1, LEN_SECTOR, pfImage[part]);
+    unsigned int nbyte = (unsigned int) fread (sector, 1, LEN_SECTOR, pfImage[part]);
     diag_message (DIAG_SDXFDC_HW, "CFX2 read %d bytes from sector %d", nbyte, lba);
     cfx_dump ();
     /* When formatting a new partition, need to be able to "read" not yet initialised sectors - so no error
@@ -255,7 +255,7 @@ void cfx2_out (word port, byte value)
                 status |= STA_BUSY;
                 if ( ++addr == LEN_SECTOR )
                     {
-                    unsigned int nbyte = fwrite (sector, 1, LEN_SECTOR, pfImage[part]);
+                    unsigned int nbyte = (unsigned int) fwrite (sector, 1, LEN_SECTOR, pfImage[part]);
                     diag_message (DIAG_SDXFDC_HW, "CFX2 write %d bytes to sector %d", nbyte, lba);
                     cfx_dump ();
                     if ( nbyte != LEN_SECTOR )

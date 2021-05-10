@@ -12,6 +12,7 @@
         <ul>
           <li><a href="#Build-Pico">Raspberry Pi Pico Build</a></li>
           <li><a href="#Build-Linux">Linux Build</a></li>
+          <li><a href="#Build-Windows">Windows Build</a></li>
         </ul>
       </li>
       <li><a href="#Usage">Usage</a>
@@ -53,6 +54,8 @@
         dialogs.</li>
       <li>Linux Framebuffer: This does not require a GUI. Instead each display is shown
         full-screen and it is necessary to toggle between screens.</li>
+      <li>Microsoft Windows: A version for Microsoft Windows with most of the additional
+        features.</li>
     </ul>
     <p>An earlier version of this fork can be found
       <a href="http://primrosebank.net/computers/mtx/emulators/Bills_MEMU_ds.htm">here</a>.
@@ -63,8 +66,6 @@
         to real hardware.</li>
       <li>Bare Metal Pi: Uses the <a href="https://github.com/rsta2/circle">Circle</a>
         library to produce versions of MEMU that run bare-metal on a Raspberry Pi.</li>
-      <li>Microsoft Windows: A version for Microsoft Windows with most of the additional
-        features.</li>
     </ul>
     <p>It is intended to eventually merge all the code from the earlier version into this
       release. As a result, this code is very much a work in progress.</p>
@@ -181,6 +182,33 @@
       will either be in the root of the build folder, or in the "src/memu" sub-folder.
       Copy the executable into the root of the "run_time" folder.</p>
 
+    <h3 id="Build-Windows">Windows Build</h3>
+    <p>Requirements:</p>
+    <ul>
+      <li>A C compiler - It has been tested with the "Community Edition" of
+        <a href="https://visualstudio.microsoft.com/vs/features/cplusplus/">
+          Microsoft Visual Studio</a></li>
+      <li><a href="https://cmake.org/download/">CMake for Windows</a></li>
+      <li><a href="http://files.portaudio.com/download.html">PortAudio</a> source code</li>
+    </ul>
+
+    <p>Download the MEMU source code:</p>
+    <pre><code>
+        git clone https://github.com/Memotech-Bill/MEMU.git
+        cd MEMU
+    </code></pre>
+
+    <p>Download and extract the PortAudio source code. Put the "portaudio" folder inside
+      the "MEMU" folder (alongside the "docs", "run-time" and "src" folders). Then, from
+      the MEMU folder:</p>
+    <pre><code>
+        mkdir build-win
+        cd build-win
+        cmake -DTARGET=Win ..
+        cmake --build . --config Release
+    </code></pre>
+    <p>Copy the "memu-win.exe" and "portaudioXXX.dll" files into the "run-time" folder</p>
+
     <h2 id="Usage">Usage</h2>
     <h3 id="Usage-Basic">Basic Usage</h3>
     <p>If MEMU is started without any command line arguments, it will usually start in whichever
@@ -224,7 +252,8 @@
       <dt>Keyboard Remapping</dt>
       <dd>Remapping adjusts for differences between the Memotech keyboard layout and modern
         keyboards. It is usually most convenient to have remapping enabled, but this will
-        not work for programs with their own keyboard drivers.</dd>
+        not work for programs with their own keyboard drivers. See the section
+        <a href="#Keyboard">Keyboard</a> for more details.</dd>
       <dt>Sound</dt>
       <dd>Generation of sound may be turned on or off.</dd>
       <dt>Tapes</dt>

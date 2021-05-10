@@ -183,4 +183,48 @@ elseif("${TARGET}" STREQUAL "FBuf")
       )
     
   endif ()
+
+elseif("${TARGET}" STREQUAL "Win")
+  set (win_src
+      ${CMAKE_CURRENT_LIST_DIR}/cfgwin.c
+      ${CMAKE_CURRENT_LIST_DIR}/cfx2.c
+      ${CMAKE_CURRENT_LIST_DIR}/common.c
+      ${CMAKE_CURRENT_LIST_DIR}/config.c
+      ${CMAKE_CURRENT_LIST_DIR}/cpm.c
+      ${CMAKE_CURRENT_LIST_DIR}/ctc.c
+      ${CMAKE_CURRENT_LIST_DIR}/diag.c
+      ${CMAKE_CURRENT_LIST_DIR}/dirt_w32.c
+      ${CMAKE_CURRENT_LIST_DIR}/dis.c
+      ${CMAKE_CURRENT_LIST_DIR}/joy_w32.c
+      ${CMAKE_CURRENT_LIST_DIR}/kbd2.c
+      ${CMAKE_CURRENT_LIST_DIR}/main.c
+      ${CMAKE_CURRENT_LIST_DIR}/mem.c
+      ${CMAKE_CURRENT_LIST_DIR}/memu.c
+      ${CMAKE_CURRENT_LIST_DIR}/mon.c
+      ${CMAKE_CURRENT_LIST_DIR}/monprom.c
+      ${CMAKE_CURRENT_LIST_DIR}/printer.c
+      ${CMAKE_CURRENT_LIST_DIR}/rom_os.c
+      ${CMAKE_CURRENT_LIST_DIR}/rom_assem.c
+      ${CMAKE_CURRENT_LIST_DIR}/rom_basic.c
+      ${CMAKE_CURRENT_LIST_DIR}/rom_boot_type07.c
+      ${CMAKE_CURRENT_LIST_DIR}/rom_sdx_type07.c
+      ${CMAKE_CURRENT_LIST_DIR}/sdxfdc.c
+      ${CMAKE_CURRENT_LIST_DIR}/sid.c
+      ${CMAKE_CURRENT_LIST_DIR}/snd.c
+      ${CMAKE_CURRENT_LIST_DIR}/spec.c
+      ${CMAKE_CURRENT_LIST_DIR}/tape.c
+      ${CMAKE_CURRENT_LIST_DIR}/ui.c
+      ${CMAKE_CURRENT_LIST_DIR}/vdeb.c
+      ${CMAKE_CURRENT_LIST_DIR}/vga.c
+      ${CMAKE_CURRENT_LIST_DIR}/vid.c
+      ${CMAKE_CURRENT_LIST_DIR}/win_w32.c
+      )
+    
+    add_library(memu_src INTERFACE)
+    
+    target_include_directories(memu_src INTERFACE
+      ${CMAKE_CURRENT_LIST_DIR}
+      )
+    
+    target_sources(memu_src INTERFACE ${win_src})
 endif()

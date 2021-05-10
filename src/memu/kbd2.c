@@ -859,7 +859,7 @@ void kbd_periodic (void)
             diag_message (DIAG_KBD_AUTO_TYPE, "auto-type file");
             if ( fgets (autotype_line, L_LINE, fp) != NULL )
                 {
-                int len = strlen (autotype_line);
+                int len = (int) strlen (autotype_line);
                 if ( len > 0 )
                     {
                     if ( autotype_line[len-1] == '\n' ) autotype_line[len-1] = '\r';

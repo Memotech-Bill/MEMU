@@ -413,7 +413,7 @@ static void search_build(void)
 		fatal("can't search directory %s: %s", drive_a, dirt_error(rc));
 	while ( (filename = dirt_next(dirt)) != NULL )
 		{
-		int len = strlen(filename);
+		int len = (int) strlen(filename);
 		if ( len >= 1 && filename[len-1] != '.' )
 			/* Must be careful not to include files ending
 			   with a ., because CP/M files with just a filename
@@ -926,7 +926,7 @@ static void bdos_read_next_record(Z80 *r)
 		else
 			{
 			byte buf[128];
-			long n = fread(buf, 1, 128, openfile->fp);
+			long n = (long) fread(buf, 1, 128, openfile->fp);
 			if ( n <= 0 )
 				{
 				r->AF.B.h = 0x01; /* end of file */
@@ -984,7 +984,7 @@ static void bdos_write_next_record(Z80 *r)
 			byte buf[128];
 			long n;
 			mem_read_block(dma_addr, 128, buf);
-			n = fwrite(buf, 1, 128, openfile->fp);
+			n = (long) fwrite(buf, 1, 128, openfile->fp);
 			if ( n < 128 )
 				{
 				r->AF.B.h = 0x02; /* disk full */
@@ -1164,7 +1164,7 @@ static void bdos_read_random_record(Z80 *r)
 		else
 			{
 			byte buf[128];
-			long n = fread(buf, 1, 128, openfile->fp);
+			long n = (long) fread(buf, 1, 128, openfile->fp);
 			if ( n <= 0 )
 				{
 				r->AF.B.h = 0x01; /* end of file */
@@ -1221,7 +1221,7 @@ static void bdos_write_random_record(Z80 *r)
 			byte buf[128];
 			long n;
 			mem_read_block(dma_addr, 128, buf);
-			n = fwrite(buf, 1, 128, openfile->fp);
+			n = (long) fwrite(buf, 1, 128, openfile->fp);
 			if ( n < 128 )
 				{
 				r->AF.B.h = 0x02; /* disk full */
@@ -1696,7 +1696,7 @@ void cpm_set_invert_case(void)
 /*...scpm_set_tail:0:*/
 void cpm_set_tail(const char *tail)
 	{
-	int n = strlen(tail);
+	int n = (int) strlen(tail);
 
 	if ( n > 126 )
 		fatal("CP/M command tail too long");

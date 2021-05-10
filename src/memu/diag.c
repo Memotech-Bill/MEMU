@@ -175,7 +175,7 @@ static FLAGVAL flagvals[] =
 BOOLEAN diag_flag_of(const char *s)
 	{
 	int i;
-    int n = strlen (s);
+    int n = (int) strlen (s);
 	BOOLEAN found = FALSE;
 	if ( !strcmp (s, "all") )
 		{

@@ -53,7 +53,7 @@ extern CFG cfg;
 static TapeFmt tape_identify (const char *psFile)
     {
     const char *psExt;
-    int nCh = strlen (psFile);
+    int nCh = (int) strlen (psFile);
     if ( nCh < 3 ) return fmtUnk;
     psExt = &psFile[nCh-3];
     if ( ! strcasecmp (psExt, "mtx") ) return fmtMTX;
@@ -102,17 +102,17 @@ static float tape_read_wav (void)
         switch (fmtIn)
             {
             case fmtW08:
-                nRead = fread (&by, sizeof (by), 1, pfTapeIn);
+                nRead = (int) fread (&by, sizeof (by), 1, pfTapeIn);
                 // diag_message (DIAG_TAPE, "Channel %d byte = %d", iChan, by);
                 fVal += (float) (by / 128.0 - 1.0);
                 break;
             case fmtW16:
-                nRead = fread (&wd, sizeof (wd), 1, pfTapeIn);
+                nRead = (int) fread (&wd, sizeof (wd), 1, pfTapeIn);
                 // diag_message (DIAG_TAPE, "Channel %d word = %d", iChan, wd);
                 fVal += (float) (wd / 32768.0);
                 break;
             case fmtW32:
-                nRead = fread (&f, sizeof (f), 1, pfTapeIn);
+                nRead = (int) fread (&f, sizeof (f), 1, pfTapeIn);
                 fVal += f;
                 // diag_message (DIAG_TAPE, "Channel %d float = %f", iChan, by);
                 break;

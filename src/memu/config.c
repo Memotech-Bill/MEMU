@@ -217,7 +217,7 @@ static void cfg_help (const char *psHelp)
 //  Edit a line of text - exit on return or escape
 static int cfg_edit (int iRow, int iCol, int nWth, int iSty, int nLen, char *psText)
     {
-    int  nCh    =  strlen (psText);
+    int  nCh    =  (int) strlen (psText);
     int  iCsr   =  0;
     int  iScl   =  0;
     int  wk;
@@ -652,7 +652,7 @@ static int cfg_choose (int iRowChoose, int nItem, char **ppsItem)
     cfg_help ("Cursor keys to move highlight, <Space> to select, <Esc> to cancel");
     for ( i = 0; i < nItem; ++i )
         {
-        nLen  =  strlen (ppsItem[i]);
+        nLen  =  (int) strlen (ppsItem[i]);
         if ( nLen > nLenMax )   nLenMax  =  nLen;
         }
     if ( nLenMax + 2 < WINCFG_WTH )  nCol  =  WINCFG_WTH / ( nLenMax + 2 );
@@ -733,8 +733,8 @@ static BOOLEAN cfg_match_ext (int nExt, const char *psExt, const char *psFile)
     if ( nExt == 0 ) return TRUE;
     for ( iExt = 0; iExt < nExt; ++iExt )
         {
-        int nExt =  strlen (psExt);
-        int nCh  =  strlen (psFile);
+        int nExt =  (int) strlen (psExt);
+        int nCh  =  (int) strlen (psFile);
         if ( ( nCh > nExt ) && ( strcasecmp (&psFile[nCh-nExt], psExt) == 0 ) )
             {
             bMatch = TRUE;
@@ -760,13 +760,13 @@ static char *cfg_new_file (int iRowChoose, const char *psDir, int nExt, const ch
     if ( wk == WK_Return )
         {
         FILE  *pfil;
-        int   nFile =  strlen (sFile);
-        int   nExt  =  strlen (psExt);
+        int   nFile =  (int) strlen (sFile);
+        int   nExt  =  (int) strlen (psExt);
         if ( ! cfg_match_ext (nExt, psExt, sFile) )
             {
             if ( nFile + nExt > MAX_PATH - 1 )  strcpy (&sFile[MAX_PATH - 1 - nExt], psExt);
             else                                strcpy (&sFile[nFile], psExt);
-            nFile =  strlen (sFile);
+            nFile =  (int) strlen (sFile);
             }
         psPath  = make_path (psDir, sFile);
         pfil    = fopen (psPath, "wb");
@@ -857,7 +857,7 @@ static const char *cfg_choose_file (int iRowChoose, const char *psDir, int nExt,
 static void file_draw (int iRow, const char *psTitle, const char *psFile, int iState)
     {
     char sLine[WINCFG_WTH+1];
-    int  nCh =  strlen (psTitle);
+    int  nCh =  (int) strlen (psTitle);
     strcpy (sLine, psTitle);
     if ( psFile != NULL )
         {
@@ -1240,7 +1240,7 @@ static void cfg_get_drive (int iDrive, const char **ppsDir, const char **ppsFile
         if ( ps2 != NULL )
             {
             char *ps3;
-            int   nDir  =  ps2 - ps1;
+            int   nDir  =  (int) (ps2 - ps1);
             if ( *ppsDir != NULL ) free ((void *) *ppsDir);
             ps3  =  (char *) emalloc (nDir + 1);
             strncpy (ps3, ps1, nDir);

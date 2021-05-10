@@ -308,7 +308,7 @@ static void CodesCB( Z80 *R)
       if(R->TrapBadOps)
           diag_message (DIAG_Z80_INSTRUCTIONS,
           "[Z80 %lX] Unrecognized instruction: CB %02X at PC=%04X\n",
-          (long)(R->User),RdZ80(R->PC.W-1),R->PC.W-2
+              /* (long)(R->User) */ 0,RdZ80(R->PC.W-1),R->PC.W-2
         );
   }
 }
@@ -329,7 +329,7 @@ static void CodesDDCB( Z80 *R)
       if(R->TrapBadOps)
           diag_message (DIAG_Z80_INSTRUCTIONS,
           "[Z80 %lX] Unrecognized instruction: DD CB %02X %02X at PC=%04X\n",
-          (long)(R->User),RdZ80(R->PC.W-2),RdZ80(R->PC.W-1),R->PC.W-4
+              /* (long)(R->User) */ 0,RdZ80(R->PC.W-2),RdZ80(R->PC.W-1),R->PC.W-4
         );
   }
 #undef XX
@@ -351,7 +351,7 @@ static void CodesFDCB( Z80 *R)
       if(R->TrapBadOps)
           diag_message (DIAG_Z80_INSTRUCTIONS,
           "[Z80 %lX] Unrecognized instruction: FD CB %02X %02X at PC=%04X\n",
-          (long)R->User,RdZ80(R->PC.W-2),RdZ80(R->PC.W-1),R->PC.W-4
+          /* (long)R->User */ 0,RdZ80(R->PC.W-2),RdZ80(R->PC.W-1),R->PC.W-4
         );
   }
 #undef XX
@@ -373,7 +373,7 @@ static void CodesED( Z80 *R)
       if(R->TrapBadOps)
           diag_message (DIAG_Z80_INSTRUCTIONS,
           "[Z80 %lX] Unrecognized instruction: ED %02X at PC=%04X\n",
-          (long)R->User,RdZ80(R->PC.W-1),R->PC.W-2
+          /* (long)R->User */ 0,RdZ80(R->PC.W-1),R->PC.W-2
         );
   }
 }
@@ -406,7 +406,7 @@ static void CodesDD( Z80 *R)
       if(R->TrapBadOps)
           diag_message (DIAG_Z80_INSTRUCTIONS,
           "[Z80 %lX] Unrecognized instruction: DD %02X at PC=%04X\n",
-          (long)R->User,RdZ80(R->PC.W-1),R->PC.W-2
+          /* (long)R->User */ 0,RdZ80(R->PC.W-1),R->PC.W-2
         );
   }
 #undef XX
@@ -489,7 +489,7 @@ word ExecZ80(Z80 *R)
       if(R->TrapBadOps)
           diag_message (DIAG_Z80_INSTRUCTIONS,
           "[Z80 %lX] Unrecognized instruction: %02X at PC=%04X\n",
-          (long)R->User,RdZ80(R->PC.W-1),R->PC.W-1
+          /* (long)R->User */ 0,RdZ80(R->PC.W-1),R->PC.W-1
     );
   break;
   }

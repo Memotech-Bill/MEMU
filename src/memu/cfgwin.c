@@ -48,7 +48,7 @@ void cfg_print (int iRow, int iCol, int iSty, const char *psTxt, int nCh)
     int  ch;
     byte by;
     int  iScan, iPix, iCh;
-    if ( nCh <= 0 )   nCh   =  strlen (psTxt);
+    if ( nCh <= 0 )   nCh   =  (int) strlen (psTxt);
 
     for ( iScan = 0; iScan < GLYPH_HEIGHT; ++iScan )
         {
