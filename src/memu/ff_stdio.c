@@ -9,6 +9,7 @@
 #ifdef ALT_PRINTF
 void ALT_PRINTF (const char *ps);
 #endif
+void fatal (const char *ps);
 
 // #define DEBUG
 
@@ -20,12 +21,13 @@ void fio_mount (void)
     printf ("Mount FatFS\n");
 #endif
     FRESULT fr = f_mount (&vol, "0:", 1);
+    if ( fr != FR_OK ) fatal ("Failed to mount SD Card");
 #ifdef DEBUG
     printf ("fr = %d\n", fr);
 #endif
     }
 
-const char * MakeString (const char *fmt, va_list va)
+static const char * MakeString (const char *fmt, va_list va)
     {
     static char sErr[] = "No space";
     static char *psBuff = NULL;

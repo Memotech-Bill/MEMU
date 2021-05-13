@@ -920,6 +920,7 @@ static BOOLEAN row_tout_key (int info, int wk)
     return   file_key (cfg.tape_name_prefix, bTapeAudio ? 2 : 1, ".mtx\0.wav", TRUE, &psTapeOut, wk);
     }
 
+#ifdef HAVE_SID
 static BOOLEAN cfg_match_fn (const char *psPath1, const char *psPath2)
     {
     const char *psFN1;
@@ -944,7 +945,6 @@ static BOOLEAN cfg_match_fn (const char *psPath1, const char *psPath2)
     }
 
 //  Display drive option selection
-#ifdef HAVE_SID
 static void cfg_clear_sid (void)
     {
     int iDrv;

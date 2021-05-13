@@ -369,28 +369,28 @@ static const char *get_tape_name(word addr, const char *fn_prefix, char *fn_buf)
 		{
 		strcpy(p, fn_prefix);
 		strcat(p, "/");
-        printf ("Tape prefix: %s\n", fn_buf);
+        // printf ("Tape prefix: %s\n", fn_buf);
 		p += strlen(fn_buf);
 		}
 	for ( i = 0; i < 15; i++ )
 		p[i] = mem_read_byte(addr+i);
 	while ( i > 0 && p[i-1] == ' ' )
 		--i;
-    printf ("MTX name length = %d\n", i);
+    // printf ("MTX name length = %d\n", i);
 	if ( i > 0 )
         {
 		strcpy(p+i, ".mtx");
         }
 	else if ( cfg.tape_fn != NULL )
         {
-        printf ("cfg.tape_fn = %s\n", cfg.tape_fn);
+        // printf ("cfg.tape_fn = %s\n", cfg.tape_fn);
 		strcpy(p, cfg.tape_fn);
         }
 	else
         {
 		strcpy(p, "default.mtx");
         }
-    printf ("fn_buf = %s\n", fn_buf);
+    // printf ("fn_buf = %s\n", fn_buf);
 	return fn_buf;
 	}
 /*...e*/

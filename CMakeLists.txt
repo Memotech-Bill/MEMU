@@ -1,9 +1,8 @@
-
 set(CMAKE_C_STANDARD 11)
-set(CMAKE_CXX_STANDARD 17)
 
 if("${TARGET}" STREQUAL "Pico")
   cmake_minimum_required(VERSION 3.12)
+  set(CMAKE_CXX_STANDARD 17)
   
   set(PICO_BOARD vgaboard)
 
@@ -37,10 +36,6 @@ if("${TARGET}" STREQUAL "Pico")
     -DALT_USAGE=cfg_usage
     -DROM_PATCH_KBD
     -DROM_PATCH_TAPE
-    )
-
-  target_include_directories(memu-pico PUBLIC
-    ${CMAKE_CURRENT_LIST_DIR}
     )
 
   pico_enable_stdio_uart(memu-pico 0)
@@ -185,7 +180,131 @@ elseif("${TARGET}" STREQUAL "Win")
       dinput8
       Shcore
       )
-  
+
+elseif("${TARGET}" STREQUAL "Circle")
+  cmake_minimum_required(VERSION 3.16)
+  set(CMAKE_CXX_STANDARD 14)
+
+  project(memu C CXX ASM)
+
+  set(CIRCLE_DIR ${CMAKE_CURRENT_LIST_DIR}/../circle)
+
+  set(CMAKE_LINKER ld)
+  set(CMAKE_CXX_LINK_EXECUTABLE
+    "<CMAKE_LINKER> -o <TARGET> <LINK_FLAGS> <OBJECTS> --start-group <LINK_LIBRARIES> --end-group")
+
+  if (${RPI} EQUAL 1)
+    set(ARCH -DAARCH=32 -mcpu=arm1176jzf-s -marm -mfpu=vfp -mfloat-abi=hard)
+    add_compile_definitions(RASPPI=1)
+    set(KERNEL kernel.img)
+  elseif (${RPI} EQUAL 2)
+    set(ARCH -DAARCH=32 -mcpu=cortex-a7 -marm -mfpu=neon-vfpv4 -mfloat-abi=hard)
+    add_compile_definitions(RASPPI=2)
+    set(KERNEL kernel7.img)
+  elseif (${RPI} EQUAL 3)
+    set(ARCH -DAARCH=32 -mcpu=cortex-a53 -marm -mfpu=neon-fp-armv8 -mfloat-abi=hard)
+    add_compile_definitions(RASPPI=3)
+    set(KERNEL kernel8-32.img)
+  elseif (${RPI} EQUAL 4)
+    set(ARCH -DAARCH=32 -mcpu=cortex-a72 -marm -mfpu=neon-fp-armv8 -mfloat-abi=hard)
+    add_compile_definitions(RASPPI=4)
+    set(KERNEL kernel7l.img)
+  endif()
+
+  add_compile_definitions(__circle__)
+  add_compile_options(${ARCH})
+  # add_compile_options(-nostdinc)
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions>)
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>)
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-nostdinc++>)
+  add_compile_options(-O2)
+  add_compile_options(-Wall -fsigned-char -ffreestanding)
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-std=c++14>)
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-aligned-new>)
+  add_link_options(--section-start=.init=0x8000)
+  add_link_options(-T ${CIRCLE_DIR}/circle.ld)
+  add_compile_definitions(
+    STDLIB_SUPPORT=1
+	__VCCOREVER__=0x04000000
+    )
+  add_compile_options(
+    -U__unix__
+    -U__linux__
+    )
+
+  execute_process(COMMAND ${CMAKE_C_COMPILER} ${ARCH} -print-file-name=libgcc.a
+                OUTPUT_VARIABLE LIBGCC_PATH
+                OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+  execute_process(COMMAND ${CMAKE_C_COMPILER} ${ARCH} -print-file-name=libm.a
+                OUTPUT_VARIABLE LIBM_PATH
+                OUTPUT_STRIP_TRAILING_WHITESPACE)
+              
+  add_executable(memu-circle)
+
+  #  add_compile_options(-g)
+  #  add_link_options(-g)
+
+  target_compile_definitions(memu-circle PUBLIC
+    -DAARCH=32
+    -D__circle__
+    -DUNIX
+    -DLINUX
+    -DLSB_FIRST
+    -DDYNAMIC_ROMS
+    -DHAVE_AUTOTYPE
+    -DHAVE_CFX2
+    -DHAVE_DISASS
+    -DHAVE_OSFS
+    -DHAVE_SID
+    -DHAVE_SPEC
+    -DHAVE_UI
+    -DHAVE_VDEB
+    -DHAVE_VGA
+	-DALT_EXIT=hw_exit
+    -DALT_INIT=hw_init
+    -DALT_OPTIONS=hw_options
+    -DALT_USAGE=hw_usage
+	-DALT_Z80_OUT=hw_Z80_out
+    -DALT_Z80_IN=hw_Z80_in
+	-DALT_KEYPRESS=test_cfg_key
+    -DALT_KBD_SENSE1=hw_kbd_sense_1
+    -DALT_KBD_SENSE2=hw_kbd_sense_2
+	-DALT_KEYIN=hw_key_scan
+    -DALT_HANDLE_EVENTS=hw_handle_events
+    -DALT_PRINTF=printf_circle
+    -DUSE_VCHIQ_SOUND=1
+    -DZ80_DEBUG
+    )
+
+  include_directories(
+    ${CMAKE_CURRENT_LIST_DIR}/src/circle/include
+    ${CIRCLE_DIR}/include
+    ${CIRCLE_DIR}/addon
+    )
+
+  target_link_libraries(memu-circle PUBLIC
+    memu_src
+    Z80_emu
+    fatfs
+    memu_cir
+    circle_fs
+    circle_sdcard
+    circle_sound
+    circle_vchiq
+    circle_usb
+    circle_input
+    circle_sched
+    circle_linux
+    circle_lib
+    ${LIBM_PATH}
+    ${LIBGCC_PATH}
+    )
+
+  add_custom_command(TARGET memu-circle POST_BUILD
+    COMMAND objcopy memu-circle -O binary ${KERNEL}
+    )
+
 endif()
 
 # Specify the source files

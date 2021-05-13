@@ -30,12 +30,12 @@ typedef struct
 /*...sdirt_open:0:*/
 DIRT *dirt_open(const char *dirname, int *rc)
 	{
-    printf ("dirt_open (%s)\n", dirname);
+    // printf ("dirt_open (%s)\n", dirname);
 	DIRT *dirt;
 	*rc = DIRTE_OK;
 	if ( ( dirt = (DIRT *) malloc (sizeof (DIRT)) ) == NULL )
 		{
-        printf ("No memory\n");
+        // printf ("No memory\n");
 		*rc = DIRTE_NO_MEMORY;
 		return NULL;
 		}
@@ -45,31 +45,31 @@ DIRT *dirt_open(const char *dirname, int *rc)
 		switch ( fr )
 			{
 			case FR_NOT_ENOUGH_CORE:
-                printf ("No memory\n");
+                // printf ("No memory\n");
                 *rc = DIRTE_NO_MEMORY;
                 break;
 			case FR_NO_PATH:
-                printf ("No path\n");
+                // printf ("No path\n");
                 *rc = DIRTE_NOT_FOUND;
                 break;
 			case FR_INVALID_NAME:
             case FR_INVALID_OBJECT:
-                printf ("Invalid name\n");
+                // printf ("Invalid name\n");
                 *rc = DIRTE_NOT_DIRECTORY;
                 break;
 			case FR_DENIED:
-                printf ("Denied\n");
+                // printf ("Denied\n");
 	            *rc = DIRTE_NO_ACCESS;
                 break;
 			default:
-                printf ("General error %d\n", fr);
+                // printf ("General error %d\n", fr);
                 *rc = DIRTE_GEN_ERROR;
                 break;
 			}
 		free (dirt);
 		return NULL;
 		}
-    printf ("Directory opened\n");
+    // printf ("Directory opened\n");
 	return dirt;
 	}
 /*...e*/
@@ -77,21 +77,21 @@ DIRT *dirt_open(const char *dirname, int *rc)
 const char *dirt_next (DIRT *dirt)
 	{
 	static FILINFO fi;
-    printf ("dirt_next\n");
+    // printf ("dirt_next\n");
     FRESULT fr = f_readdir (&(dirt->dir), &fi);
 	if ( ( fr != FR_OK ) || ( fi.fname[0] == '\0' ) )
         {
-        printf ("Not found\n");
+        // printf ("Not found\n");
 		return NULL;
         }
-    printf ("Found: %s\n", fi.fname);
+    // printf ("Found: %s\n", fi.fname);
 	return fi.fname;
 	}
 /*...e*/
 /*...sdirt_close:0:*/
 void dirt_close (DIRT *dirt)
 	{
-    printf ("dirt_close\n");
+    // printf ("dirt_close\n");
 	f_closedir (&(dirt->dir));
 	free(dirt);
 	}

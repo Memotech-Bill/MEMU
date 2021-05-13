@@ -129,3 +129,8 @@ void config_term (void)
 void cfg_set_display (void)
     {
     }
+
+WIN * get_cfg_win (void)
+    {
+    return   cfg_win;
+    }
