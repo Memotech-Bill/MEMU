@@ -82,7 +82,7 @@ elseif("${TARGET}" STREQUAL "XWin")
     add_executable(memu-x)
     
     #  add_compile_options(-g)
-    #  add_link_options(-L/usr/lib/X11/lib)
+    #  add_link_options(-g)
     
     target_compile_definitions(memu-x PUBLIC ${src_defs})
     
@@ -125,7 +125,7 @@ elseif("${TARGET}" STREQUAL "FBuf")
     add_executable(memu-fb)
     
     #  add_compile_options(-g)
-    #  add_link_options(-L/usr/lib/X11/lib)
+    #  add_link_options(-g)
     
     target_compile_definitions(memu-fb PUBLIC ${src_defs})
     
@@ -133,10 +133,63 @@ elseif("${TARGET}" STREQUAL "FBuf")
       memu_src
       Z80_emu
       portaudio
-      X11
       m
       )
   endif()
+
+elseif("${TARGET}" STREQUAL "RPi")
+    
+    project(memu C)
+    
+    add_executable(memu-pi)
+    
+    #  add_compile_options(-g)
+    #  add_link_options(-g)
+
+    target_include_directories(memu-pi PUBLIC
+      /opt/vc/include
+      /opt/vc/include/interface/vcos/pthreads
+      /opt/vc/include/interface/vmcs_host/linux
+      )
+    
+    target_compile_definitions(memu-pi PUBLIC
+    -DLSB_FIRST
+    -DDYNAMIC_ROMS
+    -DALT_HANDLE_EVENTS=hw_handle_events
+    -DALT_KBD_SENSE1=hw_kbd_sense_1
+    -DALT_KBD_SENSE2=hw_kbd_sense_2
+    -DALT_KEYPRESS=test_cfg_key
+    -DALT_OPTIONS=hw_options
+    -DALT_USAGE=hw_usage
+    -DALT_Z80_OUT=hw_Z80_out
+    -DALT_Z80_IN=hw_Z80_in
+    -DUNIX
+    -DHAVE_CFX2
+    -DHAVE_CONSOLE
+    -DHAVE_DART
+    -DHAVE_DISASS
+    -DHAVE_JOY
+    -DHAVE_OSFS
+    -DHAVE_SID
+    -DHAVE_SPEC
+    -DHAVE_UI
+    -DHAVE_VDEB
+    -DHAVE_VGA
+    -DZ80_DEBUG
+    )
+
+  target_link_options(memu-pi PUBLIC -L/opt/vc/lib)
+  
+  target_link_libraries(memu-pi PUBLIC
+    memu_src
+    Z80_emu
+    portaudio
+    bcm_host
+    vcos
+    vchostif
+    vchiq_arm
+    m
+    )
 
 elseif("${TARGET}" STREQUAL "Win")
   set(src_defs
@@ -168,7 +221,7 @@ elseif("${TARGET}" STREQUAL "Win")
     add_subdirectory(portaudio EXCLUDE_FROM_ALL)
     
     #  add_compile_options(-g)
-    #  add_link_options(-L/usr/lib/X11/lib)
+    #  add_link_options(-g)
     
     target_compile_definitions(memu-win PUBLIC ${src_defs})
     
@@ -304,6 +357,9 @@ elseif("${TARGET}" STREQUAL "Circle")
   add_custom_command(TARGET memu-circle POST_BUILD
     COMMAND objcopy memu-circle -O binary ${KERNEL}
     )
+
+else()
+  message(FATAL_ERROR "No valid target specified in MEMU/CMakeLists.txt")
 
 endif()
 

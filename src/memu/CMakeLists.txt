@@ -98,7 +98,7 @@ elseif("${TARGET}" STREQUAL "XWin")
       )
 
     #  add_compile_options(-g)
-    #  add_link_options(-L/usr/lib/X11/lib)
+    #  add_link_options(-g)
 
     target_compile_definitions(memu-x PUBLIC ${src_defs})
     
@@ -171,18 +171,64 @@ elseif("${TARGET}" STREQUAL "FBuf")
       )
 
     #  add_compile_options(-g)
-    #  add_link_options(-L/usr/lib/X11/lib)
+    #  add_link_options(-g)
 
     target_compile_definitions(memu-fb PUBLIC ${src_defs})
     
     target_link_libraries(memu-fb PUBLIC
       Z80_emu
       portaudio
-      X11
       m
       )
     
   endif ()
+
+elseif("${TARGET}" STREQUAL "RPi")
+  
+  add_library(memu_src INTERFACE)
+  
+  target_include_directories(memu_src INTERFACE
+    ${CMAKE_CURRENT_LIST_DIR}
+    )
+  
+  target_sources(memu_src INTERFACE
+    ${CMAKE_CURRENT_LIST_DIR}/cfgwin.c
+    ${CMAKE_CURRENT_LIST_DIR}/cfx2.c
+    ${CMAKE_CURRENT_LIST_DIR}/common.c
+    ${CMAKE_CURRENT_LIST_DIR}/config.c
+    ${CMAKE_CURRENT_LIST_DIR}/cpm.c
+    ${CMAKE_CURRENT_LIST_DIR}/ctc.c
+    ${CMAKE_CURRENT_LIST_DIR}/dart.c
+    ${CMAKE_CURRENT_LIST_DIR}/diag.c
+    ${CMAKE_CURRENT_LIST_DIR}/dirt_unix.c
+    ${CMAKE_CURRENT_LIST_DIR}/dis.c
+    ${CMAKE_CURRENT_LIST_DIR}/gpio.c
+    ${CMAKE_CURRENT_LIST_DIR}/hardware.c
+    ${CMAKE_CURRENT_LIST_DIR}/joy_lin.c
+    ${CMAKE_CURRENT_LIST_DIR}/kbd2.c
+    ${CMAKE_CURRENT_LIST_DIR}/main.c
+    ${CMAKE_CURRENT_LIST_DIR}/mem.c
+    ${CMAKE_CURRENT_LIST_DIR}/memu.c
+    ${CMAKE_CURRENT_LIST_DIR}/mon.c
+    ${CMAKE_CURRENT_LIST_DIR}/monprom.c
+    ${CMAKE_CURRENT_LIST_DIR}/printer.c
+    ${CMAKE_CURRENT_LIST_DIR}/rom_os.c
+    ${CMAKE_CURRENT_LIST_DIR}/rom_assem.c
+    ${CMAKE_CURRENT_LIST_DIR}/rom_basic.c
+    ${CMAKE_CURRENT_LIST_DIR}/rom_boot_type07.c
+    ${CMAKE_CURRENT_LIST_DIR}/rom_sdx_type07.c
+    ${CMAKE_CURRENT_LIST_DIR}/sdxfdc.c
+    ${CMAKE_CURRENT_LIST_DIR}/sid.c
+    ${CMAKE_CURRENT_LIST_DIR}/snd.c
+    ${CMAKE_CURRENT_LIST_DIR}/spec.c
+    ${CMAKE_CURRENT_LIST_DIR}/tape.c
+    ${CMAKE_CURRENT_LIST_DIR}/TxtRead.c
+    ${CMAKE_CURRENT_LIST_DIR}/ui.c
+    ${CMAKE_CURRENT_LIST_DIR}/vdeb.c
+    ${CMAKE_CURRENT_LIST_DIR}/vga.c
+    ${CMAKE_CURRENT_LIST_DIR}/vid.c
+    ${CMAKE_CURRENT_LIST_DIR}/win_vc.c
+    )
 
 elseif("${TARGET}" STREQUAL "Win")
   set (win_src
@@ -275,5 +321,8 @@ elseif("${TARGET}" STREQUAL "Win")
     ${CMAKE_CURRENT_LIST_DIR}/vga.c
     ${CMAKE_CURRENT_LIST_DIR}/win_cir.c
     )
+
+else()
+  message(FATAL_ERROR "No valid target specified in MEMU/src/memu/CMakeLists.txt")
 
 endif()

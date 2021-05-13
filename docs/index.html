@@ -12,6 +12,8 @@
         <ul>
           <li><a href="#Build-Pico">Raspberry Pi Pico Build</a></li>
           <li><a href="#Build-Linux">Linux Build</a></li>
+          <li><a href="#Build-RPi">Raspberry Pi Build</a></li>
+          <li><a href="#Build-Circle">Bare-Metal Raspberry Pi Build</a></li>
           <li><a href="#Build-Windows">Windows Build</a></li>
         </ul>
       </li>
@@ -54,20 +56,13 @@
         dialogs.</li>
       <li>Linux Framebuffer: This does not require a GUI. Instead each display is shown
         full-screen and it is necessary to toggle between screens.</li>
-      <li>Microsoft Windows: Does not have DART or Network emulation.</li>
-    </ul>
-    <p>An earlier version of this fork can be found
-      <a href="http://primrosebank.net/computers/mtx/emulators/Bills_MEMU_ds.htm">here</a>.
-      That version provides support for these additional platforms:</p>
-    <ul>
       <li>Raspberry Pi: Although the Linux versions run perfectly well on Raspberry Pi,
         this version uses the GPU for display updating, and can use the GPIOs to interface
         to real hardware.</li>
       <li>Bare Metal Pi: Uses the <a href="https://github.com/rsta2/circle">Circle</a>
         library to produce versions of MEMU that run bare-metal on a Raspberry Pi.</li>
+      <li>Microsoft Windows: Does not have DART or Network emulation.</li>
     </ul>
-    <p>It is intended to eventually merge all the code from the earlier version into this
-      release. As a result, this code is very much a work in progress.</p>
     <p>The full (Linux) version of MEMU provides just about complete emulation of the
       original hardware, including:</p>
     <ul>
@@ -180,6 +175,68 @@
     <p>Depending upon the age of your version of cmake, the executables "memu-x" or "memu-fb"
       will either be in the root of the build folder, or in the "src/memu" sub-folder.
       Copy the executable into the root of the "run_time" folder.</p>
+
+    <h3 id="Build-RPi">Raspberry Pi Build</h3>
+    <p>This build is intended to be run from an operating system, typically "Raspberry Pi OS".
+      It does not require a GUI, instead it uses the VideoCore IV GPU to display full screen.</p>
+    <p>This build must be done on a Raspberry Pi, as the VideoCore libraries are required.
+      To build this version of MEMU:</p>
+    <pre><code>
+        git clone https://github.com/Memotech-Bill/MEMU.git
+        cd MEMU
+        mkdir build-rpi
+        cd build-rpi
+        cmake -DTARGET=RPi ..
+        make
+    </code></pre>
+    <p>Once built, copy the "memu-pi" executable from the "build-rpi" folder to the root of
+      the "run-time" folder.</p>
+
+    <h3 id="Build-Circle">Bare-Metal Raspberry Pi Build</h3>
+    <p>The bare-metal version of MEMU relies upon the
+      <a href="https://github.com/rsta2/circle">Circle</a> bare-metal programming environment
+      for the Raspberry Pi. It has been tested with release 43.3 of Circle.</p>
+    <p>It is necessary to build a version of MEMU specific to the type of Raspberry Pi it
+      is to run on as outlined in the following table:</p>
+    <table>
+      <tr><td>RPI</td><td>Executable</td><td>Models</td><td>Optimized for</td></tr>
+      <tr><td>1</td><td>kernel.img</td><td>A, B, A+, B+, Zero, (CM)</td><td>ARM1176JZF-S</td></tr>
+      <tr><td>2</td><td>kernel7.img</td><td>2, 3, (CM3)</td><td>Cortex-A7</td></tr>
+      <tr><td>3</td><td>kernel8-32.img</td><td>3, (CM3)</td><td>Cortex-A53</td></tr>
+      <tr><td>4</td><td>kernel7l.img</td><td>4B, 400, CM4</td><td>Cortex-A72</td></tr>
+    </table>
+    <p>To build a Circle version of MEMU, run the following commands, where the ? is
+      replaced by a number (1 to 4) from the first column of the above table, according
+      to the Raspberry Pi version required:</p>
+    <pre><code>
+        git clone https://github.com/Memotech-Bill/MEMU.git
+        git clone https://github.com/rsta2/circle.git
+        cd MEMU
+        mkdir build-circle
+        cd build-circle
+        cmake -DTARGET=Circle -DRPi=? ..
+        make
+    </code></pre>
+    <p>If required it is possible to create multiple build folders (e.g. "build-circle1"
+      to "build-circle4") and build programs for each version of Raspberry Pi.</p>
+    <p>Installation requires an SD or SDHC card formatted with a single FAT partition.
+      Copy the "kernel*.img" file from the build folder into the root folder of the
+      SD card. If images for multiple Raspberry Pi versions have been built, then copy
+      each of them from their respective build folders.</p>
+    <p>It is also necessary to install the required boot support files. To obtain these
+      go to the "boot" folder in the Circle distribution (not the MEMU distribution)
+      and run "make". Then copy the following files from this folder to the root folder
+      of the SD card:</p>
+    <table>
+      <tr><td>bootcode.bin</td><td>boot loader (not used on Raspberry Pi 4)</td></tr>
+      <tr><td>start.elf</td><td>firmware executable for  Raspberry Pi 1-3</td></tr>
+      <tr><td>start4.elf</td><td>firmware executable for  Raspberry Pi 4</td></tr>
+      <tr><td>fixup.dat</td><td>relocation information for start.elf</td></tr>
+      <tr><td>fixup4.dat</td><td>relocation information for start4.elf</td></tr>
+      <tr><td>bcm2711-rpi-4-b.dtb</td><td>device tree binary needed for Raspberry Pi 4</td></tr>
+    </table>
+    <p>Finally, copy the contents of the "MEMU/run-time" folder into the root of the
+      SD card.</p>
 
     <h3 id="Build-Windows">Windows Build</h3>
     <p>Requirements:</p>
@@ -513,6 +570,30 @@
       <dt>-nfx-port-offset off</dt>
       <dd>offset to add to NFX port numbers</dd>
     </dl>
+
+    <p>The Raspberry Pi versions of MEMU (either the with OS or bare-metal versions)
+      may be attached to real hardware: a Memotech keyboard, a Kempston style joystick,
+      or a Centronics printer via the Raspberry Pi GPIO connections. The following option
+      is used to enable this:</p>
+    <dl>
+      <dt>-hw-config filename</dt>
+      <dd>Specifies a seperate filename describing the hardware configuration. The format
+        of this file differs from the other configuration options and is described
+        <a href="Hardware_config.pdf">here</a>.</dd>
+    </dl>
+
+    <p>The Raspberry Pi build has one further option to control the use of the GPU:</p>
+    <dl>
+      <dt>-gpu-mode mode</dt>
+      <dd>Specifies the display upscaling mode to use:
+        <ol>
+          <li>Perform upscaling in software (on the ARM CPU)</li>
+          <li>GPU upscaling with interpolation. This can result in a blurred display</li>
+          <li>GPU upscaling without interpolation. This is the default mode</li>
+        </ol>
+      </dd>
+    </dl>
+    
     <h2 id="Keyboard">Keyboard</h2>
     <img class="centre" src="MTX_Keyboard_100.png" alt="MTX Keyboard layout">
     <p>The layout of the MTX keyboard (illustrated above) differs somewhat from that of
@@ -520,7 +601,7 @@
     <p>The two unlabelled keys either side of the space bar are reset keys. Pressing both
       simultaneously resets the MTX. In MEMU this is emulated by simultaneously pressing
       the &lt;Alt&gt; and &lt;Alt Gr&gt; keys to reset the emulated MTX.</p>
-    <p>On difference that causes a few problems is that there are a few symbols which have
+    <p>One difference that causes a few problems is that there are a few symbols which have
       different shift states compared to modern keyboards. MEMU translates each key press
       into pressing the corresponding key on the emulated MTX keyboard. However, for these
       symbols the wrong shift state will be selected.</p>
@@ -553,8 +634,8 @@
       in the emulation rather than the original keys. The BASIC and CP/M ROMs are patched
       to recognise these new keys. However any programs with their own keyboard drivers
       will not know about these new keys and so will not work properly. Turning off
-      &lt;Scroll Lock&gt; reverts to using the original MTX keys.</p>
-    <p>It is still necessary to press &lt:Shift&gt; to produce a back-quote symbol, but
+      &lt;Scroll Lock&gt; reverts to using the original MTX key mapping.</p>
+    <p>It is still necessary to press &lt;Shift&gt; to produce a back-quote symbol, but
       this is rarely needed.</p>
     <p>The cursor keys on the keyboard are mapped onto the MTX cursor keys as expected,
       and the other navigation keys are:</p>
