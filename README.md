@@ -12,8 +12,8 @@ MEMU is a full featured emulator of the MTX systems originally written by
 Andy Key. Andy's version of MEMU is available for Microsoft Windows or Linux from
 [here](http://www.nyangau.org/memu/memu.htm).
 
-This repository was originally just a port of MEMU to run on a Raspberry Pi Pico. Work is in
-progress to re-integrate versions for other platforms. It currently includes versions for:
+This repository was originally just a port of MEMU to run on a Raspberry Pi Pico.
+It now includes all my current ports of MEMU. It includes versions for:
 
 * Raspberry Pi Pico: A cut-down version due to Pico capacity limits.
 * Linux X-Window: Displays in multiple windows.
@@ -22,11 +22,12 @@ progress to re-integrate versions for other platforms. It currently includes ver
 * Bare-Metal Raspberry Pi: Runs without any operating system using the Circle library.
 * Microsoft Windows: Does not have DART or Network emulation.
 
-This repository now includes all my current ports of MEMU. Work is still needed to clean the code.
-There are probably bugs, and there is certainly diagnostic code.
+Work is still needed to clean the code. There are probably bugs, and there is certainly
+diagnostic code.
 
 For build and usage information, see the [documentation](docs/index.html).
 
+The game "TOADO" on MEMU running on a Raspberry Pi Pico.
 ![MEMU on a Pico](docs/MEMU_Pico.jpg)
 
 ## Licence
