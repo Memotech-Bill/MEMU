@@ -21,7 +21,12 @@ void fio_mount (void)
     printf ("Mount FatFS\n");
 #endif
     FRESULT fr = f_mount (&vol, "0:", 1);
-    if ( fr != FR_OK ) fatal ("Failed to mount SD Card");
+    if ( fr != FR_OK )
+        {
+        char sMsg[80];
+        sprintf (sMsg, "Failed to mount SD Card: FR = %d", fr);
+        fatal (sMsg);
+        }
 #ifdef DEBUG
     printf ("fr = %d\n", fr);
 #endif

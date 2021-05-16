@@ -18,10 +18,12 @@ progress to re-integrate versions for other platforms. It currently includes ver
 * Raspberry Pi Pico: A cut-down version due to Pico capacity limits.
 * Linux X-Window: Displays in multiple windows.
 * Linux Framebuffer: No GUI required. One display at a time, full-screen.
+* Raspberry Pi: A Linux build with the ability to use GPIO to connect additional hardware.
+* Bare-Metal Raspberry Pi: Runs without any operating system using the Circle library.
 * Microsoft Windows: Does not have DART or Network emulation.
 
-This version of the code is very much a work in progress as new ports are merged. There are
-probably bugs, and there is certainly diagnostic code.
+This repository now includes all my current ports of MEMU. Work is still needed to clean the code.
+There are probably bugs, and there is certainly diagnostic code.
 
 For build and usage information, see the [documentation](docs/index.html).
 
@@ -37,3 +39,4 @@ see appropriate source files:
 
 * FatFS - Copyright (C) 20xx, ChaN
 * Z80 Emulation - Copyright (C) Marat Fayzullin 1994,1995,1996,1997
+* Circle Bare-Metal libraries - Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>

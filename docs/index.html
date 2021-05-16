@@ -199,7 +199,7 @@
     <p>It is necessary to build a version of MEMU specific to the type of Raspberry Pi it
       is to run on as outlined in the following table:</p>
     <table>
-      <tr><td>RPI</td><td>Executable</td><td>Models</td><td>Optimized for</td></tr>
+      <tr><th>RPI</th><th>Executable</th><th>Models</th><th>Optimized for</th></tr>
       <tr><td>1</td><td>kernel.img</td><td>A, B, A+, B+, Zero, (CM)</td><td>ARM1176JZF-S</td></tr>
       <tr><td>2</td><td>kernel7.img</td><td>2, 3, (CM3)</td><td>Cortex-A7</td></tr>
       <tr><td>3</td><td>kernel8-32.img</td><td>3, (CM3)</td><td>Cortex-A53</td></tr>
@@ -219,24 +219,14 @@
     </code></pre>
     <p>If required it is possible to create multiple build folders (e.g. "build-circle1"
       to "build-circle4") and build programs for each version of Raspberry Pi.</p>
-    <p>Installation requires an SD or SDHC card formatted with a single FAT partition.
-      Copy the "kernel*.img" file from the build folder into the root folder of the
-      SD card. If images for multiple Raspberry Pi versions have been built, then copy
-      each of them from their respective build folders.</p>
-    <p>It is also necessary to install the required boot support files. To obtain these
-      go to the "boot" folder in the Circle distribution (not the MEMU distribution)
-      and run "make". Then copy the following files from this folder to the root folder
-      of the SD card:</p>
-    <table>
-      <tr><td>bootcode.bin</td><td>boot loader (not used on Raspberry Pi 4)</td></tr>
-      <tr><td>start.elf</td><td>firmware executable for  Raspberry Pi 1-3</td></tr>
-      <tr><td>start4.elf</td><td>firmware executable for  Raspberry Pi 4</td></tr>
-      <tr><td>fixup.dat</td><td>relocation information for start.elf</td></tr>
-      <tr><td>fixup4.dat</td><td>relocation information for start4.elf</td></tr>
-      <tr><td>bcm2711-rpi-4-b.dtb</td><td>device tree binary needed for Raspberry Pi 4</td></tr>
-    </table>
-    <p>Finally, copy the contents of the "MEMU/run-time" folder into the root of the
-      SD card.</p>
+    <p>Installation requires an SD or SDHC card formatted with a FAT partition as the
+      first or only partition. Copy into this partition:</p>
+    <ul>
+      <li>The contents of the "/boot" partition from a "Raspberry Pi OS" installation</li>
+      <li>The contents of the "MEMU/run-time" folder</li>
+      <li>The "MEMU/build-circle*/kernel*.img" file or files from the builds for the
+        different Raspberry Pi versions required</li>
+    </ul>
 
     <h3 id="Build-Windows">Windows Build</h3>
     <p>Requirements:</p>

@@ -138,9 +138,10 @@ boolean CKernel::Initialize (void)
         }
    // m_ActLED.Blink (1);
     m_Logger.Write (FromKernel, LogNotice, "Mounting Filesystem");
-    if ( f_mount (&m_FileSystem, DRIVE, 1) != FR_OK )
+    FRESULT fr = f_mount (&m_FileSystem, DRIVE, 1);
+    if ( fr != FR_OK )
         {
-        m_Logger.Write (FromKernel, LogPanic, "Failed to Mount Filesystem");
+        m_Logger.Write (FromKernel, LogPanic, "Failed to Mount Filesystem: fr = %d", fr);
         return FALSE;
         }
    // m_ActLED.Blink (1);
