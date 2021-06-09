@@ -386,6 +386,7 @@ void __time_critical_func(vid_render_blank) (PIX_T *pix)
 
 void __time_critical_func(vid_render_loop) (void)
     {
+//    static int iLast = 0;
 #ifdef TEST
     for ( int i = 0; i < 16; ++i )
         {
@@ -396,6 +397,9 @@ void __time_critical_func(vid_render_loop) (void)
         {
         struct scanvideo_scanline_buffer *buffer = scanvideo_begin_scanline_generation (true);
         int iScan = scanvideo_scanline_number (buffer->scanline_id);
+//        if ( ( iScan > 0 ) && ( iScan < iLast ) )
+//            printf ("Scanline reversed %d < %d\n", iScan, iLast);
+//        iLast = iScan;
         PIX_T *pix = (PIX_T *) (buffer->data + 1);
         if ( ( iScan >= GTOP ) && ( iScan < GBOT ) )
             {

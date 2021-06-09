@@ -30,6 +30,11 @@ For build and usage information, see the [documentation](docs/index.html).
 The game "TOADO" on MEMU running on a Raspberry Pi Pico.
 ![MEMU on a Pico](docs/MEMU_Pico.jpg)
 
+## Pico SDK Version 1.2
+
+The code has been modified for the changes to tinyusb API, however there is an occasional
+panic in the USB code that has yet to be resolved.
+
 ## Licence
 
 To conform with the terms of Andy Key's original release, all the MEMU specific code is

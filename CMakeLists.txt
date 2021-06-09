@@ -19,7 +19,7 @@ if("${TARGET}" STREQUAL "Pico")
 
   add_executable(memu-pico)
 
-  #  add_compile_options(-g)
+  add_compile_options(-Werror -Wall -Wextra -Wnull-dereference)
   #  add_link_options(-g)
 
   target_compile_definitions(memu-pico PUBLIC
@@ -38,7 +38,7 @@ if("${TARGET}" STREQUAL "Pico")
     -DROM_PATCH_TAPE
     )
 
-  pico_enable_stdio_uart(memu-pico 0)
+  pico_enable_stdio_uart(memu-pico 1)
   pico_enable_stdio_usb(memu-pico 0)
   pico_add_extra_outputs(memu-pico)
   target_link_libraries(memu-pico PUBLIC

@@ -26,6 +26,8 @@
 #ifndef _TUSB_CONFIG_H_
 #define _TUSB_CONFIG_H_
 
+#include "pico.h"   // To define PICO_SDK_VERSION_*
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -64,7 +66,20 @@ extern "C" {
 #define CFG_TUH_MSC                 0
 #define CFG_TUH_CDC                 0
 
+#if ( PICO_SDK_VERSION_MAJOR == 1 ) && ( PICO_SDK_VERSION_MINOR >= 2 )
+// Additional definitions required by tinyusb 0.10 in sdk 1.2
 #define CFG_TUSB_HOST_DEVICE_MAX    (CFG_TUH_HUB ? 5 : 1) // normal hub has 4 ports
+
+// Size of buffer to hold descriptors and other data used for enumeration
+#define CFG_TUH_ENUMERATION_BUFSZIE 256
+
+#define CFG_TUH_HID                 ( CFG_TUH_HID_KEYBOARD + CFG_TUH_HID_MOUSE )
+#define CFG_TUH_VENDOR              0
+
+//------------- HID -------------//
+
+#define CFG_TUH_HID_EP_BUFSIZE      64
+#endif
 
 #ifdef __cplusplus
 }

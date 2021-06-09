@@ -1,5 +1,7 @@
 /* main.c - Initialise MEMU on Pico */
 
+#define VID_CORE    1
+
 #include "pico.h"
 #include "pico/stdlib.h"
 #include "pico/multicore.h"
@@ -30,8 +32,7 @@ void memu_main (void)
 
 int main (void)
     {
-    stdio_init_all();
-    set_sys_clock_khz (200000, true);
+    set_sys_clock_khz (250000, true);
     stdio_init_all();
 #ifdef DEBUG
     const uint LED_PIN = PICO_DEFAULT_LED_PIN;
@@ -46,7 +47,13 @@ int main (void)
         printf ("%d seconds to start\n", i);
         }
 #endif
+#if VID_CORE == 0
     multicore_launch_core1 (memu_main);
     printf ("Starting display loop\n");
     display_loop ();
+#else
+    printf ("Starting display loop\n");
+    multicore_launch_core1 (display_loop);
+    memu_main ();
+#endif
     }
