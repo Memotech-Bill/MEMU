@@ -10,6 +10,7 @@
 #include "mon.h"
 #include "memu.h"
 #include "kbd.h"
+#include "common.h"
 
 #define NKEYMODE    8
 #define KMD_SHIFT   0x01
@@ -709,6 +710,11 @@ void tuh_hid_keyboard_isr(uint8_t dev_addr, xfer_result_t event)
 #else   // PICO_SDK_VERSION_MINOR >= 2
 void hid_task (void)
     {
+    static int n = 0;
+    if ( kbd_addr == 0 )
+        {
+        if ( ++n > 1000 ) fatal ("No keyboard mounted.");
+        }
     }
 
 // Each HID instance can has multiple reports

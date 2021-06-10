@@ -137,7 +137,8 @@ void terminate(const char *reason)
     mon_term();
     diag_message (DIAG_INIT, "vid_term");
     vid_term();
-    diag_message (DIAG_ALWAYS, "Terminate: %s", reason);
+    // diag_message (DIAG_ALWAYS, "Terminate: %s", reason);
+    fprintf (stderr, "Terminate: %s", reason);
     diag_message (DIAG_INIT, "diag_term");
     diag_term();
 #ifdef BEMEMU
