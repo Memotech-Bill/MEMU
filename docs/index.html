@@ -113,11 +113,13 @@
     <p>It is recommended that the code be compiled on a Raspberry Pi. This is the only build
       that has been tested.</p>
     <pre><code>
-        mkdir pico
-        cd pico
         wget https://raw.githubusercontent.com/raspberrypi/pico-setup/master/pico_setup.sh
         chmod +x pico_setup.sh
         ./pico_setup.sh
+    </code></pre>
+    <p>Reboot to complete setup. Log back in, then:</p>
+    <pre><code>
+        cd pico
         git clone https://github.com/Memotech-Bill/MEMU.git
         cd MEMU
         mkdir build-pico
@@ -125,6 +127,20 @@
         cmake -DTARGET=Pico ..
         make
     </code></pre>
+
+    <p>The MEMU folder should be at the same level as the pico-sdk and pico-extras folders:</p>
+
+    <ul><li>pico</li>
+      <ul><li>pico-sdk</li>
+        <li>pico-extras</li>
+        <li>MEMU</li>
+        <ul><li>docs</li>
+          <li>src</li>
+          <li>run_time</li>
+          <li>build-pico</li>
+        </ul>
+      </ul>
+    </ul>
 
     <p>The resulting memu-pico.uf2 file can then be copied onto the Pico, or the memu-pico.elf
       file loaded using the debug connector on the Pico. See
