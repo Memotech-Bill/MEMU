@@ -6,6 +6,7 @@
 #include "hardware/dma.h"
 #include "sd_spi.pio.h"
 #include "sd_spi.h"
+#include "boards/vgaboard.h"
 
 // #define DEBUG
 #ifdef DEBUG
@@ -167,10 +168,11 @@ static uint8_t acmd41[] = { 0xFF, 0x40 | 41, 0x40, 0x00, 0x00, 0x00, 0x77 }; // 
 uint8_t sd_spi_cmd (uint8_t *src)
     {
     uint8_t resp = sd_spi_put (src, 7);
-    while ( resp & 0x80 )
-        {
+    for (int i = 0; i < 100; ++i)
+	{
+	if ( !( resp & 0x80 ) ) break;
         resp = sd_spi_clk (1);
-        }
+	}
     return resp;
     }
 
