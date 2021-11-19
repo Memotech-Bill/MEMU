@@ -707,7 +707,7 @@ void tuh_hid_keyboard_isr(uint8_t dev_addr, xfer_result_t event)
     (void) event;
     }
 
-#else   // PICO_SDK_VERSION_MINOR >= 2
+#elif PICO_SDK_VERSION_MINOR == 2
 void hid_task (void)
     {
     static int n = 0;
@@ -803,6 +803,100 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
         }
     }
 
+#elif PICO_SDK_VERSION_MINOR == 3
+void hid_task (void)
+    {
+    static int n = 0;
+    if ( kbd_addr == 0 )
+        {
+        if ( ++n > 1000 ) fatal ("No keyboard mounted.");
+        }
+    }
+
+//--------------------------------------------------------------------+
+// TinyUSB Callbacks
+//--------------------------------------------------------------------+
+
+// Each HID instance can has multiple reports
+#define MAX_REPORT  4
+static struct
+    {
+    uint8_t report_count;
+    tuh_hid_report_info_t report_info[MAX_REPORT];
+    } hid_info[CFG_TUH_HID];
+
+// Invoked when device with hid interface is mounted
+// Report descriptor is also available for use. tuh_hid_parse_report_descriptor()
+// can be used to parse common/simple enough descriptor.
+// Note: if report descriptor length > CFG_TUH_ENUMERATION_BUFSIZE, it will be skipped
+// therefore report_desc = NULL, desc_len = 0
+void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_report, uint16_t desc_len)
+    {
+    uint8_t const itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
+#if USBDBG > 0
+    printf("HID device address = %d, instance = %d is mounted\r\n", dev_addr, instance);
+
+    // Interface protocol (hid_interface_protocol_enum_t)
+    const char* protocol_str[] = { "None", "Keyboard", "Mouse" };
+    printf("HID Interface Protocol = %s\r\n", protocol_str[itf_protocol]);
+#endif
+    if ( itf_protocol == HID_ITF_PROTOCOL_KEYBOARD )
+        kbd_addr = dev_addr;
+
+    // By default host stack will use activate boot protocol on supported interface.
+    // Therefore for this simple example, we only need to parse generic report descriptor
+    // (with built-in parser)
+    if ( itf_protocol == HID_ITF_PROTOCOL_NONE )
+        {
+        hid_info[instance].report_count = tuh_hid_parse_report_descriptor(hid_info[instance].report_info,
+            MAX_REPORT, desc_report, desc_len);
+#if USBDBG > 0
+        printf("HID has %u reports \r\n", hid_info[instance].report_count);
+#endif
+        }
+
+    // request to receive report
+    // tuh_hid_report_received_cb() will be invoked when report is available
+    if ( !tuh_hid_receive_report(dev_addr, instance) )
+        {
+#if USBDBG > 0
+        printf("Error: cannot request to receive report\r\n");
+#endif
+        }
+    }
+
+// Invoked when device with hid interface is un-mounted
+void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance)
+    {
+#if USBDBG > 0
+    printf("HID device address = %d, instance = %d is unmounted\r\n", dev_addr, instance);
+#endif
+    if ( dev_addr == kbd_addr ) kbd_addr = 0;
+    }
+
+// Invoked when received report from device via interrupt endpoint
+void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* report, uint16_t len)
+    {
+    uint8_t const itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
+
+    if (itf_protocol == HID_ITF_PROTOCOL_KEYBOARD)
+        {
+#if USBDBG > 1
+        printf("HID receive boot keyboard report\r\n");
+#endif
+        process_kbd_report( (hid_keyboard_report_t const*) report );
+        }
+
+    // continue to request to receive report
+    if ( !tuh_hid_receive_report(dev_addr, instance) )
+        {
+#if USBDBG > 0
+        printf("Error: cannot request to receive report\r\n");
+#endif
+        }
+    }
+#else
+#error Unknown SDK Version
 #endif  // PICO_SDK_VERSION_MINOR
 #endif  // PICO_SDK_VERSION_MAJOR
 
