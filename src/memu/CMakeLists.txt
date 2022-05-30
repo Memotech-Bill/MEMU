@@ -58,6 +58,7 @@ elseif("${TARGET}" STREQUAL "XWin")
       ${CMAKE_CURRENT_LIST_DIR}/memu.c
       ${CMAKE_CURRENT_LIST_DIR}/mon.c
       ${CMAKE_CURRENT_LIST_DIR}/monprom.c
+      ${CMAKE_CURRENT_LIST_DIR}/nfx.c
       ${CMAKE_CURRENT_LIST_DIR}/printer.c
       ${CMAKE_CURRENT_LIST_DIR}/rom_os.c
       ${CMAKE_CURRENT_LIST_DIR}/rom_assem.c
@@ -131,6 +132,7 @@ elseif("${TARGET}" STREQUAL "FBuf")
       ${CMAKE_CURRENT_LIST_DIR}/memu.c
       ${CMAKE_CURRENT_LIST_DIR}/mon.c
       ${CMAKE_CURRENT_LIST_DIR}/monprom.c
+      ${CMAKE_CURRENT_LIST_DIR}/nfx.c
       ${CMAKE_CURRENT_LIST_DIR}/printer.c
       ${CMAKE_CURRENT_LIST_DIR}/rom_os.c
       ${CMAKE_CURRENT_LIST_DIR}/rom_assem.c

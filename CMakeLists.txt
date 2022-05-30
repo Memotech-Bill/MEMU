@@ -73,6 +73,7 @@ elseif("${TARGET}" STREQUAL "XWin")
     -DHAVE_UI
     -DHAVE_VDEB
     -DHAVE_VGA
+    -DHAVE_NFX
     -DZ80_DEBUG
     )
   
@@ -116,6 +117,7 @@ elseif("${TARGET}" STREQUAL "FBuf")
     -DHAVE_UI
     -DHAVE_VDEB
     -DHAVE_VGA
+    -DHAVE_NFX
     -DZ80_DEBUG
     )
   

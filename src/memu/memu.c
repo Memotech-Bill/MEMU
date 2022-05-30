@@ -1961,12 +1961,12 @@ void OutZ80(word port, byte value)
 			break;
 #endif
 #ifdef HAVE_NFX
-        case 0xa0:
-        case 0xa1:
-        case 0xa2:
-        case 0xa3:
-            nfx_out(port & 0x03, value);
-            break;
+ 		case NFX_BASE:
+ 		case NFX_BASE + 1:
+ 		case NFX_BASE + 2:
+ 		case NFX_BASE + 3:
+		    nfx_out(port & 0x03, value);
+		    break;
 #endif
 #ifdef HAVE_CFX2
         case 0xb0:
@@ -2156,11 +2156,11 @@ byte InZ80(word port)
 			return spec_in7F();
 #endif
 #ifdef HAVE_NFX
-        case 0xa0:
-        case 0xa1:
-        case 0xa2:
-        case 0xa3:
-            return nfx_in(port & 0x03);
+ 		case NFX_BASE:
+ 		case NFX_BASE + 1:
+ 		case NFX_BASE + 2:
+ 		case NFX_BASE + 3:
+		    return nfx_in(port & 0x03);
 #endif
 #ifdef HAVE_CFX2
         case 0xb0:

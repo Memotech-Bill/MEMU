@@ -3,6 +3,10 @@
 #ifndef NFX_H
 #define NFX_H
 
+#ifndef NFX_BASE
+#define	NFX_BASE    0x90	// Base I/O address for Wiznet
+#endif
+
 #include "types.h"
 
 extern void nfx_port_offset (int offset);
