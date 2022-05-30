@@ -1761,6 +1761,13 @@ void show_instruction (void)
 void OutZ80_bad(const char *hardware, word port, byte value, BOOLEAN stop)
 	{
 	diag_message(DIAG_BAD_PORT_DISPLAY, "no emulation of %s, out 0x%04x,0x%02x", hardware, port, value);
+	if ( diag_flags[DIAG_BAD_PORT_DISPLAY] )
+	    {
+	    BOOLEAN dbgflg = diag_flags[DIAG_Z80_INSTRUCTIONS];
+	    diag_flags[DIAG_Z80_INSTRUCTIONS] = TRUE;
+	    DebugZ80 (&z80);
+	    diag_flags[DIAG_Z80_INSTRUCTIONS] = dbgflg;
+	    }
 	if ( stop && !diag_flags[DIAG_BAD_PORT_IGNORE] )
 		fatal("no emulation of %s, out 0x%04x,0x%02x, so stopping emulation", hardware, port, value);
 	}
@@ -2036,6 +2043,13 @@ void OutZ80(word port, byte value)
 byte InZ80_bad(const char *hardware, word port, BOOLEAN stop)
 	{
 	diag_message(DIAG_BAD_PORT_DISPLAY, "no emulation of %s, in 0x%04x", hardware, port);
+	if ( diag_flags[DIAG_BAD_PORT_DISPLAY] )
+	    {
+	    BOOLEAN dbgflg = diag_flags[DIAG_Z80_INSTRUCTIONS];
+	    diag_flags[DIAG_Z80_INSTRUCTIONS] = TRUE;
+	    DebugZ80 (&z80);
+	    diag_flags[DIAG_Z80_INSTRUCTIONS] = dbgflg;
+	    }
 	if ( stop && !diag_flags[DIAG_BAD_PORT_IGNORE] )
 		fatal("no emulation of %s, in 0x%04x, so stopping emulation", hardware, port);
 	return 0xff;
