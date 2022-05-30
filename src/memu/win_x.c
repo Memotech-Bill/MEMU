@@ -146,7 +146,8 @@ void win_max_size (const char *display, int *pWth, int *pHgt)
     {
     DPY *dpy = dpy_connect (display);
     *pWth = XDisplayWidth (dpy->disp, dpy->scrn);
-    *pHgt = XDisplayHeight (dpy->disp, dpy->scrn);
+    // Allow for 10% window decoration
+    *pHgt = 9 * XDisplayHeight (dpy->disp, dpy->scrn) / 10;
     dpy_disconnect (dpy);
     }
 
