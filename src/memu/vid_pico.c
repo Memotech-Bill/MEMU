@@ -116,7 +116,7 @@ void __time_critical_func(vid_render_sprites) (PIX_T *pix, int iScan)
     for (int i = 0; i < NSPRITE; ++i )
         {
         int iY = (vram[iAttr] + 0x20u) & 0xFF;
-		if ( iY == 0 ) break;
+		if ( iY == 0xF0 ) break;
 		iY -= 32;
         if ( ( iScan >= iY ) && ( iScan < iY + iSize ) )
             {
