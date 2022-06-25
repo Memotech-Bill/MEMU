@@ -1394,14 +1394,19 @@ void RetiZ80(Z80 *R)
 	}
 /*...e*/
 /*...sIntAckZ80:0:*/
-byte Z80IntAck (Z80 *r)
+BOOLEAN Z80IntAck (Z80 *r, word *pvec)
 	{
     byte vec;
-    if ( ctc_int_ack (&vec) )
+    if ( ctc_int_ack (pvec) )
+	{
         diag_message (DIAG_Z80_INTERRUPTS, "CTC Interrupt vector: 0x%02X", vec);
+	return TRUE;
+	}
     else
-        fatal ("No interrupt vector");
-    return vec;
+	{
+        diag_message (DIAG_Z80_INTERRUPTS, "Interrupt request gone away");
+	}
+    return FALSE;
 	}
 /*...e*/
 

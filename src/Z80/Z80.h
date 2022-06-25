@@ -83,6 +83,12 @@ typedef unsigned short word;
 #endif
 typedef signed char offset;
 
+typedef int BOOLEAN;
+#ifndef TRUE
+#define	TRUE 1
+#define	FALSE 0
+#endif
+
 /** Structured Datatypes *************************************/
 /** NOTICE: #define LSB_FIRST for machines where least      **/
 /**         signifcant byte goes first.                     **/
@@ -216,7 +222,7 @@ void Z80Int (Z80 *R);
 /** the data bus by the interrupting device.                **/
 /** Does not currently support multi-byte responses.        **/
 /************************************ TO BE WRITTEN BY USER **/
-byte Z80IntAck (Z80 *R);
+BOOLEAN Z80IntAck (Z80 *R, word *pvec);
 
 /** Z80Step() ************************************************/
 /** Called at the end of every Z80 instruction to update    **/

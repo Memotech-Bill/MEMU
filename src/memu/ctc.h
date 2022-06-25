@@ -22,7 +22,7 @@ extern void ctc_reload(int channel);
 extern void ctc_trigger(int channel);
 extern void ctc_advance(int adv);
 extern BOOLEAN ctc_int_pending(void);
-extern BOOLEAN ctc_int_ack(byte *);
+extern BOOLEAN ctc_int_ack(word *);
 extern byte ctc_get_int_vector(void);
 extern BOOLEAN ctc_reti (void);
 extern double ctc_freq (int channel);

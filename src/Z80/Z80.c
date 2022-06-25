@@ -515,7 +515,7 @@ void IntZ80(Z80 *R,word Vector)
       if(R->IFF&0x04)
       { 
 /* @@@AK acknowledge interrupt, so that CTC knows we've got it */
-        Z80IntAck(R);
+      Z80IntAck(R, &Vector);
         Vector=(Vector&0xFF)|((word)(R->I)<<8);
         R->PC.B.l=RdZ80(Vector++);
         R->PC.B.h=RdZ80(Vector);
@@ -696,19 +696,23 @@ word Z80Run (Z80 *R)
 				R->IFF &= ~ ( IFF_IEN | IFF_IEN2 );
 				/* Clear interrupt request and acknowledge interrupt */
 				word Vector;
+				BOOLEAN bInt = FALSE;
 				if ( R->IntCont & ICF_INT )
 					{
 					R->IntCont &= ~ ICF_INT;
-					Vector = Z80IntAck (R);
+					bInt = Z80IntAck (R, &Vector);
                     diag_message (DIAG_Z80_INTERRUPTS, "External vector = 0x%02X", Vector);
 					}
 				else
 					{
 					R->IntCont &= ~ ICF_LOOP;
 					Vector = R->IRequest;
+					bInt = Vector < INT_QUIT;
                     diag_message (DIAG_Z80_INTERRUPTS, "Loop vector = 0x%02X", Vector);
 					}
 				/* Switch to interrupt service routine */
+				if ( bInt )
+				    {
 				switch ( R->IFF & IFF_IMODE )
 					{
 					case IFF_IM1:
@@ -734,6 +738,7 @@ word Z80Run (Z80 *R)
 					}
 				/* Assume same number of cycles as a RST for the branch */
 				ELAPSE(Cycles[RST00]);
+				    }
 				}
 			}			
 

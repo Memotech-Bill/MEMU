@@ -118,7 +118,7 @@ BOOLEAN ctc_int_pending(void)
 	}
 /*...e*/
 /*...sctc_int_ack:0:*/
-BOOLEAN ctc_int_ack (byte *vector)
+BOOLEAN ctc_int_ack (word *vector)
 	{
 	int i;
 	for ( i = 0; i < N_CHANNELS; i++ )
