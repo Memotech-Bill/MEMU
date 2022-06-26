@@ -515,7 +515,7 @@ void IntZ80(Z80 *R,word Vector)
       if(R->IFF&0x04)
       { 
 /* @@@AK acknowledge interrupt, so that CTC knows we've got it */
-      Z80IntAck(R, &Vector);
+        Z80IntAck(R, &Vector);
         Vector=(Vector&0xFF)|((word)(R->I)<<8);
         R->PC.B.l=RdZ80(Vector++);
         R->PC.B.h=RdZ80(Vector);
@@ -713,31 +713,31 @@ word Z80Run (Z80 *R)
 				/* Switch to interrupt service routine */
 				if ( bInt )
 				    {
-				switch ( R->IFF & IFF_IMODE )
-					{
-					case IFF_IM1:
-					{
-					R->PC.W = INT_IRQ;
-					break;
-					}
-					case IFF_IM2:
-					{
-					Vector = ( Vector & 0xFF ) | ( (word)(R->I) << 8 );
-					R->PC.B.l = RdZ80 (Vector);
-					R->PC.B.h = RdZ80 (++Vector);
-                    diag_message (DIAG_Z80_INTERRUPTS, "IM2: vector = 0x%04X, PC = 0x%04X", --Vector, R->PC.W);
-					ELAPSE(5 + 2 * 3); /* Interrupt acknowledge + 2 * Read */
-					break;
-					}
-					default: // Mode 0 - Assume response is an RST Opcode.
-					{
-					R->PC.W = ( Vector - RST00 ) & 0x38;
-					ELAPSE(5); /* Interrupt acknowledge */
-					break;
-					}
-					}
-				/* Assume same number of cycles as a RST for the branch */
-				ELAPSE(Cycles[RST00]);
+                    switch ( R->IFF & IFF_IMODE )
+                        {
+                        case IFF_IM1:
+                        {
+                        R->PC.W = INT_IRQ;
+                        break;
+                        }
+                        case IFF_IM2:
+                        {
+                        Vector = ( Vector & 0xFF ) | ( (word)(R->I) << 8 );
+                        R->PC.B.l = RdZ80 (Vector);
+                        R->PC.B.h = RdZ80 (++Vector);
+                        diag_message (DIAG_Z80_INTERRUPTS, "IM2: vector = 0x%04X, PC = 0x%04X", --Vector, R->PC.W);
+                        ELAPSE(5 + 2 * 3); /* Interrupt acknowledge + 2 * Read */
+                        break;
+                        }
+                        default: // Mode 0 - Assume response is an RST Opcode.
+                        {
+                        R->PC.W = ( Vector - RST00 ) & 0x38;
+                        ELAPSE(5); /* Interrupt acknowledge */
+                        break;
+                        }
+                        }
+                    /* Assume same number of cycles as a RST for the branch */
+                    ELAPSE(Cycles[RST00]);
 				    }
 				}
 			}			
