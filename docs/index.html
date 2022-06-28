@@ -251,25 +251,27 @@
         <a href="https://visualstudio.microsoft.com/vs/features/cplusplus/">
           Microsoft Visual Studio</a></li>
       <li><a href="https://cmake.org/download/">CMake for Windows</a></li>
-      <li><a href="http://files.portaudio.com/download.html">PortAudio</a> source code</li>
     </ul>
 
-    <p>Download the MEMU source code:</p>
+    <p>Download and configure the portaudio code:</p>
+    <pre><code>
+        git clone https://github.com/PortAudio/portaudio.git
+        cd portaudio
+        git checkout tags/v19.7.0
+        cd ..
+    </code></pre>
+
+    <p>Download and build the MEMU source code:</p>
     <pre><code>
         git clone https://github.com/Memotech-Bill/MEMU.git
         cd MEMU
-    </code></pre>
-
-    <p>Download and extract the PortAudio source code. Put the "portaudio" folder inside
-      the "MEMU" folder (alongside the "docs", "run-time" and "src" folders). Then, from
-      the MEMU folder:</p>
-    <pre><code>
         mkdir build-win
         cd build-win
         cmake -DTARGET=Win ..
         cmake --build . --config Release
     </code></pre>
-    <p>Copy the "memu-win.exe" and "portaudioXXX.dll" files into the "run-time" folder</p>
+    <p>Copy the "Release\memu-win.exe" and "portaudio\Release\portaudioXXX.dll" files into the
+      "run-time" folder</p>
 
     <h2 id="Usage">Usage</h2>
     <h3 id="Usage-Basic">Basic Usage</h3>

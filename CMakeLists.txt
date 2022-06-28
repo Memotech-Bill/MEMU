@@ -221,7 +221,7 @@ elseif("${TARGET}" STREQUAL "Win")
     
     add_executable(memu-win)
 
-    add_subdirectory(portaudio EXCLUDE_FROM_ALL)
+    add_subdirectory(../portaudio portaudio EXCLUDE_FROM_ALL)
     
     #  add_compile_options(-g)
     #  add_link_options(-g)
