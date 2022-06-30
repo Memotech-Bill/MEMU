@@ -51,6 +51,7 @@
 #include "ui.h"
 #include "vdeb.h"
 #endif
+#include "dirmap.h"
 
 /*...vdiag\46\h:0:*/
 /*...vcommon\46\h:0:*/
@@ -202,6 +203,7 @@ FILE *efopen(const char *fn, const char *mode)
 
 char * make_path (const char *psDir, const char *psFile)
     {
+    psDir = PMapPath (psDir);
     char *psPath   =  emalloc (strlen (psDir) + strlen (psFile) + 2);
     strcpy (psPath, psDir);
     int n = (int) strlen (psPath);

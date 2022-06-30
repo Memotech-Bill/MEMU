@@ -16,6 +16,7 @@ CP/M related stuff moved to CP/M emulation.
 #include "types.h"
 #include "diag.h"
 #include "common.h"
+#include "dirmap.h"
 
 /*...vtypes\46\h:0:*/
 /*...vdiag\46\h:0:*/
@@ -112,6 +113,7 @@ byte print_in4(void)
 /*...sprint_init:0:*/
 void print_init(const char *fn)
 	{
+    fn = PMapPath (fn);
 	diag_message(DIAG_PRINT, "Printer output will be sent to %s", fn);
 	if ( (fp_print = fopen(fn, "wb")) == NULL )
 		fatal("error opening print file/device: %s", fn);

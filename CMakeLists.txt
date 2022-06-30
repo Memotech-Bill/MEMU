@@ -67,6 +67,7 @@ elseif("${TARGET}" STREQUAL "XWin")
     -DHAVE_DART
     -DHAVE_DISASS
     -DHAVE_JOY
+    -DMAP_PATH
     -DHAVE_OSFS
     -DHAVE_SID
     -DHAVE_SPEC
@@ -111,6 +112,7 @@ elseif("${TARGET}" STREQUAL "FBuf")
     -DHAVE_DART
     -DHAVE_DISASS
     -DHAVE_JOY
+    -DMAP_PATH
     -DHAVE_OSFS
     -DHAVE_SID
     -DHAVE_SPEC
@@ -172,6 +174,7 @@ elseif("${TARGET}" STREQUAL "RPi")
     -DHAVE_DART
     -DHAVE_DISASS
     -DHAVE_JOY
+    -DMAP_PATH
     -DHAVE_OSFS
     -DHAVE_SID
     -DHAVE_SPEC
@@ -208,6 +211,7 @@ elseif("${TARGET}" STREQUAL "Win")
     -DHAVE_CONSOLE
     -DHAVE_DISASS
     -DHAVE_JOY
+    -DMAP_PATH
     -DHAVE_OSFS
     -DHAVE_SID
     -DHAVE_SPEC

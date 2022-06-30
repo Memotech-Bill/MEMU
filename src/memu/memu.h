@@ -79,7 +79,7 @@ extern int memu (int argc, const char *argv[]);
 extern void OutZ80_bad(const char *hardware, word port, byte value, BOOLEAN stop);
 extern byte InZ80_bad(const char *hardware, word port, BOOLEAN stop);
 extern void memu_reset(void);
-extern void usage(const char *psErr);
+    extern void usage(const char *psErr, ...);
 extern void unimplemented (const char *psErr);
 extern void RaiseInt (const char *psSource);
 extern unsigned long long get_Z80_clocks (void);

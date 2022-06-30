@@ -27,6 +27,7 @@ Changing the content would not be detected, and corruption would result.
 #include "diag.h"
 #include "common.h"
 #include "sid.h"
+#include "dirmap.h"
 
 #ifdef __circle__
 #include "console.h"
@@ -262,7 +263,7 @@ void sid_load (int drive)
         if ( fp[drive] ) fclose (fp[drive]);
         base[drive] = 0;
 //        active[drive] = 0;
-		if ( (fp[drive] = fopen(fns[drive], "rb+")) != NULL )
+		if ( (fp[drive] = fopen(PMapPath (fns[drive]), "rb+")) != NULL )
 			{
             unsigned int nalloc = ( sid_emu & SIDEMU_HUGE ) ? SIBUF_SIZE : SIDISC_SIZE;
 			size_t file_size;
@@ -308,7 +309,7 @@ void sid_save (int drive, BOOLEAN bFree)
 		{
         ALERT_ON();
         fprintf (stderr, "Saving contents of silicon drive %d to file \"%s\"\n", drive, fns[drive]);
-        if ( fp[drive] == NULL ) fp[drive] = fopen(fns[drive], "wb+");
+        if ( fp[drive] == NULL ) fp[drive] = fopen(PMapPath (fns[drive]), "wb+");
 		if ( fp[drive] != NULL )
 			{
 			fseek(fp[drive], base[drive], SEEK_SET);

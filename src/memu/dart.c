@@ -20,6 +20,7 @@ Contributed by Bill Brendling.
 #include "ctc.h"
 #include "common.h"
 #include "diag.h"
+#include "dirmap.h"
 
 #define	 NUM_CH				  2		// Number of DART channels
 
@@ -1058,6 +1059,7 @@ void dart_init (void)
 
 void dart_read (int ch, const char *psFile)
 	{
+    psFile = PMapPath (psFile);
 	if ( channel[ch].fdIn >= 0 )
 		{
 		close (channel[ch].fdIn);
@@ -1075,6 +1077,7 @@ void dart_read (int ch, const char *psFile)
 
 void dart_write (int ch, const char *psFile)
 	{
+    psFile = PMapPath (psFile);
 	if ( channel[ch].fdOut >= 0 )
 		{
 		close (channel[ch].fdOut);

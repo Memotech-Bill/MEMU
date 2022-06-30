@@ -21,6 +21,7 @@ AK    01/04/13 Support 40 track media in 80 track drive.
 #include "sdxfdc.h"
 #include "memu.h"
 #include "diag.h"
+#include "dirmap.h"
 
 #define  FDCS_NOT_READY    0x80
 #define  FDCS_PROTECTED    0x40
@@ -616,6 +617,7 @@ byte sdxfdc_in (word port)
    
 void sdxfdc_init (int drive, const char *psFile)
    {
+   psFile = PMapPath (psFile);
    if ( ( drive < 0 ) || ( drive >= SDX_DRIVES ) )
       {
       if ( ! diag_flags[DIAG_BAD_PORT_IGNORE] ) fatal ("Attempt to configure an invalid drive");

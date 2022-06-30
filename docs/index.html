@@ -387,15 +387,30 @@
     <h3 id="Usage-Advanced">Advanced Usage</h3>
     <p>MEMU configuration is controlled by a large number of option flags or switches. These
       may be either in configuration files or specified on the command line.</p>
-    <p>If MEMU is started without any command line options, then it will read the configuration
-      from two files "memu0.cfg" and "memu.cfg". For systems with an operating system
-      these files will be in the same folder as the program executable. For bare-metal systems
-      the files will be in the root of the storage media. The contents of the "memu0.cfg"
-      file remain constant, while the "memu.cfg" file is re-written by the interactive
-      configuration screen.</p>
+    <p>For bare-metal systems the configuration will be specified in files "memu0.cfg" and
+      "memu.cfg" in the root of the storage media.</p>
+    <p>For systems with an operating system, if MEMU is started without any command line options,
+      then it will read the configuration from two files "memu0.cfg" and "memu.cfg".</p>
+    <p>MEMU now looks first for "memu.cfg" in the current folder. If found, it will read
+      configuration from "memu0.cfg" (if it exists) and "memu.cfg" in the current folder.
+      This allows for folder specific customisation if required. If there is no "memu.cfg" in the
+      current folder, then "memu0.cfg" and "memu.cfg" from the same folder as the program
+      executable is used.</p>
+    <p>The contents of the "memu0.cfg" file remain constant, while the "memu.cfg" file is
+      re-written by the interactive configuration screen.</p>
     <p>If there are any options specified on the command line, then the above configuration
       files will not be read automatically. Command line options may be used to read these
       (or other) configuration files.</p>
+    <p>When specifying file or folder path names, the following special macros may be used
+      to specify the starting folder for a path;</p>
+    <ul>
+      <li>~C - The folder containing the configuration files.</li>
+      <li>~E - The folder containing the MEMU executable.</li>
+      <li>~H - The users home folder (or can just use ~).</li>
+      <li>~W - The folder in which MEMU is started.</li>
+    </ul>
+    <p>By default, relative paths are taken from the folder containing the configuration.</p>
+    
     <p>The following options are supported on all versions of MEMU:</p>
     <dl>
       <dt>-help</dt>

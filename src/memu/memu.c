@@ -81,6 +81,7 @@ memu.c - Memotech Emulator
 #ifdef HAVE_NFX
 #include "nfx.h"
 #endif
+#include "dirmap.h"
 
 /*...vZ80\46\h:0:*/
 /*...vtypes\46\h:0:*/
@@ -117,7 +118,7 @@ extern void ALT_EXIT (int reason);
 
 const char *psExe = "memu";
 
-void usage(const char *psErr)
+void usage(const char *psErr, ...)
 	{
 	fprintf(stderr, "usage: %s [flags]\n", psExe);
     fprintf(stderr, "Flags may be specified on command line or in files\n");
@@ -235,7 +236,16 @@ void usage(const char *psErr)
 	fprintf(stderr, "       file.run             -iobyte 0x00 -addr 0xAAAA (from header)\n");
 #endif
 	fprintf(stderr, "       file.mtx             subsequent LOAD/SAVE/VERIFY \"\" will use this file\n");
-    if ( psErr ) fprintf (stderr, "\nError at option: %s\n", psErr);
+
+    if ( psErr )
+        {
+        fprintf (stderr, "\nError: ");
+        va_list va;
+        va_start (va, psErr);
+        vfprintf (stderr, psErr, va);
+        va_end (va);
+        fprintf (stderr, "\n");
+        }
 #ifdef ALT_EXIT
 	ALT_EXIT(2);
 #else
@@ -248,7 +258,12 @@ static BOOLEAN bIgnore = FALSE;
 void unimplemented (const char *psErr)
     {
     if ( bIgnore ) diag_message (DIAG_ALWAYS, "Feature %s is not implemented in this version", psErr);
-    else usage (psErr);
+    else usage ("Feature %s is not implemented in this version", psErr);
+    }
+
+void opterror (const char *psOpt)
+    {
+    usage ("At option %s", psOpt);
     }
 
 /*...sread_file:0:*/
@@ -367,7 +382,7 @@ static const char *get_tape_name(word addr, const char *fn_prefix, char *fn_buf)
 	char *p = fn_buf;
 	if ( fn_prefix != NULL )
 		{
-		strcpy(p, fn_prefix);
+		strcpy(p, PMapPath (fn_prefix));
 		strcat(p, "/");
         // printf ("Tape prefix: %s\n", fn_buf);
 		p += strlen(fn_buf);
@@ -2324,7 +2339,7 @@ int memu (int argc, const char *argv[])
 			{
 			unsigned iobyte;
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			sscanf(argv[i], "%i", &iobyte);
 			mem_set_iobyte((byte) iobyte);
 			}
@@ -2333,7 +2348,7 @@ int memu (int argc, const char *argv[])
 #ifndef SMALL_MEM
 			int subpage;
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			sscanf(argv[i], "%i", &subpage);
 			mem_set_rom_subpage((byte) subpage);
 #else
@@ -2345,7 +2360,7 @@ int memu (int argc, const char *argv[])
 			{
 #ifndef SMALL_MEM
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			sscanf(argv[i], "%i", &addr);
 #else
             unimplemented (argv[i]);
@@ -2358,7 +2373,7 @@ int memu (int argc, const char *argv[])
 			byte buf[0x10000];
 			int len;
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			len = read_file(argv[i], buf, sizeof(buf));
 			mem_write_block((word) addr, (word) len, buf);
 #else
@@ -2370,7 +2385,7 @@ int memu (int argc, const char *argv[])
 			{
 			int nblocks;
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			sscanf(argv[i], "%i", &nblocks);
 			mem_alloc(nblocks);
 			}
@@ -2381,7 +2396,7 @@ int memu (int argc, const char *argv[])
 #ifndef SMALL_MEM
 			int nblocks;
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			sscanf(argv[i], "%i", &nblocks);
 			mem_alloc_snapshot(nblocks);
 #else
@@ -2394,12 +2409,12 @@ int memu (int argc, const char *argv[])
 #ifndef SMALL_MEM
 			int rom, n_subpages;
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			sscanf(argv[i], "%i", &rom);
 			if ( rom < 0 || rom >= 8 )
 				fatal("rom must be between 0 and 7");
 			if ( ++i == argc )
-				usage(argv[i-2]);
+				opterror (argv[i-2]);
 			sscanf(argv[i], "%i", &n_subpages);
 			if ( n_subpages ==   1 ||
 			     n_subpages ==   2 ||
@@ -2425,7 +2440,7 @@ int memu (int argc, const char *argv[])
 			int rom;
 			sscanf(argv[i]+8, "%i", &rom);
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
             load_rompair (rom, argv[i]);
 #else
             unimplemented (argv[i]);
@@ -2438,7 +2453,7 @@ int memu (int argc, const char *argv[])
 			int rom;
 			sscanf(argv[i]+4, "%i", &rom);
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			cfg.rom_fn[rom] = argv[i];
             load_rom (rom, argv[i]);
 #else
@@ -2452,7 +2467,7 @@ int memu (int argc, const char *argv[])
 			{
 			int country;
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			sscanf(argv[i], "%i", &country);
 			if ( ( country < 0 ) || ( country > 3 ) )
 				usage (argv[i-1]);
@@ -2462,7 +2477,7 @@ int memu (int argc, const char *argv[])
 			{
 #ifdef HAVE_AUTOTYPE
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			kbd_add_events(argv[i]);
 #else
             unimplemented (argv[i]);
@@ -2473,8 +2488,8 @@ int memu (int argc, const char *argv[])
 			{
 #ifdef HAVE_AUTOTYPE
 			if ( ++i == argc )
-				usage(argv[i-1]);
-			kbd_add_events_file(argv[i]);
+				opterror (argv[i-1]);
+			kbd_add_events_file(PMapPath (argv[i]));
 #else
             unimplemented (argv[i]);
             ++i;
@@ -2493,7 +2508,7 @@ int memu (int argc, const char *argv[])
 			{
 #ifdef HAVE_JOY
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			cfg.joy_buttons = argv[i];
 			joy_set_buttons(argv[i]);
 #else
@@ -2505,7 +2520,7 @@ int memu (int argc, const char *argv[])
 			{
 #ifdef HAVE_JOY
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			sscanf(argv[i], "%d", &cfg.joy_central);
 			joy_set_central(cfg.joy_central);
 #else
@@ -2542,7 +2557,7 @@ int memu (int argc, const char *argv[])
 #ifdef HAVE_VID_TIMING
 			unsigned t_2us, t_8us, t_blank;
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			sscanf(argv[i], "%u,%u,%u", &t_2us, &t_8us, &t_blank);
 			vid_setup_timing_check(t_2us, t_8us, t_blank);
 #else
@@ -2558,7 +2573,7 @@ int memu (int argc, const char *argv[])
 		else if ( !strcmp(argv[i], "-snd-latency") )
 			{
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			sscanf(argv[i], "%lf", &cfg.latency);
 			}
 		else if ( !strcmp(argv[i], "-mon-win") )
@@ -2615,25 +2630,25 @@ int memu (int argc, const char *argv[])
 		else if ( !strcmp(argv[i], "-sdx-tracks") )
 			{
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			sscanf(argv[i], "%i", &cfg.tracks_sdxfdc[0]);
 			}
 		else if ( !strcmp(argv[i], "-sdx-mfloppy") )
 			{
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			cfg.fn_sdxfdc[0] = argv[i];
 			}
 		else if ( !strcmp(argv[i], "-sdx-tracks2") )
 			{
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			sscanf(argv[i], "%i", &cfg.tracks_sdxfdc[1]);
 			}
 		else if ( !strcmp(argv[i], "-sdx-mfloppy2") )
 			{
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			cfg.fn_sdxfdc[1] = argv[i];
 			}
 		else if ( !strcmp(argv[i], "-sidisc-huge") )
@@ -2657,12 +2672,12 @@ int memu (int argc, const char *argv[])
 #ifdef HAVE_SID
 			int drive;
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			sscanf(argv[i], "%i", &drive);
 			if ( drive < 0 || drive >= N_SIDISC )
 				fatal("bad Silicon Disc number");
 			if ( ++i == argc )
-				usage(argv[i-2]);
+				opterror (argv[i-2]);
 			cfg.sid_fn[drive] = argv[i];
 			sid_set_file(drive, argv[i]);
 #else
@@ -2674,7 +2689,7 @@ int memu (int argc, const char *argv[])
             {
 #ifdef HAVE_CFX2
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			cfg.rom_cfx2 = argv[i];
             load_rompair (4, cfg.rom_cfx2);
             cfg.bCFX2 = TRUE;
@@ -2692,14 +2707,14 @@ int memu (int argc, const char *argv[])
             int iDrive;
             int iPart;
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			if ( sscanf(argv[i], "%i:%i", &iDrive, &iPart) == 1 )
                 {
                 iPart = iDrive;
                 iDrive = 0;
                 }
 			if ( ++i == argc )
-				usage(argv[i-2]);
+				opterror (argv[i-2]);
             cfx2_set_image (iDrive, iPart, argv[i]);
             cfg.fn_cfx2[iDrive][iPart] = argv[i];
 #else
@@ -2718,13 +2733,13 @@ int memu (int argc, const char *argv[])
 		else if ( !strcmp(argv[i], "-prn-file") )
 			{
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			cfg.fn_print = argv[i];
 			}
 		else if ( !strcmp(argv[i], "-tape-dir") )
 			{
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			if ( strlen(argv[i]) > MAX_TAPE_PREFIX )
 				fatal("tape prefix is too long");
 			cfg.tape_name_prefix = argv[i];
@@ -2736,14 +2751,14 @@ int memu (int argc, const char *argv[])
 		else if ( !strcmp(argv[i], "-cassette-in") )
 			{
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			tape_set_input (argv[i]);
 			cfg.tape_disable = TRUE;
 			}
 		else if ( !strcmp(argv[i], "-cassette-out") )
 			{
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			tape_set_output (argv[i]);
 			cfg.tape_disable = TRUE;
 			}
@@ -2751,7 +2766,7 @@ int memu (int argc, const char *argv[])
 			{
 #ifdef HAVE_SPEC
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			tap_fn = argv[i];
 #else
             unimplemented (argv[i]);
@@ -2762,7 +2777,7 @@ int memu (int argc, const char *argv[])
 			{
 #ifdef HAVE_SPEC
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			sna_fn = argv[i];
 #else
             unimplemented (argv[i]);
@@ -2783,8 +2798,8 @@ int memu (int argc, const char *argv[])
 			{
 #ifdef HAVE_OSFS
 			if ( ++i == argc )
-				usage(argv[i-1]);
-			cpm_set_drive_a(argv[i]);
+				opterror (argv[i-1]);
+			cpm_set_drive_a(PMapPath (argv[i]));
 #else
             unimplemented (argv[i]);
             ++i;
@@ -2802,7 +2817,7 @@ int memu (int argc, const char *argv[])
 			{
 #ifdef HAVE_OSFS
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			cpm_set_tail(argv[i]);
 #else
             unimplemented (argv[i]);
@@ -2844,7 +2859,7 @@ int memu (int argc, const char *argv[])
 		else if ( !strcmp(argv[i], "-speed") )
 			{
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			sscanf(argv[i], "%llu", &clock_speed);
 			if ( clock_speed < 1000000 || clock_speed > 1000000000 )
 				fatal("clock speed must be between 1000000 (1MHz) and 1000000000 (1GHz)");
@@ -2862,7 +2877,7 @@ int memu (int argc, const char *argv[])
 			   I use this to investigate when I suspect a program
 			   may be very timing sensitive. */
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			sscanf(argv[i], "%d", &cfg.iperiod);
 			if ( cfg.iperiod < 10 || cfg.iperiod > 1000000 )
 				fatal("iperiod must be between 10 and 1000000");
@@ -2879,7 +2894,7 @@ int memu (int argc, const char *argv[])
 			{
 #ifdef HAVE_DART
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			cfg.bSerialDev[0] = TRUE;
 			cfg.fn_serial_in[0] = argv[i];
 #else
@@ -2891,7 +2906,7 @@ int memu (int argc, const char *argv[])
 			{
 #ifdef HAVE_DART
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			cfg.fn_serial_in[0] = argv[i];
 #else
             unimplemented (argv[i]);
@@ -2902,7 +2917,7 @@ int memu (int argc, const char *argv[])
 			{
 #ifdef HAVE_DART
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			cfg.fn_serial_out[0] = argv[i];
 #else
             unimplemented (argv[i]);
@@ -2913,7 +2928,7 @@ int memu (int argc, const char *argv[])
 			{
 #ifdef HAVE_DART
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			cfg.bSerialDev[1] = TRUE;
 			cfg.fn_serial_in[1] = argv[i];
 #else
@@ -2925,7 +2940,7 @@ int memu (int argc, const char *argv[])
 			{
 #ifdef HAVE_DART
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			cfg.fn_serial_in[1] = argv[i];
 #else
             unimplemented (argv[i]);
@@ -2936,7 +2951,7 @@ int memu (int argc, const char *argv[])
 			{
 #ifdef HAVE_DART
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			cfg.fn_serial_out[1] = argv[i];
 #else
             unimplemented (argv[i]);
@@ -2948,7 +2963,7 @@ int memu (int argc, const char *argv[])
 #ifdef Z80_DEBUG
 			int addr_from, addr_to, addr;
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			sscanf(argv[i], "%i-%i", &addr_from, &addr_to);
 			for ( addr = addr_from; addr <= addr_to; addr++ )
 				no_trace[(addr&0xffff)>>3] |= (0x01<<(addr&7));
@@ -2962,7 +2977,7 @@ int memu (int argc, const char *argv[])
 #ifdef Z80_DEBUG
 			int addr_from, addr_to, addr;
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			sscanf(argv[i], "%i-%i", &addr_from, &addr_to);
 			for ( addr = addr_from; addr <= addr_to; addr++ )
 				no_trace[(addr&0xffff)>>3] &= ~(0x01<<(addr&7));
@@ -2976,7 +2991,7 @@ int memu (int argc, const char *argv[])
 #ifdef HAVE_NFX
 			int offset;
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			sscanf(argv[i], "%i", &offset);
             nfx_port_offset (offset);
 #else
@@ -2988,7 +3003,7 @@ int memu (int argc, const char *argv[])
 			{
 #ifdef HAVE_GUI
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			vid_set_title (argv[i]);
 #else
             unimplemented (argv[i]);
@@ -2999,7 +3014,7 @@ int memu (int argc, const char *argv[])
 			{
 #ifdef HAVE_GUI
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			vid_set_display (argv[i]);
 #else
             unimplemented (argv[i]);
@@ -3010,7 +3025,7 @@ int memu (int argc, const char *argv[])
 			{
 #ifdef HAVE_GUI
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			mon_set_title (argv[i]);
 #else
             unimplemented (argv[i]);
@@ -3021,7 +3036,7 @@ int memu (int argc, const char *argv[])
 			{
 #ifdef HAVE_GUI
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			mon_set_display (argv[i]);
 #else
             unimplemented (argv[i]);
@@ -3032,7 +3047,7 @@ int memu (int argc, const char *argv[])
 			{
 #ifdef HAVE_UI
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			ui_mem_set_title (argv[i]);
 #else
             unimplemented (argv[i]);
@@ -3043,7 +3058,7 @@ int memu (int argc, const char *argv[])
 			{
 #ifdef HAVE_UI
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			ui_mem_set_display (argv[i]);
 #else
             unimplemented (argv[i]);
@@ -3054,7 +3069,7 @@ int memu (int argc, const char *argv[])
 			{
 #ifdef HAVE_UI
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			ui_vram_set_title (argv[i]);
 #else
             unimplemented (argv[i]);
@@ -3065,7 +3080,7 @@ int memu (int argc, const char *argv[])
 			{
 #ifdef HAVE_UI
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			ui_vram_set_display (argv[i]);
 #else
             unimplemented (argv[i]);
@@ -3076,7 +3091,7 @@ int memu (int argc, const char *argv[])
 			{
 #ifdef HAVE_UI
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			ui_dis_set_title (argv[i]);
 #else
             unimplemented (argv[i]);
@@ -3087,7 +3102,7 @@ int memu (int argc, const char *argv[])
 			{
 #ifdef HAVE_UI
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			ui_dis_set_display (argv[i]);
 #else
             unimplemented (argv[i]);
@@ -3126,14 +3141,14 @@ int memu (int argc, const char *argv[])
 			else if ( diag_flag_of(argv[i]+6) )
 				;
 			else
-				usage(argv[i]);
+				opterror (argv[i]);
 			}
 #if defined(BEMEMU)
 		else if ( !strcmp(argv[i], "-be") )
 			{
 			const char *pipe_id;
 			if ( ++i == argc )
-				usage(argv[i-1]);
+				opterror (argv[i-1]);
 			pipe_id = argv[i];
 			be_init(pipe_id);
 			}
@@ -3152,7 +3167,7 @@ int memu (int argc, const char *argv[])
 		{
 		const char *dot = strrchr(argv[i], '.');
 		if ( dot == NULL )
-			usage(argv[i]);
+			opterror (argv[i]);
         if ( !strcmp(dot, ".mtx") || !strcmp(dot, ".MTX") )
             {
 			/* Save the filename for later LOAD "" */
@@ -3215,7 +3230,7 @@ int memu (int argc, const char *argv[])
 		}
 
 	if ( i != argc )
-		usage(argv[i]);
+		opterror (argv[i]);
 
     /* Test for no display - missing config file ? */
 

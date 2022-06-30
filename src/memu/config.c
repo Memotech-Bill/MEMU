@@ -45,6 +45,7 @@
 #endif
 #include "common.h"
 #include "dirt.h"
+#include "dirmap.h"
 
 #ifdef WIN32
 #define strcasecmp _stricmp
@@ -2051,6 +2052,27 @@ BOOLEAN read_config (const char *psFile, int *pargc, const char ***pargv)
     int  ich, nch;
     BOOLEAN  bFirst;
     BOOLEAN  bQuote;
+    psFile = PMapPath (psFile);
+    char *psDir = strdup (psFile);
+    if ( psDir != NULL )
+        {
+        char *psDEnd = strrchr (psDir, '/');
+#ifdef WIN32
+        char *psDEn2 = strrchr (psDir, '\\');
+        if ( psDEn2 >= psDEnd ) psDEnd = psDEn2;
+#endif
+        if ( psDEnd != NULL )
+            {
+            *psDEnd = '\0';
+            PMapRootDir (pmapCfg, psDir, TRUE);
+            }
+        else
+            {
+            PMapRootDir (pmapCfg, ".", TRUE);
+            }
+        free (psDir);
+        }
+    
     diag_message (DIAG_INIT, "Configuration file: %s", psFile);
     pfil  =  fopen (psFile, "rb");
     if ( pfil == NULL )

@@ -33,6 +33,7 @@
 #ifdef HAVE_VDEB
 #include "vdeb.h"
 #endif
+#include "dirmap.h"
 
 #include "Z80.h"
 extern Z80 *GetZ80 (void);
@@ -524,10 +525,11 @@ byte *mem_rom_ptr(int rom)
 
 void load_rom (int rom, const char *fname)
     {
+    fname = PMapPath (fname);
     if ( rom < 0 || rom > 7 )
         fatal("ROM must be between 0 and 7");
 #ifdef SMALL_MEM
-    FILE *fp;
+    FILE *fp = efopen(fname, "rb");;
     size_t size;
     byte subpage_write = 0;
     while ( subpage_write <= mem_n_subpages[rom] )
@@ -570,10 +572,11 @@ void load_rom (int rom, const char *fname)
 
 void load_rompair (int rom, const char *fname)
     {
+    fname = PMapPath (fname);
     if ( rom != 2 && rom != 4 && rom != 6 )
         fatal("ROM-pair base must be 2, 4 or 6");
 #ifdef SMALL_MEM
-    FILE *fp;
+    FILE *fp = efopen(fname, "rb");;
     size_t size;
     byte subpage_write = 0;
     while ( subpage_write <= mem_n_subpages[rom] )

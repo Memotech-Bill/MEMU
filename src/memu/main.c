@@ -15,6 +15,8 @@
 #include <unistd.h>
 #endif
 #include "types.h"
+#include "dirmap.h"
+#include "memu.h"
 
 //  Test for a regular file
 
@@ -71,45 +73,52 @@ int memu (int argc, const char **argv);
 
 int main (int argc, const char *argv[])
     {
+    PMapRootDir (pmapHome, getenv ("HOME"), TRUE);
+    char *psExe = cfg_exe_path ();
+    char *psDEnd = NULL;
+    if ( psExe != NULL )
+        {
+        psDEnd = strrchr (psExe, '/');
+#ifdef WIN32
+        char *psD2 = strrchr (psExe, '\\');
+        if ( psD2 > psDEnd ) psDEnd = psD2;
+#endif
+        if ( psDEnd != NULL )
+            {
+            *psDEnd = '\0';
+            }
+        PMapRootDir (pmapExe, psExe, FALSE);
+        }
+#ifdef WIN32
+    char *psWorkDir = (char *) emalloc (MAX_PATH+1);
+    psWorkDir = getcwd (psWorkDir, MAX_PATH+1);
+#else
+    char *psWorkDir = getcwd (NULL, 0);
+#endif
+    PMapRootDir (pmapWork, psWorkDir, FALSE);
     const char *argvn[] = {argv[0], "-config-file", "memu0.cfg", "-config-file", "memu.cfg"};
     if ( argc == 1 )
         {
-        char *psExe = cfg_exe_path ();
-        char *psDEnd = NULL;
-        if ( psExe != NULL )
+        if (( psExe != NULL ) && ( ! cfg_test_file (argvn[4]) ))
             {
-            psDEnd = strrchr (psExe, '/');
-#ifdef WIN32
-            char *psD2 = strrchr (psExe, '\\');
-            if ( psD2 > psDEnd ) psDEnd = psD2;
-#endif
-            if ( psDEnd != NULL )
+            chdir (psExe);
+            }
+        if ( cfg_test_file (argvn[4]) )
+            {
+            if ( cfg_test_file (argvn[2]) )
                 {
-                *psDEnd = '\0';
-                chdir (psExe);
-                }
-            if ( cfg_test_file (argvn[4]) )
-                {
-                if ( cfg_test_file (argvn[2]) )
-                    {
-                    argc = 5;
-                    }
-                else
-                    {
-                    argc = 3;
-                    argvn[2] = argvn[4];
-                    }
-                argv = argvn;
+                argc = 5;
                 }
             else
                 {
-                fprintf (stderr, "*** No configuration files found ***\n");
+                argc = 3;
+                argvn[2] = argvn[4];
                 }
-            free (psExe);
+            argv = argvn;
             }
         else
             {
-            fprintf (stderr, "*** Program folder not found ***\n");
+            usage ("No command line options specified and \"memu.cfg\" not found.");
             }
         }
     return memu (argc, argv);

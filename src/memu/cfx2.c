@@ -12,6 +12,7 @@
 #include "diag.h"
 #include "cfx2.h"
 #include "memu.h"
+#include "dirmap.h"
 
 #define CPM_PART_SIZE   ( 8 * 1024 * 1024 ) // Size of CPM partitions on CF card
 
@@ -480,7 +481,7 @@ void cfx2_init (void)
             card = part / NCF_PART;
             diag_message (DIAG_SDXFDC_HW, "CFX2 opening image file \"%s\" for partition %d",
                 psImage[part], part);
-            pfImage[part] = fopen (psImage[part], "r+b");
+            pfImage[part] = fopen (PMapPath (psImage[part]), "r+b");
             // if ( pfImage[part] == NULL ) fatal ("Error opening CF partition image");
             if ( pfImage[part] != NULL )
                 {
