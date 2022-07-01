@@ -14,6 +14,7 @@
 #else
 #include <unistd.h>
 #endif
+#include "common.h"
 #include "types.h"
 #include "dirmap.h"
 #include "memu.h"
@@ -73,7 +74,14 @@ int memu (int argc, const char **argv);
 
 int main (int argc, const char *argv[])
     {
+#ifdef WIN32
+    char sHome[MAX_PATH+1];
+    strcpy (sHome, getenv("HOMEDRIVE"));
+    strcat (sHome, getenv ("HOMEPATH"));
+    PMapRootDir (pmapHome, sHome, TRUE);
+#else
     PMapRootDir (pmapHome, getenv ("HOME"), TRUE);
+#endif
     char *psExe = cfg_exe_path ();
     char *psDEnd = NULL;
     if ( psExe != NULL )
@@ -91,7 +99,7 @@ int main (int argc, const char *argv[])
         }
 #ifdef WIN32
     char *psWorkDir = (char *) emalloc (MAX_PATH+1);
-    psWorkDir = getcwd (psWorkDir, MAX_PATH+1);
+    psWorkDir = _getcwd (psWorkDir, MAX_PATH+1);
 #else
     char *psWorkDir = getcwd (NULL, 0);
 #endif
