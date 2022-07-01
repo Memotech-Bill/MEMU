@@ -799,7 +799,7 @@ static const char *cfg_choose_file (int iRowChoose, const char *psDir, int nExt,
         config_term ();
         fatal ("No directory specified for %s files", bDisk ? "disk image" : "tape");
         }
-    dirt =  dirt_open (psDir, &iErr);
+    dirt =  dirt_open (PMapPath (psDir), &iErr);
     if ( iErr != DIRTE_OK ) { config_term (); fatal (dirt_error (iErr)); }
     ppsFiles[0] =  estrdup ("<None>");
     if ( bDisk )

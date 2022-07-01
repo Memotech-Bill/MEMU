@@ -188,9 +188,9 @@
         make
     </code></pre>
 
-    <p>Depending upon the age of your version of cmake, the executables "memu-x" or "memu-fb"
-      will either be in the root of the build folder, or in the "src/memu" sub-folder.
-      Copy the executable into the root of the "run_time" folder.</p>
+    <p>The executables "memu-x" or "memu-fb" should be in the ../run_time folder. For older
+      versions of CMake, they may either be in the root of the build folder, or in the
+      "src/memu" sub-folder. Copy the executable into the root of the "run_time" folder.</p>
 
     <h3 id="Build-RPi">Raspberry Pi Build</h3>
     <p>This build is intended to be run from an operating system, typically "Raspberry Pi OS".
@@ -205,8 +205,9 @@
         cmake -DTARGET=RPi ..
         make
     </code></pre>
-    <p>Once built, copy the "memu-pi" executable from the "build-rpi" folder to the root of
-      the "run-time" folder.</p>
+    <p>The "memu-pi" executable should be in the ../run_time folder. For older
+      versions of CMake, it may either be in the root of the build-rpi folder, or in the
+      "src/memu" sub-folder. Copy the executable into the root of the "run_time" folder.</p>
 
     <h3 id="Build-Circle">Bare-Metal Raspberry Pi Build</h3>
     <p>The bare-metal version of MEMU relies upon the

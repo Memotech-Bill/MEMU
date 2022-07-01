@@ -1,7 +1,5 @@
 *~
 #*#
 build
-run_time/memu-fb
-run_time/memu-pico
-run_time/memu-win
-run_time/memu-x
+run_time/memu-*
+run_time/portaudio*
