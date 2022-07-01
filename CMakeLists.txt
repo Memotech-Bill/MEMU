@@ -135,6 +135,7 @@ elseif("${TARGET}" STREQUAL "FBuf")
 
     set_target_properties(memu-fb PROPERTIES
       RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/run_time
+      )
     
     #  add_compile_options(-g)
     #  add_link_options(-g)
@@ -157,6 +158,7 @@ elseif("${TARGET}" STREQUAL "RPi")
 
     set_target_properties(memu-pi PROPERTIES
       RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/run_time
+      )
     
     #  add_compile_options(-g)
     #  add_link_options(-g)
@@ -236,9 +238,14 @@ elseif("${TARGET}" STREQUAL "Win")
     add_executable(memu-win)
 
     set_target_properties(memu-win PROPERTIES
-      RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/run_time
+      RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_LIST_DIR}/run_time
+      )
 
     add_subdirectory(../portaudio portaudio EXCLUDE_FROM_ALL)
+
+    set_target_properties(portaudio PROPERTIES
+      RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_LIST_DIR}/run_time
+      )
     
     #  add_compile_options(-g)
     #  add_link_options(-g)
