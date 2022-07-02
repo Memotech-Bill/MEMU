@@ -684,16 +684,6 @@ word Z80Run (Z80 *R)
 			if ( R->IntCont & ( ICF_INT | ICF_LOOP ) )
 				{
                 diag_message (DIAG_Z80_INTERRUPTS, "IntCont = 0x%02X", R->IntCont);
-				/* Exit Halt state */
-				if ( R->IFF & IFF_HALT )
-					{
-					R->PC.W++;
-					R->IFF &= ~ IFF_HALT;
-					}
-				/* Save program counter */
-				M_PUSH(PC);
-				/* Disable interrupts */
-				R->IFF &= ~ ( IFF_IEN | IFF_IEN2 );
 				/* Clear interrupt request and acknowledge interrupt */
 				word Vector;
 				BOOLEAN bInt = FALSE;
@@ -701,18 +691,29 @@ word Z80Run (Z80 *R)
 					{
 					R->IntCont &= ~ ICF_INT;
 					bInt = Z80IntAck (R, &Vector);
-                    diag_message (DIAG_Z80_INTERRUPTS, "External vector = 0x%02X", Vector);
+                    if ( bInt ) diag_message (DIAG_Z80_INTERRUPTS, "External vector = 0x%02X", Vector);
 					}
 				else
 					{
 					R->IntCont &= ~ ICF_LOOP;
 					Vector = R->IRequest;
 					bInt = Vector < INT_QUIT;
-                    diag_message (DIAG_Z80_INTERRUPTS, "Loop vector = 0x%02X", Vector);
+                    if ( bInt ) diag_message (DIAG_Z80_INTERRUPTS, "Loop vector = 0x%02X", Vector);
+                    else diag_message (DIAG_Z80_INTERRUPTS, "Quit request");
 					}
 				/* Switch to interrupt service routine */
 				if ( bInt )
 				    {
+                    /* Exit Halt state */
+                    if ( R->IFF & IFF_HALT )
+                        {
+                        R->PC.W++;
+                        R->IFF &= ~ IFF_HALT;
+                        }
+                    /* Save program counter */
+                    M_PUSH(PC);
+                    /* Disable interrupts */
+                    R->IFF &= ~ ( IFF_IEN | IFF_IEN2 );
                     switch ( R->IFF & IFF_IMODE )
                         {
                         case IFF_IM1:
