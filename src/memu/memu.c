@@ -226,8 +226,8 @@ void usage(const char *psErr, ...)
 	/*
 	fprintf(stderr, "       -ui-mem-title        set title for memory window\n");
 	fprintf(stderr, "       -ui-mem-display      set display to use for memory window\n");
-	fprintf(stderr, "       -ui-vram-title       set title for memory window\n");
-	fprintf(stderr, "       -ui-vram-display     set display to use for memory window\n");
+	fprintf(stderr, "       -ui-vram-title       set title for video memory window\n");
+	fprintf(stderr, "       -ui-vram-display     set display to use for video memory window\n");
 	fprintf(stderr, "       -ui-dis-title        set title for disassembly window\n");
 	fprintf(stderr, "       -ui-dis-display      set display to use for disassembly window\n");
 	*/
@@ -3230,7 +3230,7 @@ int memu (int argc, const char *argv[])
 		}
 
 	if ( i != argc )
-		opterror (argv[i]);
+		usage ("Unrecognised command %s", argv[i]);
 
     /* Test for no display - missing config file ? */
 
