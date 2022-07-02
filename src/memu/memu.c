@@ -263,7 +263,7 @@ void unimplemented (const char *psErr)
 
 void opterror (const char *psOpt)
     {
-    usage ("At option %s", psOpt);
+    usage ("Missing parameter after %s", psOpt);
     }
 
 /*...sread_file:0:*/
@@ -3141,7 +3141,7 @@ int memu (int argc, const char *argv[])
 			else if ( diag_flag_of(argv[i]+6) )
 				;
 			else
-				opterror (argv[i]);
+				usage ("Invalid diagnostic flag: %s", argv[i]);
 			}
 #if defined(BEMEMU)
 		else if ( !strcmp(argv[i], "-be") )
@@ -3167,7 +3167,7 @@ int memu (int argc, const char *argv[])
 		{
 		const char *dot = strrchr(argv[i], '.');
 		if ( dot == NULL )
-			opterror (argv[i]);
+			usage ("Filename missing extension: %s", argv[i]);
         if ( !strcmp(dot, ".mtx") || !strcmp(dot, ".MTX") )
             {
 			/* Save the filename for later LOAD "" */
