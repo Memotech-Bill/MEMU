@@ -338,6 +338,7 @@ static byte last_trace = TRUE;
 static byte no_trace[0x10000>>3] = { 0 };
 
 static BOOLEAN loadmtx_hack = FALSE;
+static BOOLEAN run_no_int = FALSE;
 /*...e*/
 
 #ifdef SMALL_MEM
@@ -1355,9 +1356,12 @@ void PatchZ80(Z80 *r)
 			mem_write_block(run_hdr_base, run_hdr_length, run_buf+4);
 			free(run_buf);
 			run_buf = NULL;
-			r->IFF&=0xFE; /* Disable interrupts, otherwise the
-			                 interrupts set up by MTX BASIC will
-			                 continue to happen, and can interfere. */
+            if ( run_no_int )
+                {
+                r->IFF&=0xFE; /* Disable interrupts, otherwise the
+                                 interrupts set up by MTX BASIC will
+                                 continue to happen, and can interfere. */
+                }
 			r->PC.W = run_hdr_base; /* Jump to the code we loaded */
 			vid_reset();
 			mem_snapshot();
@@ -2889,6 +2893,10 @@ int memu (int argc, const char *argv[])
 #else
             unimplemented (argv[i]);
 #endif
+			}
+		else if ( !strcmp(argv[i], "-run-no-interrupts") )
+            {
+            run_no_int = TRUE;
             }
 		else if ( !strcmp(argv[i], "-serial1-dev") )
 			{
