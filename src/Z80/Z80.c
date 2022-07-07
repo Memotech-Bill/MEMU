@@ -399,8 +399,10 @@ static void CodesDD( Z80 *R)
     case HALT:
       R->PC.W--;
       R->IFF|=0x80;
-      R->ICntLast -= R->ICount;
-      R->ICount=0;
+      // WJB - Execute HALT repeatedly so that CTC interrupt occurs at correct count
+      // and control of elapsed time is correct.
+      // R->ICntLast -= R->ICount;
+      // R->ICount=0;
       break;
     default:
       if(R->TrapBadOps)
@@ -433,8 +435,10 @@ static void CodesFD( Z80 *R)
     case HALT:
       R->PC.W--;
       R->IFF|=0x80;
-      R->ICntLast -= R->ICount;
-      R->ICount=0;
+      // WJB - Execute HALT repeatedly so that CTC interrupt occurs at correct count
+      // and control of elapsed time is correct.
+      // R->ICntLast -= R->ICount;
+      // R->ICount=0;
       break;
     default:
           diag_message (DIAG_Z80_INSTRUCTIONS,

@@ -219,7 +219,8 @@ case NOP:  break;
 case OUTA: OutZ80(RdZ80(R->PC.W++) |(R->AF.B.h<<8) ,R->AF.B.h);break;
 /* @@@AK, full word IO address */
 case INA:  R->AF.B.h=InZ80(RdZ80(R->PC.W++) |(R->AF.B.h<<8) );break;
-case HALT: R->PC.W--;R->IFF|=0x80;R->ICount=0;break;
+// Do not skip timing on HALT instruction
+case HALT: R->PC.W--;R->IFF|=0x80;/*R->ICount=0;*/break;
 
 case DI:
   R->IFF&=0xFE;
