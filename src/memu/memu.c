@@ -227,6 +227,7 @@ void usage(const char *psErr, ...)
 #endif
 	fprintf(stderr, "       -speed hz            set CPU speed (default is 4000000, ie: 4MHz)\n");
 	fprintf(stderr, "       -fast                don't limit speed, run as fast as possible\n");
+	fprintf(stderr, "       -run-no-interrupts   disable interrupts loading RUN files from command line\n");
 	/*
 	fprintf(stderr, "       -ui-mem-title        set title for memory window\n");
 	fprintf(stderr, "       -ui-mem-display      set display to use for memory window\n");
@@ -343,6 +344,7 @@ static byte run_cmd[] = "USER RUN \"????????.RUN\"\r";
 static byte *run_buf = NULL;
 static word run_hdr_base;
 static word run_hdr_length;
+static BOOLEAN run_no_int = FALSE;
 
 #ifdef SMALL_MEM
 FILE *fp_tape = NULL;
@@ -971,9 +973,12 @@ static void sna_save(Z80 *r)
 
 #ifdef HAVE_OSFS
 /*...ssetup_sdx:0:*/
+static BOOLEAN sdx_emulate = FALSE;
+
 static void setup_sdx(int rom)
 	{
 	byte b = mem_get_iobyte();
+    sdx_emulate = TRUE;
 	mem_set_iobyte(rom<<4);
 
 	/* Copy the ROM into place */
@@ -1365,36 +1370,41 @@ void PatchZ80(Z80 *r)
 			/* Hack used to load .RUN file into memory
 			   when MTX BASIC has started itself up */
 			{
-#if 0
-			mem_set_iobyte(0x00);
+            if ( sdx_emulate )
+                {
+                // Generate a USER RUN command
+                r->AF.B.h = *run_buf;   // Load a character in A
+                r->PC.W = 0x3635;       // Address of RET at end of routine
+                ++run_buf;
+                if ( *run_buf == '\0' )
+                    {
+                    // Remove the patch
+                    mem_write_byte(0x3627, 0xd3);
+                    mem_write_byte(0x3628, 0x05);
+                    run_buf = NULL;
+                    }
+                }
+            else
+                {
+                // Load the RUN file into memory and jump to it
+                mem_set_iobyte(0x00);
 				/* In a real USER RUN, the IOBYTE
 				   reflects the SDX BASIC ROM slot */
-			mem_write_byte(0x3627, 0xd3);
-			mem_write_byte(0x3628, 0x05);
-			mem_write_block(run_hdr_base, run_hdr_length, run_buf+4);
-			free(run_buf);
-			run_buf = NULL;
-            if ( run_no_int )
-                {
-                r->IFF&=0xFE; /* Disable interrupts, otherwise the
-                                 interrupts set up by MTX BASIC will
-                                 continue to happen, and can interfere. */
-                }
-			r->PC.W = run_hdr_base; /* Jump to the code we loaded */
-			vid_reset();
-			mem_snapshot();
-#else
-            r->AF.B.h = *run_buf;   // Load a character in A
-            r->PC.W = 0x3635;       // Address of RET at end of routine
-            ++run_buf;
-            if ( *run_buf == '\0' )
-                {
-                // Remove the patch
                 mem_write_byte(0x3627, 0xd3);
                 mem_write_byte(0x3628, 0x05);
+                mem_write_block(run_hdr_base, run_hdr_length, run_buf+4);
+                free(run_buf);
                 run_buf = NULL;
+                if ( run_no_int )
+                    {
+                    r->IFF&=0xFE; /* Disable interrupts, otherwise the
+                                     interrupts set up by MTX BASIC will
+                                     continue to happen, and can interfere. */
+                    }
+                r->PC.W = run_hdr_base; /* Jump to the code we loaded */
+                vid_reset();
+                mem_snapshot();
                 }
-#endif
 			}
 		else if ( r->PC.W-2 == 0x0AAE )
 			mtx_tape(r);
@@ -2671,6 +2681,7 @@ int memu (int argc, const char *argv[])
 			if ( ++i == argc )
 				opterror (argv[i-1]);
 			cfg.fn_sdxfdc[0] = argv[i];
+            sdx_emulate = TRUE;
 			}
 		else if ( !strcmp(argv[i], "-sdx-tracks2") )
 			{
@@ -2683,6 +2694,7 @@ int memu (int argc, const char *argv[])
 			if ( ++i == argc )
 				opterror (argv[i-1]);
 			cfg.fn_sdxfdc[1] = argv[i];
+            sdx_emulate = TRUE;
 			}
 		else if ( !strcmp(argv[i], "-sidisc-huge") )
             {
@@ -2713,6 +2725,7 @@ int memu (int argc, const char *argv[])
 				opterror (argv[i-2]);
 			cfg.sid_fn[drive] = argv[i];
 			sid_set_file(drive, argv[i]);
+            sdx_emulate = TRUE;
 #else
             unimplemented (argv[i]);
             i += 2;
@@ -2750,6 +2763,7 @@ int memu (int argc, const char *argv[])
 				opterror (argv[i-2]);
             cfx2_set_image (iDrive, iPart, argv[i]);
             cfg.fn_cfx2[iDrive][iPart] = argv[i];
+            sdx_emulate = TRUE;
 #else
             unimplemented (argv[i]);
             i += 2;
@@ -2903,6 +2917,10 @@ int memu (int argc, const char *argv[])
 		else if ( !strcmp(argv[i], "-fast") )
             {
 			moderate_speed = FALSE;
+            }
+		else if ( !strcmp(argv[i], "-run-no-interrupts") )
+            {
+			run_no_int = TRUE;
             }
 		else if ( !strcmp(argv[i], "-iperiod") )
 			{
@@ -3235,54 +3253,57 @@ int memu (int argc, const char *argv[])
 		else if ( !strcmp(dot, ".run") || !strcmp(dot, ".RUN") )
 			{
 #ifdef HAVE_OSFS
-#if 0
-			int len;
-			run_buf = emalloc(0x10000-0x4000);
-			len = read_file_path(argv[i], run_buf, 0x10000-0x4000, cpm_get_drive_a());
-			if ( len < 4 )
-				fatal("RUN file is way too short");
-			run_hdr_base   = get_word(run_buf  );
-			run_hdr_length = get_word(run_buf+2);
-			if ( len < run_hdr_length )
-				/* Per SDX User Manual, the length in the
-				   header is doesn't include the header. */
-				fatal("RUN file is too short");
-			if ( run_hdr_base < 0x4000 ||
-			     (unsigned long) run_hdr_base + (unsigned long) run_hdr_length >= 0x10000 )
-				fatal("RUN file base and length fields aren't credible"); 
-#else
-            struct stat st;
-            byte run_tmp[4];
-            const char *fpath = path_join (cpm_get_drive_a(), argv[i]);
-            FILE *frun = efopen (fpath, "rb");
-            int len = fread (run_tmp, 1, 4, frun);
-            fclose (frun);
-			if ( len < 4 )
-				fatal("RUN file is way too short");
-			run_hdr_base   = get_word(run_tmp  );
-			run_hdr_length = get_word(run_tmp+2);
-            if ( stat (fpath, &st) < 0 )
-                fatal ("Unable to stat RUN file");
-			if ( st.st_size < run_hdr_length + 4 )
-				/* Per SDX User Manual, the length in the
-				   header is doesn't include the header. */
-				fatal("RUN file is too short");
-			if ( run_hdr_base < 0x4000 ||
-			     (unsigned long) run_hdr_base + (unsigned long) run_hdr_length >= 0x10000 )
-				fatal("RUN file base and length fields aren't credible");
-            cpm_force_filename (fpath);
-            char *ps = &run_cmd[10];
-            for (int j = 0; j < 8; ++j)
+            if ( sdx_emulate )
                 {
-                char ch = argv[i][j];
-                if ( ch == '.' ) break;
-                if ( islower (ch) ) ch = toupper (ch);
-                *ps = ch;
-                ++ps;
+                struct stat st;
+                byte run_tmp[4];
+                const char *fpath = path_join (cpm_get_drive_a(), argv[i]);
+                FILE *frun = efopen (fpath, "rb");
+                int len = fread (run_tmp, 1, 4, frun);
+                fclose (frun);
+                if ( len < 4 )
+                    fatal("RUN file is way too short");
+                run_hdr_base   = get_word(run_tmp  );
+                run_hdr_length = get_word(run_tmp+2);
+                if ( stat (fpath, &st) < 0 )
+                    fatal ("Unable to stat RUN file");
+                if ( st.st_size < run_hdr_length + 4 )
+                    /* Per SDX User Manual, the length in the
+                       header is doesn't include the header. */
+                    fatal("RUN file is too short");
+                if ( run_hdr_base < 0x4000 ||
+                    (unsigned long) run_hdr_base + (unsigned long) run_hdr_length >= 0x10000 )
+                    fatal("RUN file base and length fields aren't credible");
+                cpm_force_filename (fpath);
+                char *ps = &run_cmd[10];
+                for (int j = 0; j < 8; ++j)
+                    {
+                    char ch = argv[i][j];
+                    if ( ch == '.' ) break;
+                    if ( islower (ch) ) ch = toupper (ch);
+                    *ps = ch;
+                    ++ps;
+                    }
+                strcpy (ps, ".RUN\"\r");
+                run_buf = run_cmd;
                 }
-            strcpy (ps, ".RUN\"\r");
-            run_buf = run_cmd;
-#endif
+            else
+                {
+                int len;
+                run_buf = emalloc(0x10000-0x4000);
+                len = read_file_path(argv[i], run_buf, 0x10000-0x4000, cpm_get_drive_a());
+                if ( len < 4 )
+                    fatal("RUN file is way too short");
+                run_hdr_base   = get_word(run_buf  );
+                run_hdr_length = get_word(run_buf+2);
+                if ( len < run_hdr_length )
+                    /* Per SDX User Manual, the length in the
+                       header is doesn't include the header. */
+                    fatal("RUN file is too short");
+                if ( run_hdr_base < 0x4000 ||
+                    (unsigned long) run_hdr_base + (unsigned long) run_hdr_length >= 0x10000 )
+                    fatal("RUN file base and length fields aren't credible");
+                }
 			mem_set_iobyte(0x00);
 			mem_write_byte(0x3627, 0xed); /* was 0xd3 */
 			mem_write_byte(0x3628, 0xfe); /* was 0x05 */

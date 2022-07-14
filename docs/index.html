@@ -572,6 +572,12 @@
       <dd>FDXB CP/M support</dd>
       <dt>-fast</dt>
       <dd>don't limit speed, run as fast as possible</dd>
+      <dt>-run-no-interrupts</dt>
+      <dd>Disable interrupts when loading a RUN file via the command line option.
+        This was default on Andy's MEMU but is not consistent with USER RUN
+        on a real MTX. Only has any effect if SDX is not being emulated (loading
+        a game into memory of an emulated MTX). If SDX emulation is enabled, then
+        the effect of typing a USER RUN command is explicitly emulated.</dd>
       <dt>file.com tail ...</dt>
       <dd>-cpm -iobyte 0x80 -addr 0x0100 -mem file.com</dd>
       <dt>file.run</dt>
