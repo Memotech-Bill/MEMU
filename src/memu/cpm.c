@@ -72,11 +72,18 @@ static BOOLEAN cpm_inited_fdxb = FALSE;
 static char *drive_a = NULL;
 static BOOLEAN invert_case = FALSE;
 static word dma_addr = 0x0080;
+static const char *force_fn = NULL;
 
 static BOOLEAN cpm_open_hack = FALSE;
 
 #define	CPM_DPB_ADDR     0xff80
 #define	CPM_DPB_ADDR_SDX 0xd800
+
+void cpm_force_filename (const char *fn)
+    {
+    if ( force_fn != NULL ) free ((void *)force_fn);
+    force_fn = fn;
+    }
 
 /*...sstr_upper:0:*/
 static void str_upper(char *s)
@@ -755,6 +762,7 @@ static void bdos_open_file(Z80 *r)
 	char filename[FCB_Fn_LEN+1+FCB_Tn_LEN+1];
 	char filename2[FCB_Fn_LEN+1+FCB_Tn_LEN+1];
 	char hostfilename[DRIVE_PREFIX_LEN+1+FCB_Fn_LEN+1+FCB_Tn_LEN+1];
+    const char *hostfn = hostfilename;
 	OPENFILE *openfile;
 	FILE *fp;
 	check_drive(fcb_addr);
@@ -778,8 +786,11 @@ static void bdos_open_file(Z80 *r)
 	strcpy(filename2, filename);
 	if ( invert_case )
 		str_invert(filename2);
-	sprintf(hostfilename, "%s/%s", drive_a, filename2);
-	if ( (fp = fopen(hostfilename, "rb+")) != NULL ) 
+    if ( force_fn == NULL )
+        sprintf(hostfilename, "%s/%s", drive_a, filename2);
+    else
+        hostfn = force_fn;
+	if ( (fp = fopen(hostfn, "rb+")) != NULL ) 
 		{
 		openfile = emalloc(sizeof(OPENFILE));
 		openfile->addr = fcb_addr;
@@ -793,6 +804,11 @@ static void bdos_open_file(Z80 *r)
 		r->AF.B.h = 0xff;
 		diag_message(DIAG_CPM_BDOS_FILE, "BDOS open file 0x%04x (cfn=%s, hfn=%s) failed", fcb_addr, filename, hostfilename);
 		}
+    if ( force_fn != NULL )
+        {
+        free ((void *)force_fn);
+        force_fn = NULL;
+        }
 	}
 /*...e*/
 /*...sbdos_close_file:0:*/

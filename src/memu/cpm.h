@@ -25,5 +25,6 @@ extern const char *cpm_get_drive_a(void);
 extern void cpm_set_invert_case(void);
 extern void cpm_set_tail(const char *tail);
 extern void cpm_allow_open_hack(BOOLEAN bAllow);
+extern void cpm_force_filename (const char *fn);
 
 #endif

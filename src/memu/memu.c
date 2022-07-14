@@ -18,6 +18,10 @@ memu.c - Memotech Emulator
 #include "display_pico.h"
 #endif
 #include <time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <ctype.h>
 
 #if defined(BEMEMU)
   #if defined(UNIX)
@@ -286,14 +290,27 @@ int read_file(const char *fn, byte *buf, int buflen)
 /*...e*/
 /*...sread_file_path:0:*/
 /* Honor the path, if specified */
+char * path_join (const char *path, const char *fn)
+    {
+    char *full_fn;
+	if ( path != NULL )
+		{
+		full_fn = emalloc(strlen(path)+1+strlen(fn)+1);
+		sprintf(full_fn, "%s/%s", path, fn);
+		}
+	else
+        {
+        full_fn = estrdup (fn);
+        }
+    return full_fn;
+    }
+
 static int read_file_path(const char *fn, byte *buf, int buflen, const char *path)
 	{
 	if ( path != NULL )
 		{
-		char *full_fn = emalloc(strlen(path)+1+strlen(fn)+1);
-		int n;
-		sprintf(full_fn, "%s/%s", path, fn);
-		n = read_file(full_fn, buf, buflen);
+		char *full_fn = path_join (path, fn);
+		int n = read_file(full_fn, buf, buflen);
 		free(full_fn);
 		return n;
 		}
@@ -322,6 +339,7 @@ static Z80 z80;
 static BOOLEAN moderate_speed = TRUE;
 // static BOOLEAN panel_hack = FALSE;
 
+static byte run_cmd[] = "USER RUN \"????????.RUN\"\r";
 static byte *run_buf = NULL;
 static word run_hdr_base;
 static word run_hdr_length;
@@ -338,7 +356,6 @@ static byte last_trace = TRUE;
 static byte no_trace[0x10000>>3] = { 0 };
 
 static BOOLEAN loadmtx_hack = FALSE;
-static BOOLEAN run_no_int = FALSE;
 /*...e*/
 
 #ifdef SMALL_MEM
@@ -1348,6 +1365,7 @@ void PatchZ80(Z80 *r)
 			/* Hack used to load .RUN file into memory
 			   when MTX BASIC has started itself up */
 			{
+#if 0
 			mem_set_iobyte(0x00);
 				/* In a real USER RUN, the IOBYTE
 				   reflects the SDX BASIC ROM slot */
@@ -1365,6 +1383,18 @@ void PatchZ80(Z80 *r)
 			r->PC.W = run_hdr_base; /* Jump to the code we loaded */
 			vid_reset();
 			mem_snapshot();
+#else
+            r->AF.B.h = *run_buf;   // Load a character in A
+            r->PC.W = 0x3635;       // Address of RET at end of routine
+            ++run_buf;
+            if ( *run_buf == '\0' )
+                {
+                // Remove the patch
+                mem_write_byte(0x3627, 0xd3);
+                mem_write_byte(0x3628, 0x05);
+                run_buf = NULL;
+                }
+#endif
 			}
 		else if ( r->PC.W-2 == 0x0AAE )
 			mtx_tape(r);
@@ -2893,10 +2923,6 @@ int memu (int argc, const char *argv[])
             unimplemented (argv[i]);
 #endif
 			}
-		else if ( !strcmp(argv[i], "-run-no-interrupts") )
-            {
-            run_no_int = TRUE;
-            }
 		else if ( !strcmp(argv[i], "-serial1-dev") )
 			{
 #ifdef HAVE_DART
@@ -3209,6 +3235,7 @@ int memu (int argc, const char *argv[])
 		else if ( !strcmp(dot, ".run") || !strcmp(dot, ".RUN") )
 			{
 #ifdef HAVE_OSFS
+#if 0
 			int len;
 			run_buf = emalloc(0x10000-0x4000);
 			len = read_file_path(argv[i], run_buf, 0x10000-0x4000, cpm_get_drive_a());
@@ -3223,6 +3250,39 @@ int memu (int argc, const char *argv[])
 			if ( run_hdr_base < 0x4000 ||
 			     (unsigned long) run_hdr_base + (unsigned long) run_hdr_length >= 0x10000 )
 				fatal("RUN file base and length fields aren't credible"); 
+#else
+            struct stat st;
+            byte run_tmp[4];
+            const char *fpath = path_join (cpm_get_drive_a(), argv[i]);
+            FILE *frun = efopen (fpath, "rb");
+            int len = fread (run_tmp, 1, 4, frun);
+            fclose (frun);
+			if ( len < 4 )
+				fatal("RUN file is way too short");
+			run_hdr_base   = get_word(run_tmp  );
+			run_hdr_length = get_word(run_tmp+2);
+            if ( stat (fpath, &st) < 0 )
+                fatal ("Unable to stat RUN file");
+			if ( st.st_size < run_hdr_length + 4 )
+				/* Per SDX User Manual, the length in the
+				   header is doesn't include the header. */
+				fatal("RUN file is too short");
+			if ( run_hdr_base < 0x4000 ||
+			     (unsigned long) run_hdr_base + (unsigned long) run_hdr_length >= 0x10000 )
+				fatal("RUN file base and length fields aren't credible");
+            cpm_force_filename (fpath);
+            char *ps = &run_cmd[10];
+            for (int j = 0; j < 8; ++j)
+                {
+                char ch = argv[i][j];
+                if ( ch == '.' ) break;
+                if ( islower (ch) ) ch = toupper (ch);
+                *ps = ch;
+                ++ps;
+                }
+            strcpy (ps, ".RUN\"\r");
+            run_buf = run_cmd;
+#endif
 			mem_set_iobyte(0x00);
 			mem_write_byte(0x3627, 0xed); /* was 0xd3 */
 			mem_write_byte(0x3628, 0xfe); /* was 0x05 */
