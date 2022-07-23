@@ -9,6 +9,7 @@
 #define BOOLEAN BOOLEANx
 #include <windows.h>
 #undef BOOLEAN
+#define strdup _strdup
 #else
 #include <unistd.h>
 #endif
