@@ -622,6 +622,31 @@ void load_rompair (int rom, const char *fname)
     }
 #endif
 
+void load_largerom (const char *psFlags, const char *psFile)
+    {
+    FILE *pf = efopen (psFile, "r");
+    while ( *psFlags )
+        {
+        int rom = *psFlags;
+        if (( rom == 'S' ) || ( rom == 's' ))
+            {
+            fseek (pf, 0, SEEK_SET);
+            if ( fread (mem_rom_os, 1, ROM_SIZE, pf) != ROM_SIZE ) fatal ("Error loading system ROM");
+            }
+        else if (( rom >= '0' ) && ( rom <= '7' ))
+            {
+            rom -= '0';
+            fseek (pf, ROM_SIZE * ( 2 * rom + 1 ), SEEK_SET);
+            if ( fread (mem_subpages[rom][0], 1, ROM_SIZE, pf) != ROM_SIZE ) fatal ("Error loading ROM");
+            }
+        else
+            {
+            fatal ("Invalid ROM selector");
+            }
+        ++psFlags;
+        }
+    }
+
 #ifdef SMALL_MEM
 byte *mem_ram_ptr (word addr, word *psize)
     {

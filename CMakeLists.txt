@@ -67,6 +67,7 @@ elseif("${TARGET}" STREQUAL "XWin")
     -DHAVE_DART
     -DHAVE_DISASS
     -DHAVE_JOY
+    -DHAVE_MFX
     -DMAP_PATH
     -DHAVE_OSFS
     -DHAVE_SID
@@ -88,8 +89,8 @@ elseif("${TARGET}" STREQUAL "XWin")
       RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/run_time
       )
     
-    #  add_compile_options(-g)
-    #  add_link_options(-g)
+    target_compile_options(memu-x PUBLIC -g)
+    target_link_options(memu-x PUBLIC -g)
     
     target_compile_definitions(memu-x PUBLIC ${src_defs})
     

@@ -249,6 +249,26 @@ void mon_out33(byte value)
 	diag_message(DIAG_MON_HW, "write attribute data 0x%02x", value);
 	mon_atrd = value;
 	}
+/* MFX Repeat Write */
+void mon_out34 (byte count)
+    {
+	diag_message(DIAG_MON_HW, "write repeat count 0x%02x", count);
+	if ( mon_adr_hi & 0x80 )
+		/* Its a write */
+		{
+		word adr = ( (((word)(mon_adr_hi&0x07))<<8) | mon_adr_lo );
+        for ( int i = 0; i < count; ++i )
+            {
+            if ( mon_adr_hi & 0x40 )
+                mon_glyphs[adr] = mon_ascd;
+            if ( mon_adr_hi & 0x20 )
+                mon_attrs [adr] = mon_atrd;
+            ++adr;
+            adr &= 0x07FF;
+            }
+		mon_refresh();
+		}
+    }
 /*...e*/
 /*...smon_out38 \45\ select a CRTC register:0:*/
 /* CRTC address */
@@ -350,6 +370,11 @@ byte mon_in33(void)
 	diag_message(DIAG_MON_HW, "read attribute data returns 0xff (offscreen)");
 	return 0xff;
 	}
+/* Read repeat counter - Assume it has always conted down to zero */
+byte mon_in34 (void)
+    {
+    return 0;
+    }
 /*...e*/
 /*...smon_in38 \45\ query selected CRTC register:0:*/
 /* CRTC address.

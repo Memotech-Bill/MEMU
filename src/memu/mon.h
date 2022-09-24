@@ -21,11 +21,13 @@ extern void mon_out30(byte value);
 extern void mon_out31(byte value);
 extern void mon_out32(byte value);
 extern void mon_out33(byte value);
+extern void mon_out34(byte value);
 extern void mon_out38(byte value);
 extern void mon_out39(byte value);
 extern byte mon_in30(void);
 extern byte mon_in32(void);
 extern byte mon_in33(void);
+extern byte mon_in34(void);
 extern byte mon_in38(void);
 extern byte mon_in39(void);
 

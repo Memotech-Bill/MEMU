@@ -20,6 +20,7 @@ memu.c - Memotech Emulator
 #include <time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <unistd.h>
 #include <ctype.h>
 
 #if defined(BEMEMU)
@@ -78,12 +79,12 @@ memu.c - Memotech Emulator
 #ifdef HAVE_CFX2
 #include "cfx2.h"
 #endif
+#include "sdcard.h"
+#include "mfx.h"
 #ifdef HAVE_VGA
 #include "vga.h"
 #endif
-#ifdef HAVE_NFX
 #include "nfx.h"
-#endif
 #include "dirmap.h"
 
 /*...vZ80\46\h:0:*/
@@ -143,6 +144,7 @@ void usage(const char *psErr, ...)
 	fprintf(stderr, "       -n-subpages rom n    set number of subpages\n");
 	fprintf(stderr, "       -romX file           load ROM X from file\n");
 	fprintf(stderr, "       -rompairX file       load ROM X and X+1 from file\n");
+	fprintf(stderr, "       -largerom roms file  load roms (S,0-7) from single file\n");
 #endif
 	fprintf(stderr, "       -vid-win             emulate VDP and TV using a graphical window\n");
 	fprintf(stderr, "       -vid-win-big,-v      increase size of VDP window (repeat as necessary)\n");
@@ -201,6 +203,10 @@ void usage(const char *psErr, ...)
 #ifdef HAVE_CFX2
     fprintf(stderr, "       -cfx2 rom_file       enable CFX-II emulation and specify ROM image file\n");
     fprintf(stderr, "       -cf-image c:p file   specify data image for partition (p) on card (c)\n");
+#endif
+#ifdef HAVE_SD_CARD
+    fprintf(stderr, "       -sd-image p file     specify data image for partition (p) on SD card\n");
+    fprintf(stderr, "       -sd-type type        SD card type emulated (SDv1, SDv2, SDHC)\n");
 #endif
 	fprintf(stderr, "       -prn-file file       specify file to receive printer output\n");
 	fprintf(stderr, "       -tape-dir path       .mtx files are in this directory\n");
@@ -1963,12 +1969,25 @@ void OutZ80(word port, byte value)
 		case 0x33:
 			mon_out33(value);
 			break;
+#ifdef HAVE_MFX
+        case 0x34:
+            mon_out34 (value);
+            break;
+        case 0x35:
+            mfx_out35 (value);
+            break;
+#endif
 		case 0x38:
 			mon_out38(value);
 			break;
 		case 0x39:
 			mon_out39(value);
 			break;
+#ifdef HAVE_MFX
+        case 0x3A:
+            mfx_out3A (value);
+            break;
+#endif
 		case 0x40:
 		case 0x41:
 		case 0x42:
@@ -2065,7 +2084,11 @@ void OutZ80(word port, byte value)
 			break;
 		case 0xd4:
 		case 0xd6:
+#ifdef HAVE_SD_CARD
+            sdcard_out (port, value);
+#else
 			OutZ80_bad("REMEMOTECH/REMEMOrizer SD Card", port, value, TRUE);
+#endif
 			break;
 		case 0xd9:
 			OutZ80_bad("REMEMOrizer flags", port, value, TRUE);
@@ -2176,10 +2199,22 @@ byte InZ80(word port)
 			return mon_in32();
 		case 0x33:
 			return mon_in33();
+#ifdef HAVE_MFX
+        case 0x34:
+            return mon_in34 ();
+        case 0x35:
+            return mfx_in35 ();
+#endif
 		case 0x38:
 			return mon_in38();
 		case 0x39:
 			return mon_in39();
+#ifdef HAVE_MFX
+        case 0x3A:
+            return mfx_in3A ();
+        case 0x3B:
+            return mem_get_iobyte ();
+#endif
 		case 0x40:
 		case 0x41:
 		case 0x42:
@@ -2267,9 +2302,17 @@ byte InZ80(word port)
 		case 0xd4:
 		case 0xd6:
 		case 0xd7:
+#ifdef HAVE_SD_CARD
+            return sdcard_in (port);
+#else
 			return InZ80_bad("REMEMOTECH/REMEMOrizer SD Card", port, TRUE);
+#endif
 		case 0xd8:
+#ifdef HAVE_SD_CARD
+            return mfx_inD8 ();
+#else
 			return InZ80_bad("REMEMOTECH/REMEMOrizer clock divider", port, TRUE);
+#endif
 		case 0xd9:
 			return InZ80_bad("REMEMOrizer flags", port, TRUE);
 #ifdef HAVE_SPEC
@@ -2487,6 +2530,18 @@ int memu (int argc, const char *argv[])
 #else
             unimplemented (argv[i]);
             ++i;
+#endif
+			}
+		else if ( !strncmp(argv[i], "-largerom", 8) )
+			{
+#ifndef SMALL_MEM
+			if ( i + 2 >= argc )
+				opterror (argv[i]);
+            load_largerom (argv[i+1], argv[i+2]);
+            i += 2;
+#else
+            unimplemented (argv[i]);
+            i += 2;
 #endif
 			}
 		else if ( !strncmp(argv[i], "-rom", 4) )
@@ -2766,6 +2821,33 @@ int memu (int argc, const char *argv[])
 #else
             unimplemented (argv[i]);
             i += 2;
+#endif
+            }
+        else if ( !strcmp (argv[i], "-sd-image") )
+            {
+#ifdef HAVE_SD_CARD
+            int iPart;
+			if ( ++i == argc )
+				opterror (argv[i-1]);
+			sscanf(argv[i], "%i", &iPart);
+			if ( ++i == argc )
+				opterror (argv[i-2]);
+            sdcard_set_image (iPart, argv[i]);
+            // cfg.fn_cfx2[iDrive][iPart] = argv[i];
+            sdx_emulate = TRUE;
+#else
+            unimplemented (argv[i]);
+            i += 2;
+#endif
+            }
+        else if ( !strcmp (argv[i], "-sd-type") )
+            {
+#ifdef HAVE_SD_CARD
+			if (( ++i == argc ) || ( ! sdcard_set_type (argv[i]) ))
+				opterror (argv[i-1]);
+#else
+            unimplemented (argv[i]);
+            ++i;
 #endif
             }
         else if ( !strcmp (argv[i], "-vga") )

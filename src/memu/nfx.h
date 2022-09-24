@@ -3,6 +3,11 @@
 #ifndef NFX_H
 #define NFX_H
 
+#if defined (HAVE_MFX) && ! defined (HAVE_NFX)
+#define HAVE_NFX
+#endif
+
+#ifdef HAVE_NFX
 #ifndef NFX_BASE
 #define	NFX_BASE    0x90	// Base I/O address for Wiznet
 #endif
@@ -12,5 +17,6 @@
 extern void nfx_port_offset (int offset);
 extern void nfx_out (byte port, byte value);
 extern byte nfx_in (byte port);
+#endif
 
 #endif

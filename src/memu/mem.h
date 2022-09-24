@@ -79,6 +79,7 @@ extern void mem_dump(void);
 extern byte *mem_rom_ptr(int rom);
 extern void load_rom (int rom, const char *fname);
 extern void load_rompair (int rom, const char *fname);
+extern void load_largerom (const char *psFlags, const char *psFile);
 
 #ifdef SMALL_MEM
 extern byte *mem_ram_ptr (word addr, word *psize);
