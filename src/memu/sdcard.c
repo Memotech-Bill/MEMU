@@ -24,6 +24,7 @@ static int nImage = 0;
 static const char *psImage[NSDPART] = { NULL };
 static FILE *pfImage[NSDPART] = { NULL };
 static int ncbt = 0;
+static byte sd_cfg;
 static byte cmdbuf[LEN_CMD];
 static byte crc = 0;
 static bool bAppCmd = false;
@@ -76,6 +77,8 @@ static FILE * sd_seek (int iPos)
         {
         pf = fopen (psImage[nFile], "r+");
         pfImage[nFile] = pf;
+        if ( pf != NULL ) diag_message (DIAG_SDXFDC_HW, "Opened image file %d: %s", nFile, psImage[nFile]);
+        else diag_message (DIAG_SDXFDC_HW, "Error opening image file %d: %s", nFile, psImage[nFile]);
         }
     if ( pf != NULL ) fseek (pf, iPos, SEEK_SET);
     return pf;
@@ -83,6 +86,7 @@ static FILE * sd_seek (int iPos)
 
 static void sd_data_out (byte b)
     {
+    if ( ! (sd_cfg & 0x80) ) return;
     if ( sd_state == st_wr_wait )
         {
         diag_message (DIAG_SDXFDC_HW, "SD wait data: 0x%02X", b);
@@ -250,6 +254,7 @@ static void sd_data_out (byte b)
 static byte sd_data_in (void)
     {
     byte b = 0xFF;
+    if ( ! (sd_cfg & 0x80) ) return b;
     if ( nrbt < 0 ) return b;
     switch (sd_state)
         {
@@ -276,6 +281,7 @@ static byte sd_data_in (void)
 
 static void sd_data_adv (void)
     {
+    if ( ! (sd_cfg & 0x80) ) return;
     ++nrbt;
     switch (sd_state)
         {
@@ -355,6 +361,15 @@ void sdcard_out (byte port, byte value)
     diag_message (DIAG_SDXFDC_PORT, "SD card output to port 0x%02x: 0x%02x", port & 0xFF, value);
     switch (port)
         {
+        case 0xD4:
+            sd_cfg = value;
+            if ( sd_cfg & 0x80 )
+                {
+                diag_message (DIAG_SDXFDC_HW, "SD card enabled - %s speed",
+                    ( sd_cfg & 0x04 ) ? "low" : "full");
+                }
+            else diag_message (DIAG_SDXFDC_HW, "SD card disabled");
+            break;
         case 0xD6:
             sd_data_adv ();
             sd_data_out (value);
