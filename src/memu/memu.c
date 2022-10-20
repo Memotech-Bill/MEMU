@@ -230,6 +230,7 @@ void usage(const char *psErr, ...)
 #ifdef HAVE_NFX
 	fprintf(stderr, "       -nfx-port-offset off offset to add to NFX port numbers\n");
 #endif
+	fprintf(stderr, "       -vdeb                Run Visual Debugger on startup\n");
 	fprintf(stderr, "       -speed hz            set CPU speed (default is 4000000, ie: 4MHz)\n");
 	fprintf(stderr, "       -fast                don't limit speed, run as fast as possible\n");
 	fprintf(stderr, "       -run-no-interrupts   disable interrupts loading RUN files from command line\n");
@@ -3264,6 +3265,10 @@ int memu (int argc, const char *argv[])
 #else
             unimplemented (argv[i]);
 #endif
+            }
+		else if ( !strcmp(argv[i], "-vdeb") )
+			{
+            vdeb_break ();
             }
 		else if ( !strncmp(argv[i], "-diag-", 6) )
 			{
