@@ -10,6 +10,7 @@
 #include "display_pico.h"
 #include "ff_stdio.h"
 #include "memu.h"
+#include "dirmap.h"
 
 #if DEBUG
 #define PRINTF(...) printf(__VA_ARGS__)
@@ -33,6 +34,9 @@ void memu_main (void)
     PRINTF ("Initialising USB\n");
     tusb_init();
     PRINTF ("Starting MEMU\n");
+    PMapRootDir (pmapHome, "", TRUE);
+    PMapRootDir (pmapExe, "", FALSE);
+    PMapRootDir (pmapWork, "", FALSE);
     memu (sizeof (sArg) / sizeof (sArg[0]), sArg);
     }
 
