@@ -1,5 +1,5 @@
 *~
 #*#
-build
+build*
 run_time/memu-*
 run_time/portaudio*

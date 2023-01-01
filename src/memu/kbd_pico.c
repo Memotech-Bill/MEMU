@@ -12,6 +12,26 @@
 #include "kbd.h"
 #include "common.h"
 
+#if PICO_SDK_VERSION_MAJOR == 1
+#if PICO_SDK_VERSION_MINOR < 2
+#define KBD_VERSION     1
+#elif PICO_SDK_VERSION_MINOR == 2
+#define KBD_VERSION     2
+#elif PICO_SDK_VERSION_MINOR == 3
+#define KBD_VERSION     3
+#endif  // PICO_SDK_VERSION_MINOR
+#endif  // PICO_SDK_VERSION_MAJOR
+#ifndef KBD_VERSION
+#if TUSB_VERSION_MAJOR == 0
+#if TUSB_VERSION_MINOR == 12
+#define KBD_VERSION     3
+#endif  // TUSB_VERSION_MINOR
+#endif  // TUSB_VERSION_MAJOR
+#endif  // KBD_VERSION
+#ifndef KBD_VERSION
+#error Unknown USB Version for keyboard
+#endif  // KBD_VERSION
+
 #define NKEYMODE    8
 #define KMD_SHIFT   0x01
 #define KMD_SCRLK   0x02
@@ -669,8 +689,7 @@ static inline void process_kbd_report(hid_keyboard_report_t const *p_new_report)
 
 CFG_TUSB_MEM_SECTION static hid_keyboard_report_t usb_keyboard_report;
 
-#if PICO_SDK_VERSION_MAJOR == 1
-#if PICO_SDK_VERSION_MINOR < 2
+#if KBD_VERSION == 1
 void hid_task(void)
 	{
     if ((kbd_addr > 0) && tuh_hid_keyboard_is_mounted(kbd_addr))
@@ -707,7 +726,7 @@ void tuh_hid_keyboard_isr(uint8_t dev_addr, xfer_result_t event)
     (void) event;
     }
 
-#elif PICO_SDK_VERSION_MINOR == 2
+#elif KBD_VERSION == 2
 void hid_task (void)
     {
     static int n = 0;
@@ -803,7 +822,7 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
         }
     }
 
-#elif PICO_SDK_VERSION_MINOR == 3
+#elif KBD_VERSION == 3
 void hid_task (void)
     {
     static int n = 0;
@@ -896,9 +915,8 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
         }
     }
 #else
-#error Unknown SDK Version
-#endif  // PICO_SDK_VERSION_MINOR
-#endif  // PICO_SDK_VERSION_MAJOR
+#error Unknown USB Version for Keyboard
+#endif  // KBD_VERSION
 
 void win_handle_events (void)
     {
