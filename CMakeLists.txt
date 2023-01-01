@@ -39,7 +39,12 @@ if("${TARGET}" STREQUAL "Pico")
     -DROM_PATCH_TAPE
     )
 
-  pico_enable_stdio_uart(memu-pico 1)
+  if (SERIAL_DEBUG)
+    pico_enable_stdio_uart(memu-pico 1)
+    target_compile_definitions(memu-pico PUBLIC -DDEBUG=1)
+  else ()
+    pico_enable_stdio_uart(memu-pico 0)
+  endif ()
   pico_enable_stdio_usb(memu-pico 0)
   pico_add_extra_outputs(memu-pico)
   target_link_libraries(memu-pico PUBLIC

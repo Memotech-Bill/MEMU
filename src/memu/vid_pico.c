@@ -9,9 +9,11 @@
 #include "diag.h"
 #include "vid.h"
 
-// #define TEST
-#ifdef TEST
+#if DEBUG
 #include <stdio.h>
+#define PRINTF(...) printf(__VA_ARGS__)
+#else
+#define PRINTF(...)
 #endif
 
 #define VWIDTH      320
@@ -65,7 +67,7 @@ static PIX_T colours[16] =
 	CLRMULT( PICO_SCANVIDEO_PIXEL_FROM_RGB8(  224, 224, 224 ) )	    /* white */
     };
 
-#ifdef TEST
+#ifdef DEBUG
 extern uint8_t vram[VRAM_SIZE];
 extern uint8_t regs[8];
 #else
@@ -390,7 +392,7 @@ void __time_critical_func(vid_render_loop) (void)
 #ifdef TEST
     for ( int i = 0; i < 16; ++i )
         {
-        printf ("colours[%d] = 0x%08X\n", i, colours[i]);
+        PRINTF ("colours[%d] = 0x%08X\n", i, colours[i]);
         }
 #endif
     while ( dmode == dispVDP )
@@ -398,7 +400,7 @@ void __time_critical_func(vid_render_loop) (void)
         struct scanvideo_scanline_buffer *buffer = scanvideo_begin_scanline_generation (true);
         int iScan = scanvideo_scanline_number (buffer->scanline_id);
 //        if ( ( iScan > 0 ) && ( iScan < iLast ) )
-//            printf ("Scanline reversed %d < %d\n", iScan, iLast);
+//            PRINTF ("Scanline reversed %d < %d\n", iScan, iLast);
 //        iLast = iScan;
         PIX_T *pix = (PIX_T *) (buffer->data + 1);
         if ( ( iScan >= GTOP ) && ( iScan < GBOT ) )
@@ -455,14 +457,14 @@ void __time_critical_func(vid_render_loop) (void)
 void vdp_video (void)
     {
 #ifndef DBLPIX
-    printf ("scanvideo_setup (320x320)\n");
+    PRINTF ("scanvideo_setup (320x320)\n");
     scanvideo_setup (&vga_mode_320x240_60);
-    printf ("scanvideo_timing_enable (true)\n");
+    PRINTF ("scanvideo_timing_enable (true)\n");
     scanvideo_timing_enable (true);
 #endif
     vid_render_loop ();
 #ifndef DBLPIX
-    printf ("scanvideo_timing_enable (false)\n");
+    PRINTF ("scanvideo_timing_enable (false)\n");
     scanvideo_timing_enable(false);
 #endif
     }

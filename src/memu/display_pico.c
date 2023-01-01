@@ -9,6 +9,12 @@
 #include "80col_pico.h"
 void vdp_video (void);
 
+#if DEBUG
+#define PRINTF(...) printf(__VA_ARGS__)
+#else
+#define PRINTF(...)
+#endif
+
 volatile DisplayMode dmode = dispNone;
 volatile EightyColumn *p80column;
 volatile bool bFrameInt;
@@ -52,9 +58,9 @@ const scanvideo_mode_t vga_mode_640x240_60 =
 void display_loop (void)
     {
 #ifdef DBLPIX
-    printf ("scanvideo_setup (640x320)\n");
+    PRINTF ("scanvideo_setup (640x320)\n");
     scanvideo_setup(&vga_mode_640x240_60);
-    printf ("scanvideo_timing_enable (true)\n");
+    PRINTF ("scanvideo_timing_enable (true)\n");
     scanvideo_timing_enable(true);
 #endif
     while (true)
@@ -65,27 +71,27 @@ void display_loop (void)
                 null_render_loop ();
                 break;
             case dispVDP:
-                printf ("Start VDP mode\n");
+                PRINTF ("Start VDP mode\n");
                 vdp_video ();
                 break;
             case disp80col:
-                printf ("Start 80 column mode\n");
+                PRINTF ("Start 80 column mode\n");
                 ecol_video ();
                 break;
             }
-        printf ("Switch display mode\n");
+        PRINTF ("Switch display mode\n");
         }
     }
 
 void display_vdp (void)
     {
-    printf ("Display VDP screen\n");
+    PRINTF ("Display VDP screen\n");
     dmode = dispVDP;
     }
 
 void display_80column (EightyColumn *p80c)
     {
-    printf ("Display 80 column screen\n");
+    PRINTF ("Display 80 column screen\n");
     p80column = p80c;
     dmode = disp80col;
     }

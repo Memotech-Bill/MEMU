@@ -273,12 +273,14 @@ void snd_term (void)
 
 void snd_query (void)
     {
+#ifdef DEBUG
     printf ("Period = %d us, Frequency = %f KHz\n", iPer, 1000.0 / iPer);
     printf ("nInt = %d, nFill = %d\n", nInt, nFill);
     printf ("sm_pc = %d, fifo = %d, stalled = %d\n",
         pio_sm_get_pc (pio_snd, sm_snd_out),
         pio_sm_get_tx_fifo_level (pio_snd, sm_snd_out),
         pio_sm_is_exec_stalled (pio_snd, sm_snd_out));
+#endif
     }
 
 #if 0

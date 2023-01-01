@@ -9,6 +9,12 @@
 #include "80col_pico.h"
 #include "monprom.h"
 
+#if DEBUG
+#define PRINTF(...) printf(__VA_ARGS__)
+#else
+#define PRINTF(...)
+#endif
+
 #define NCLR80C 8
 #define WTH80C ( EC_COLS * GLYPH_WIDTH )
 #define HGT80C ( EC_ROWS * GLYPH_HEIGHT )
@@ -35,7 +41,7 @@ extern volatile EightyColumn *p80column;
 
 void __time_critical_func(ecol_render_loop) (void)
     {
-    printf ("In render loop: mode = 0x%02X\n", p80column->mode);
+    PRINTF ("In render loop: mode = 0x%02X\n", p80column->mode);
     while ( dmode == disp80col )
         {
         EightyColumn *p80c = (EightyColumn *) p80column;
@@ -133,7 +139,7 @@ void __time_critical_func(ecol_render_loop) (void)
         scanvideo_end_scanline_generation (buffer);
         if ( iScan == HGT80C - 1 ) bFrameInt = true;
         }
-    printf ("Exit render loop: mode = 0x%02X\n", p80column->mode);
+    PRINTF ("Exit render loop: mode = 0x%02X\n", p80column->mode);
     }
 
 #ifndef DBLPIX
@@ -151,14 +157,14 @@ const scanvideo_mode_t vga_mode_640x240_60 =
 void ecol_video (void)
     {
 #ifndef DBLPIX
-    printf ("scanvideo_setup (640x320)\n");
+    PRINTF ("scanvideo_setup (640x320)\n");
     scanvideo_setup(&vga_mode_640x240_60);
-    printf ("scanvideo_timing_enable (true)\n");
+    PRINTF ("scanvideo_timing_enable (true)\n");
     scanvideo_timing_enable(true);
 #endif
     ecol_render_loop ();
 #ifndef DBLPIX
-    printf ("scanvideo_timing_enable (false)\n");
+    PRINTF ("scanvideo_timing_enable (false)\n");
     scanvideo_timing_enable(false);
 #endif
     }

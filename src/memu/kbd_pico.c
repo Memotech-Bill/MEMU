@@ -803,7 +803,9 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
 
     if (!rpt_info)
         {
+#if USBDBG > 0
         printf("Couldn't find the report info for this report !\r\n");
+#endif
         return;
         }
 

@@ -6,6 +6,12 @@
 #include <string.h>
 #include <stdio.h>
 
+#if DEBUG
+#define PRINTF(...) printf(__VA_ARGS__)
+#else
+#define PRINTF(...)
+#endif
+
 static EightyColumn ec_con;
 
 static bool bInit = false;
@@ -15,7 +21,7 @@ static int iAddr = 0;
 
 void printf_pico (const char *psMsg)
     {
-    printf ("%s", psMsg);
+    PRINTF ("%s", psMsg);
     if ( ! bInit )
         {
         memset (&ec_con, 0, sizeof (ec_con));
