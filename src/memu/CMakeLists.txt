@@ -17,6 +17,7 @@ if("${TARGET}" STREQUAL "Pico")
     ${CMAKE_CURRENT_LIST_DIR}/ctc.c
     ${CMAKE_CURRENT_LIST_DIR}/diag.c
     ${CMAKE_CURRENT_LIST_DIR}/dirt_ff.c
+    ${CMAKE_CURRENT_LIST_DIR}/dirmap.c
     ${CMAKE_CURRENT_LIST_DIR}/display_pico.c
     ${CMAKE_CURRENT_LIST_DIR}/ff_disk.c
     ${CMAKE_CURRENT_LIST_DIR}/ff_stdio.c

@@ -57,6 +57,7 @@ static PMapMode PMapClass (const char *psPath)
 
 const char *PMapMap (PMapMode pmap, const char *psPath)
     {
+    // printf ("pmap = %d, psPath = "%s\n", pmap, psPath);
     if ( pmap == pmapNone ) return psPath;
     int nLen = strlen (rootdir[pmap]) + strlen (psPath);
     if ( psNewMap == NULL )
@@ -71,7 +72,8 @@ const char *PMapMap (PMapMode pmap, const char *psPath)
         nNewLen = nLen;
         }
     strcpy (psNewMap, rootdir[pmap]);
-    strcat (psNewMap, &psPath[pmap == pmapHome ? 1 : 2]);
+    strcat (psNewMap, &psPath[psPath[1] == '/' ? 1 : 2]);
+    // printf ("psNewMap = %s\n", psNewMap);
     return psNewMap;
     }
 

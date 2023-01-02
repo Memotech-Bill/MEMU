@@ -43,7 +43,7 @@ void memu_main (void)
 int main (void)
     {
     set_sys_clock_khz (250000, true);
-#ifdef DEBUG
+#ifdef SERIAL_DIAG
     stdio_init_all();
 #endif
 #ifdef DEBUG

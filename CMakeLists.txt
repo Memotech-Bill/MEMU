@@ -37,11 +37,12 @@ if("${TARGET}" STREQUAL "Pico")
     -DALT_USAGE=cfg_usage
     -DROM_PATCH_KBD
     -DROM_PATCH_TAPE
+    -DMAP_PATH
     )
 
-  if (SERIAL_DEBUG)
+  if (SERIAL_DIAG)
     pico_enable_stdio_uart(memu-pico 1)
-    target_compile_definitions(memu-pico PUBLIC -DDEBUG=1)
+    target_compile_definitions(memu-pico PUBLIC -DSERIAL_DIAG=1)
   else ()
     pico_enable_stdio_uart(memu-pico 0)
   endif ()
