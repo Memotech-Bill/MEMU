@@ -25,6 +25,8 @@
 #if TUSB_VERSION_MAJOR == 0
 #if TUSB_VERSION_MINOR == 12
 #define KBD_VERSION     3
+#elif TUSB_VERSION_MINOR == 14
+#define KBD_VERSION     4
 #endif  // TUSB_VERSION_MINOR
 #endif  // TUSB_VERSION_MAJOR
 #endif  // KBD_VERSION
@@ -348,8 +350,17 @@ static void set_leds (uint8_t leds)
             .wIndex = 0,    // Interface number
             .wLength = sizeof (led_flags)
             };
-    
+#if KBD_VERSION == 3
         bool bRes = tuh_control_xfer (kbd_addr, &ledreq, &led_flags, NULL);
+#elif KBD_VERSION == 4
+        tuh_xfer_t ledxfer = {
+            .daddr = kbd_addr,
+            .setup = &ledreq,
+            .buffer = &led_flags,
+            .complete_cb = NULL
+            };
+        bool bRes = tuh_control_xfer (&ledxfer);
+#endif
         }
     }
 
@@ -824,7 +835,7 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
         }
     }
 
-#elif KBD_VERSION == 3
+#elif ( KBD_VERSION == 3 ) | ( KBD_VERSION == 4 )
 void hid_task (void)
     {
     static int n = 0;
