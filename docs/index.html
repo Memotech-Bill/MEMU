@@ -20,6 +20,7 @@
       <li><a href="#Usage">Usage</a>
         <ul>
           <li><a href="#Usage-Basic">Basic Usage</a></li>
+          <li><a href="#Usage-DiskImages">Disk Images</a></li>
           <li><a href="#Usage-Advanced">Advanced Usage</a></li>
         </ul>
       </li>
@@ -351,10 +352,10 @@
       <dt>Exit</dt>
       <dd>Exits MEMU. In bare-metal versions it will be necessary to reset the processor
         to restart the program.</dd>
-      <p>In order to be used by MEMU, disk images should be placed in the "disks" sub-folder
-        below the folder containing MEMU and the configuration files. Similarly, tapes should
-        be placed in the "tapes" sub-folder. This repositry only contains a few example tape
-        and disk image files. Many more can be obtained from:</p>
+      <p>In order to be used by MEMU, <a href="#Usage-DiskImages">disk images</a> should be
+        placed in the "disks" sub-folder below the folder containing MEMU and the configuration
+        files. Similarly, tapes should be placed in the "tapes" sub-folder. This repositry
+        only contains a few example tape and disk image files. Many more can be obtained from:</p>
       <ul>
         <li>Tape images
           <ul>
@@ -384,6 +385,33 @@
     <p>A typical configuration for CP/M emulation, with two floppy disks, is shown below.</p>
     <img class="Centre" src="MEMU_CPM_Configuration.png"
          alt="CP/M Colour Selected, Keyboard: Remapped, Sound: Yes, Files for floppy drives B and C selected">
+
+    <h3 id="Usage-DiskImages">Disk Images</h3>
+    <p>MEMU is not able to directly access files stored on the SD card. Instead the files on
+      the SD card are binary copies of the contents of CP/M disks. To access the CP/M files on
+      a modern PC you need to use a program which understands the CP/M disk format.</p>
+    <p>The traditional set of programs for that is <a href="http://www.moria.de/~michael/cpmtools/">cpmtools</a>.
+      For most Linux distributions they can be installed using the distribution's package manager.
+      Versions for Microsoft Windows can be downloaded from <a href="https://www.cpm8680.com/cpmtools/">here</a>.
+      Cpmtools requires a disk definition file which defines the exact layout of the disk image. Andy Key's
+      website provides a <a href="http://www.nyangau.org/memotech/diskdefs">disk definition file</a> for all the
+      Memotech disk formats.</p>
+    <p>The two most commonly used formats with the MEMU emulator are:</p>
+    <ul>
+      <li><b>memotech-type07</b> - The 640KB double sided / double density floppy disk.</li>
+      <li><b>memotech-type18</b> - The 8MB format used for silicon disks and modern CF or SD
+        storage expansions for the Memotech.</li>
+    </ul>
+    <p>Cpmtools are traditional command line utilities. To make the CP/M images more accessible on modern
+      machines, Andy has also developed software whicch enables the CP/M image to be mounted and accessed
+      using standard GUI file managers. These are:</p>
+    <ul>
+      <li>For Microsoft Windows - <a href="http://www.nyangau.org/cpmcbfs/cpmcbfs.htm">CP/M Callback Filesystem</a>.</li>
+      <li>For Linux - <a href="http://www.nyangau.org/cpmfuse/cpmfuse.htm">CP/M Filesystem in userspace</a>.</li>
+    </ul>
+    <p>An empty disk image can be preduced by creating an empty file, mounting it as a disk
+      in MEMU, then using one of the Memotech utilities to format the drive. Once formatted,
+      close MEMU and use one of the above tools to copy files into the image.</p>
     
     <h3 id="Usage-Advanced">Advanced Usage</h3>
     <p>MEMU configuration is controlled by a large number of option flags or switches. These
