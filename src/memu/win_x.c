@@ -958,3 +958,7 @@ void win_kbd_leds (BOOLEAN bCaps, BOOLEAN bNum, BOOLEAN bScroll)
         }
     diag_message (DIAG_KBD_HW, "win_kbd_leds (%d, %d, %d) - done", bCaps, bNum, bScroll);
     }
+
+void win_term (void)
+    {
+    }

@@ -138,6 +138,7 @@ void terminate(const char *reason)
     mon_term();
     diag_message (DIAG_INIT, "vid_term");
     vid_term();
+    win_term();
     // diag_message (DIAG_ALWAYS, "Terminate: %s", reason);
     fprintf (stderr, "Terminate: %s\n", reason);
     diag_message (DIAG_INIT, "diag_term");

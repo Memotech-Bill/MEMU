@@ -120,6 +120,7 @@ extern WIN *win_create(
 	void (*keyrelease)(int)
 	);
 
+extern void win_term (void);    
 extern void win_delete (WIN *win);
 extern void win_refresh (WIN *win);
 extern int win_shifted_wk (int wk);

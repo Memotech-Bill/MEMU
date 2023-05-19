@@ -137,7 +137,7 @@ void win_fb_init (void)
 
 	// Map the device to memory
 	fbp = (byte *) mmap (0, screensize, PROT_READ | PROT_WRITE, MAP_SHARED, fbfd, 0);
-	if ( (int) fbp == -1 )
+	if (  fbp == (byte *) -1 )
 		{
 		fatal ("Failed to map frame buffer memory.");
 		}

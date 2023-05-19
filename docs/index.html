@@ -188,6 +188,8 @@
         cmake -DTARGET=FBuf ..
         make
     </code></pre>
+    <p><b>Note:</b> The framebuffer version is intended for use from the console keyboard
+      and screen. It will not work over an SSH connection.</p>
 
     <p>The executables "memu-x" or "memu-fb" should be in the ../run_time folder. For older
       versions of CMake, they may either be in the root of the build folder, or in the
@@ -209,6 +211,22 @@
     <p>The "memu-pi" executable should be in the ../run_time folder. For older
       versions of CMake, it may either be in the root of the build-rpi folder, or in the
       "src/memu" sub-folder. Copy the executable into the root of the "run_time" folder.</p>
+    <p><b>Notes:/b></p>
+    <ol>
+      <li><p>This build uses the VideoCore GPU to compose the display. It therefore requires
+          use of the old FKMS driver, not the new KMS driver. Therefore edit the file
+          &quot;/config.txt&quot;</p>
+        <ul>
+          <li>If the line &quot;dtoverlay=vc4-kms-v3d&quot; is present, comment it out.</li>
+          <li>Insert the line &quot;dtoverlay=vc4-<b>f</b>kms-v3d&quot;
+        </ul>
+        <p>TODO - Produce a version which works with the KMS driver.</p>
+      </li>
+      <li><p>The display must be connected to one of the outputs controlled by the VideoCore
+          (e.g. HDMI), and the keyboard attached to a USB port. This version will not work
+          over an SSH connection. <b>Use</b> memu-x for that.</p>
+      </li>
+    </ol>
 
     <h3 id="Build-Circle">Bare-Metal Raspberry Pi Build</h3>
     <p>The bare-metal version of MEMU relies upon the

@@ -910,3 +910,8 @@ void win_max_size (const char *display, int *pWth, int *pHgt)
     *pWth = GetSystemMetrics (SM_CXFULLSCREEN) - iXBorder;
     *pHgt = GetSystemMetrics (SM_CYFULLSCREEN) - iYBorder;
     }
+
+void win_term (void)
+    {
+    }
+

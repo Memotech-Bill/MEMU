@@ -315,6 +315,7 @@ static void win_kbd_init (void)
 		{
 		fatal ("Unable to get existing keyboard mode.");
 		}
+    diag_message (DIAG_WIN_HW, "old_keyboard_mode = %d", old_keyboard_mode);
 
 	tcgetattr (ttyfd, &tty_attr_old);
 	tty_init   =  TRUE;
@@ -601,14 +602,18 @@ WIN *win_create(
 /*...e*/
 
 /*...swin_delete:0:*/
-static void win_term (void)
+void win_term (void)
 	{
+	diag_message (DIAG_WIN_HW, "win_term");
 #ifndef	NOKBD
 	if ( tty_init )
 		{
 		tcsetattr (ttyfd, TCSAFLUSH, &tty_attr_old);
+        diag_message (DIAG_WIN_HW, "old_keyboard_mode = %d", old_keyboard_mode);
 		ioctl (ttyfd, KDSKBMODE, old_keyboard_mode);
 		tty_init = FALSE;
+        diag_message (DIAG_WIN_HW, "Restored keyboard mode");
+        tty_init = 0;
 		}
 #endif
 	if ( gpu_mode == 3 )	vc_restore ();
