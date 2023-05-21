@@ -781,6 +781,7 @@ static int win_map_key (unsigned char ks)
 		}
 
 	// Have to deal with shift 3 (Pound sign) as a special case on UK keyboards.
+    /*
 	if ( ( ks == KEY_3 ) && ( mod_keys & ( MKY_LSHIFT | MKY_RSHIFT ) )
 		&& ( ( mod_keys & ( MKY_LCTRL | MKY_RCTRL | MKY_LALT | MKY_RALT ) ) == 0 ) )
 		{
@@ -788,11 +789,12 @@ static int win_map_key (unsigned char ks)
 		int   key   =  '#';
 		return   key;
 		}
+    */
 
 	// Use keyboard mapping.
 	kbe.kb_table   =  K_NORMTAB;
-	if ( mod_keys & ( MKY_LSHIFT | MKY_RSHIFT ) )   kbe.kb_table   |= K_SHIFTTAB;
-	if ( mod_keys & ( MKY_LALT | MKY_RALT ) )       kbe.kb_table   |= K_ALTTAB;
+	// if ( mod_keys & ( MKY_LSHIFT | MKY_RSHIFT ) )   kbe.kb_table   |= K_SHIFTTAB;
+	// if ( mod_keys & ( MKY_LALT | MKY_RALT ) )       kbe.kb_table   |= K_ALTTAB;
 	kbe.kb_index   =  ks;
 	kbe.kb_value   =  0;
 	if ( ioctl (ttyfd, KDGKBENT, &kbe) >= 0 )
@@ -827,9 +829,7 @@ static int win_map_key (unsigned char ks)
 
 int win_shifted_wk(int wk)
 	{
-	// This version of the code actually returns the shifted codes. No further conversion is necessary.
-	return   wk;
-#if (FALSE)
+#if (TRUE)
 	if ( wk >= 'a' && wk <= 'z' )
 		return wk-'a'+'A';
 	switch ( wk )
@@ -858,6 +858,8 @@ int win_shifted_wk(int wk)
 		default:   return ( wk >= 0 && wk < 0x100 ) ? wk : -1;
 		}
 #endif
+	// This version of the code actually returns the shifted codes. No further conversion is necessary.
+	return   wk;
 	}
 /*...e*/
 
