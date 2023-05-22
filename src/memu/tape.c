@@ -5,6 +5,7 @@
 #include "ctc.h"
 #include "diag.h"
 #include "memu.h"
+#include "mem.h"
 #include <stdio.h>
 #include <string.h>
 #ifdef WIN32
@@ -44,6 +45,7 @@ static unsigned long long cTapeLast = 0;        /* Z80 clock at last tape output
 static MTXStages stgOut = stgPre;       /* Stages of saving an MTX tape file */
 static int nMTXBitsOut;                 /* Number of bits in MTX tape byte */
 static int nMTXBytesOut;                /* Number of bytes saved to an MTX tape file */
+static int nMTXBlock;                   /* Number of blocks saved to an MTX tape file */
 static byte byMTXOut;                   /* MTX tape output byte */
 static byte nCycleOut;                  /* Number of preamble cycles output */
 static int nRateOut = 4800;             /* WAV output file sample rate */
@@ -212,6 +214,7 @@ void tape_play (void)
     {
     if ( ( pfTapeIn == NULL ) && ( psTapeIn != NULL ) )
         {
+        diag_message (DIAG_TAPE, "tape_play: psTapeIn = \"%s\".", psTapeIn);
         const char *psTapePath = make_path (cfg.tape_name_prefix, psTapeIn);
         switch (fmtIn)
             {
@@ -383,24 +386,20 @@ void tape_out1F (byte value)
             if ( fmtIn == fmtMTX )
                 {
                 diag_message (DIAG_TAPE, "%d Bytes loaded, %d Bits remaining.", nMTXBytesIn, nMTXBitsIn);
-/*
-  word addr;
-  Z80 *r = get_Z80_regs ();
-  printf ("HL = 0x%04x\n", r->HL.W);
-  addr = r->HL.W - 20;
-  while ( addr <= r->HL.W )
-  {
-  printf (" 0x%02x", mem_read_byte (addr));
-  ++addr;
-  }
-  printf ("\n");
-  fatal ("End of test");
-*/
                 }
             if ( fmtOut == fmtMTX )
                 {
-                diag_message (DIAG_TAPE, "%d data bytes saved.", nMTXBytesOut);
+                ++nMTXBlock;
+                if (( nMTXBlock == 1 ) && ( nMTXBytesOut == 20 ))
+                    {
+                    // Discard last two bytes of name block.
+                    diag_message (DIAG_TAPE, "Discard last two bytes of name block.");
+                    nMTXBytesOut -= 2;
+                    fseek (pfTapeOut, -2, SEEK_CUR);
+                    }
+                diag_message (DIAG_TAPE, "MTX block %d: %d data bytes saved.", nMTXBlock, nMTXBytesOut);
                 }
+            if ( pfTapeOut != NULL ) fflush (pfTapeOut);
             break;
         }
     }
@@ -462,6 +461,7 @@ void tape_save_cas (byte value)
         {
         const char *psTapePath;
         if ( psTapeOut == NULL ) OutZ80_bad("cassette tape", 0x03, value, FALSE);
+        diag_message (DIAG_TAPE, "Open CAS format tape output file %s", psTapeOut);
         psTapePath = make_path (cfg.tape_name_prefix, psTapeOut);
         pfTapeOut = fopen (psTapePath, "wb");
         free ((void *) psTapePath);
@@ -490,9 +490,11 @@ void tape_save_mtx (byte value)
                     {
                     const char *psTapePath;
                     if ( psTapeOut == NULL ) OutZ80_bad("cassette tape", 0x03, value, FALSE);
+                    diag_message (DIAG_TAPE, "Open MTX format tape output file %s", psTapeOut);
                     psTapePath = make_path (cfg.tape_name_prefix, psTapeOut);
                     pfTapeOut = fopen (psTapePath, "wb");
                     free ((void *) psTapePath);
+                    nMTXBlock = 0;
                     }
                 diag_message (DIAG_TAPE, "%d Preamble cycles", nCycleOut);
                 nMTXBytesOut = 0;
@@ -509,6 +511,9 @@ void tape_save_mtx (byte value)
                 if ( cTime > MTX_TAPE_HALF ) byMTXOut |= 0x80;
                 if ( ++ nMTXBitsOut >= 8 )
                     {
+                    Z80 *r = get_Z80_regs ();
+                    diag_message (DIAG_TAPE, "Byte %d = 0x%02X, PC = 0x%04X, HL = 0x%04X, (HL) = 0x%02X",
+                        nMTXBytesOut, byMTXOut, r->PC.W, r->HL.W, mem_read_byte (r->HL.W));
                     fwrite (&byMTXOut, sizeof (byMTXOut), 1, pfTapeOut);
                     ++nMTXBytesOut;
                     nMTXBitsOut = 0;
@@ -531,8 +536,8 @@ void tape_save_wav (byte value)
         word wVal;
         const char *psTapePath;
         if ( psTapeOut == NULL ) OutZ80_bad("cassette tape", 0x03, value, FALSE);
+        diag_message (DIAG_TAPE, "Open WAV format tape output file %s", psTapeOut);
         psTapePath = make_path (cfg.tape_name_prefix, psTapeOut);
-        diag_message (DIAG_TAPE, "Open tape output file: %s", psTapePath);
         pfTapeOut = fopen (psTapePath, "wb");
         free ((void *) psTapePath);
         fwrite ("RIFF", sizeof (char), 4, pfTapeOut);
@@ -568,10 +573,10 @@ void tape_save_wav (byte value)
 void tape_out3 (byte value)
     {
     value &= 0x01;
-    diag_message (DIAG_TAPE, "Cassette output 0x%02x", value);
+    //  diag_message (DIAG_TAPE, "Cassette output 0x%02x", value);
     if ( ( bTapeRun ) && ( value != byTapeOut ) )
         {
-        diag_message (DIAG_TAPE, "Tape output: %d", value);
+        // diag_message (DIAG_TAPE, "Tape output: %d", value);
         switch (fmtOut)
             {
             case fmtMTX:
