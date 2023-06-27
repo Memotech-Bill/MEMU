@@ -621,13 +621,13 @@ static BOOLEAN row_topt_key (int info, int wk)
         if ( ( iSelTopt == 0 ) && ( bTapeAudio ) )
             {
             bTapeAudio = FALSE;
-            bNoApply = TRUE;
+            // bNoApply = TRUE;
             bCfgRedraw = TRUE;
             }
         else if ( ( iSelTopt == 1 ) && ( ! bTapeAudio ) )
             {
             bTapeAudio = TRUE;
-            bNoApply = TRUE;
+            // bNoApply = TRUE;
             bCfgRedraw = TRUE;
             }
         else if ( iSelTopt == 2 ) bTapeOver = FALSE;
