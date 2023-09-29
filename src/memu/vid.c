@@ -969,20 +969,6 @@ byte vid_status_read(void)
 /*...e*/
 
 /*...svid_init:0:*/
-/*...skeypress:0:*/
-static void keypress(int wk)
-	{
-	kbd_win_keypress(wk);
-	mon_kbd_win_keypress(wk);
-	}
-/*...e*/
-/*...skeyrelease:0:*/
-static void keyrelease(int wk)
-	{
-	kbd_win_keyrelease(wk);
-	mon_kbd_win_keyrelease(wk);
-	}
-/*...e*/
 
 void vid_init(int emu, int width_scale, int height_scale)
 	{
@@ -1009,8 +995,8 @@ void vid_init(int emu, int width_scale, int height_scale)
 			vid_display, /* display */
 			NULL, /* geometry */
 			vid_cols, N_COLS_VID,
-			keypress,
-			keyrelease
+			kbd_win_keypress,
+			kbd_win_keyrelease
 			);
         // con_print ("After win_create\n",0);
         return;
@@ -1139,4 +1125,9 @@ BOOLEAN vid_dump (void)
     fprintf (pfil, " 0x%02X };\n", vid_memory[VID_MEMORY_SIZE - 1]);
     fclose (pfil);
     return TRUE;
+    }
+
+extern void vid_show (void)
+    {
+    win_show (vid_win);
     }

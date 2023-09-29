@@ -1,4 +1,4 @@
-/* display_pico.c - Display Control */
+/* win_pico.c - Display Control */
 
 #include <stdio.h>
 #include "pico.h"
@@ -6,8 +6,7 @@
 #include "pico/scanvideo.h"
 #include "pico/scanvideo/composable_scanline.h"
 #include "display_pico.h"
-#include "80col_pico.h"
-void vdp_video (void);
+#include "win.h"
 
 #if DEBUG
 #define PRINTF(...) printf(__VA_ARGS__)
@@ -16,7 +15,7 @@ void vdp_video (void);
 #endif
 
 volatile DisplayMode dmode = dispNone;
-volatile EightyColumn *p80column;
+volatile TXTBUF *p80column;
 volatile bool bFrameInt;
 
 void __time_critical_func(null_render_loop) (void)
@@ -76,36 +75,11 @@ void display_loop (void)
                 break;
             case disp80col:
                 PRINTF ("Start 80 column mode\n");
-                ecol_video ();
+                twin_video ();
                 break;
             }
         PRINTF ("Switch display mode\n");
         }
-    }
-
-void display_vdp (void)
-    {
-    PRINTF ("Display VDP screen\n");
-    dmode = dispVDP;
-    }
-
-void display_80column (EightyColumn *p80c)
-    {
-    PRINTF ("Display 80 column screen\n");
-    p80column = p80c;
-    dmode = disp80col;
-    }
-
-void display_save (DisplayState *pst)
-    {
-    pst->dm = dmode;
-    pst->pec = (EightyColumn *) p80column;
-    }
-
-void display_load (const DisplayState *pst)
-    {
-    if ( pst->dm == dispVDP ) display_vdp ();
-    else if ( pst->dm == disp80col ) display_80column (pst->pec);
     }
 
 void display_wait_for_frame (void)
@@ -118,4 +92,64 @@ void display_wait_for_frame (void)
         tight_loop_contents();
         }
     bFrameInt = false;
+    }
+
+void win_max_size (const char *display, int *pWth, int *pHgt)
+    {
+    *pWth = 640;
+    *pHgt = 480;
+    }
+
+WIN *win_create(
+	int width, int height,
+	int width_scale, int height_scale,
+	const char *title,
+	const char *display,
+	const char *geometry,
+	COL *col, int n_cols,
+	void (*keypress)(WIN *, int),
+	void (*keyrelease)(WIN *, int)
+	)
+    {
+    WIN *win = win_alloc (sizeof (WIN), 0);
+    win->width = width;
+    win->height = height;
+    win->width_scale = width_scale;
+    win->height_scale = height_scale;
+    win->keypress = keypress;
+    win->keyrelease = keyrelease;
+    return win;
+    }
+
+void win_delete (WIN *win)
+    {
+    win_free (win);
+    }
+
+void display_vdp (void)
+        {
+        PRINTF ("Display VDP screen\n");
+        dmode = dispVDP;
+        }
+    
+void display_tbuf (TXTBUF *tbuf)
+        {
+        PRINTF ("Display 80 column screen\n");
+        p80column = tbuf;
+        dmode = disp80col;
+        }
+
+void win_show (WIN *win)
+    {
+    active_win = win;
+    if ( win->tbuf != NULL ) display_tbuf (win->tbuf);
+    else display_vdp ();
+    }
+
+void win_refresh (WIN *win)
+    {
+    }
+
+void win_term (void)
+    {
     }

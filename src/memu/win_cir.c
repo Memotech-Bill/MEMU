@@ -5,25 +5,12 @@
 */
 
 /*...sincludes:0:*/
-/*
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <linux/fb.h>
-#include <linux/input.h>
-#include <sys/mman.h>
-#include <sys/ioctl.h>
-#include <linux/kd.h>
-#include <termios.h>
-*/
 #include <circle/alloc.h>
-
 #include "types.h"
 #include "diag.h"
 #include "common.h"
 #include "win.h"
+#include "kbd.h"
 #include "keyeventbuffer.h"
 #include "kfuncs.h"
 
@@ -35,37 +22,24 @@
 
 typedef struct
 	{
+    int iWin;
 	int width, height;
 	int width_scale, height_scale;
 	int n_cols;
 	byte *data;
-	void (*keypress)(int);
-	void (*keyrelease)(int);
+	void (*keypress)(WIN *, int);
+	void (*keyrelease)(WIN *, int);
+    TXTBUF *tbuf;
 	/* Private window data below - Above must match definition of WIN in win.h */
-	int iWin;
 	int left, top;
 	int byte_per_pixel;
 	unsigned int *cols;
 	} WIN_PRIV;
 
-#define   MAX_WINS 10
-static int n_wins = 0; 
-static int  iActiveWin  =  -1;
-static WIN_PRIV *wins[MAX_WINS];
-
 static struct FBInfo finfo;
 static int screensize = 0;
 static byte *fbp = NULL;
 static byte *pbline = NULL;
-
-/*
-static BOOLEAN tty_init =  FALSE;
-static int ttyfd  =  0;
-static struct termios tty_attr_old;
-static int old_keyboard_mode;
-*/
-
-static int mod_keys  =  0;
 
 void win_fb_init (void)
 	{
@@ -113,8 +87,8 @@ void win_refresh(WIN *win_pub)
 	byte *fbd;
 	int  line_length;
 
-    // diag_message (DIAG_WIN_HW, "Refresh window %d (%X), Active window = %d", win->iWin, win, iActiveWin);
-	if ( win->iWin != iActiveWin )   return;
+    // diag_message (DIAG_WIN_HW, "Refresh window %d (%p), Active window = %d", win->iWin, win, active_win->iWin);
+	if ( win_pub != active_win )   return;
 	line_length =  win->width * win->width_scale;
 	fbd   =  fbp + win->top * finfo.xstride + win->left;
 	pix   =  win->data;
@@ -169,7 +143,7 @@ static void win_swap (WIN_PRIV *win)
 	byte *fbd   =  fbp;
 	int  i;
 	diag_message (DIAG_WIN_HW, "Swap to window %d", win->iWin);
-	iActiveWin  =  win->iWin;
+    active_win = (WIN *) win;
 	for ( i = 0; i < screensize; ++i )
 		{
 		*fbd  =  0;
@@ -186,30 +160,7 @@ static void win_swap (WIN_PRIV *win)
 
 void win_show (WIN *win)
     {
-    if ( (WIN_PRIV *) win != wins[iActiveWin] ) win_swap ((WIN_PRIV *)win);
-    }
-
-void win_next (void)
-	{
-	if ( ++iActiveWin >= n_wins )	iActiveWin	=  0;
-	win_swap (wins[iActiveWin]);
-	}
-
-void win_prev (void)
-	{
-	if ( --iActiveWin < 0 )	iActiveWin	=  n_wins - 1;
-	win_swap (wins[iActiveWin]);
-	}
-
-BOOLEAN win_active (WIN *win_pub)
-    {
-	WIN_PRIV *win = (WIN_PRIV *) win_pub;
-    return ( win->iWin == iActiveWin );
-    }
-
-WIN * win_current (void)
-    {
-    return (WIN *) wins[iActiveWin];
+    if ( win != active_win ) win_swap ((WIN_PRIV *)win);
     }
 
 /*...e*/
@@ -230,8 +181,8 @@ WIN *win_create(
 	const char *display,
 	const char *geometry,
 	COL *cols, int n_cols,
-	void (*keypress)(int k),
-	void (*keyrelease)(int k)
+	void (*keypress)(WIN *, int),
+	void (*keyrelease)(WIN *, int)
 	)
 	{
 	WIN_PRIV *win;
@@ -242,12 +193,9 @@ WIN *win_create(
 	if ( n_wins == MAX_WINS )
 		fatal("too many windows");
 
-	win = (WIN_PRIV *) emalloc(sizeof(WIN_PRIV));
-	win->iWin      = n_wins;
+	win = (WIN_PRIV *) win_alloc(sizeof(WIN_PRIV), width * height);
 	win->width           = width;
 	win->height          = height;
-	win->data            = emalloc (width * height);
-	memset (win->data, 0, width * height);
 	win->width_scale     = finfo.xres / width;
 	win->height_scale    = finfo.yres / height;
 	if ( win->width_scale > win->height_scale )  win->width_scale  =  win->height_scale;
@@ -261,7 +209,6 @@ WIN *win_create(
 	diag_message (DIAG_INIT, "Created window %s (%d), size = %d x %d, scale = %d x %d, position = (%d, %d)",
 		title, win->iWin, win->width, win->height, win->width_scale, win->height_scale, win->left, win->top);
 
-	wins[n_wins++] =  win;
 	win_swap (win);
 	return (WIN *) win;
 	}
@@ -281,25 +228,9 @@ void win_delete(WIN *win_pub)
 	{
 	if ( win_pub == NULL ) return;
 	WIN_PRIV *win = (WIN_PRIV *) win_pub;
-	int i;
-	for ( i = 0; wins[i] != win; i++ )
-		;
-	diag_message (DIAG_WIN_HW, "Delete window %d", i);
-	wins[i] = wins[--n_wins];
-	wins[i]->iWin  =  i;
-	free (win->data);
+	diag_message (DIAG_WIN_HW, "Delete window %d", win->iWin);
 	free (win->cols);
-	free (win);
-	if ( n_wins )
-		{
-		diag_message (DIAG_WIN_HW, "Active window was %d", iActiveWin);
-		if ( iActiveWin == i )  win_swap (wins[n_wins-1]);
-		else if ( iActiveWin >= n_wins ) iActiveWin  =  i;
-		}
-	else
-		{
-		win_term ();
-		}
+	win_free (win_pub);
 	}
 /*...e*/
 
@@ -432,67 +363,6 @@ static int win_map_key (unsigned char ks)
 
 /*...e*/
 
-/*...swin_shifted_wk:0:*/
-/* Keys of the host keyboard have an unshifted label and a shifted label
-   written on them, eg: unshifted "1", shifted "!". Alphabetic keys typically
-   omit the unshifted lowercase letter, but notionally it is there.
-   This module returns WK_ values with names which reflect unshifted label.
-   Sometimes the module user will want to know the equivelent shifted label.
-
-   The problem with this code is that it assumes the UK keyboard layout. */
-
-int win_shifted_wk(int wk)
-	{
-	if ( wk >= 'a' && wk <= 'z' )
-		return wk-'a'+'A';
-	switch ( wk )
-		{
-		case '1':   return '!';
-		case '2':   return '"';
-		case '3':   return '#'; /* pound */
-		case '4':   return '$';
-		case '5':   return '%';
-		case '6':   return '^';
-		case '7':   return '&';
-		case '8':   return '*';
-		case '9':   return '(';
-		case '0':   return ')';
-		case '-':   return '_';
-		case '=':   return '+';
-		case '[':   return '{';
-		case ']':   return '}';
-		case ';':   return ':';
-		case '\'':   return '@';
-		case '#':   return '~';
-		case '\\':   return '|';
-		case ',':   return '<';
-		case '.':   return '>';
-		case '/':   return '?';
-		default:   return ( wk >= 0 && wk < 0x100 ) ? wk : -1;
-		}
-	}
-/*...e*/
-
-static char * ListModifiers (void)
-	{
-	static char sMods[19];
-	sMods[0] =  '\0';
-	if ( mod_keys == 0 ) strcpy (sMods, " None");
-	if ( mod_keys & MKY_LSHIFT )  strcat (sMods, " LS");
-	if ( mod_keys & MKY_RSHIFT )  strcat (sMods, " RS");
-	if ( mod_keys & MKY_LCTRL )   strcat (sMods, " LC");
-	if ( mod_keys & MKY_RCTRL )   strcat (sMods, " RC");
-	if ( mod_keys & MKY_LALT )    strcat (sMods, " LA");
-	if ( mod_keys & MKY_RALT )    strcat (sMods, " RA");
-	if ( mod_keys & MKY_CAPSLK )  strcat (sMods, " CL");
-	return   sMods;
-	}
-
-int win_mod_keys (void)
-    {
-    return mod_keys;
-    }
-
 /*...swin_handle_events:0:*/
 
 #ifdef	 ALT_HANDLE_EVENTS
@@ -506,7 +376,7 @@ void win_handle_events()
 
 #ifdef	 ALT_HANDLE_EVENTS
     // diag_message (DIAG_INIT, "ALT_HANDLE_EVENTS");
-	if ( ALT_HANDLE_EVENTS ((WIN *) wins[iActiveWin]) )	 return;
+	if ( ALT_HANDLE_EVENTS ((WIN *) active_win) )	 return;
 #endif
 
     // Keep Circle Scheduler happy.
@@ -523,32 +393,16 @@ void win_handle_events()
 			// Key press.
 			diag_message (DIAG_KBD_HW, "Key down event: 0x%02x, Modifiers:%s", key, ListModifiers ());
 
-			// Modifier keys.
-			if ( key == KEY_LSHIFT )        mod_keys |= MKY_LSHIFT;
-			else if ( key == KEY_RSHIFT )   mod_keys |= MKY_RSHIFT;
-			else if ( key == KEY_LCTRL )    mod_keys |= MKY_LCTRL;
-			else if ( key == KEY_RCTRL )    mod_keys |= MKY_RCTRL;
-			else if ( key == KEY_LALT )     mod_keys |= MKY_LALT;
-			else if ( key == KEY_RALT )     mod_keys |= MKY_RALT;
-			else if ( key == KEY_CAPLK )    mod_keys |= MKY_CAPSLK;
-
-			// Select window.
-			if ( ( mod_keys & MKY_LCTRL ) && ( key >= KEY_F1 ) && ( key <= KEY_F8 ) )
-				{
-				if ( ( key - KEY_F1 ) < n_wins )  win_swap (wins[key - KEY_F1]);
-				return;
-				}
-
 			// Exit on ctrl+break.
 
-			if ( ( key == KEY_PAUSE ) && ( mod_keys & MKY_LCTRL ) )
+			if ( ( key == KEY_PAUSE ) && ( kbd_mods & MKY_LCTRL ) )
 				{
 				diag_message (DIAG_KBD_HW, "Ctrl+Break keys pressed.");
 				terminate ("Ctrl+Break keys pressed.");
 				}
 
 			// Process key press.
-			if ( (iKey = win_map_key (key)) > 0 ) wins[iActiveWin]->keypress (iKey);
+			if ( (iKey = win_map_key (key)) > 0 ) active_win->keypress (active_win, iKey);
 			}
 		else
 			{
@@ -556,17 +410,8 @@ void win_handle_events()
 			key &= 0x7f;
 			diag_message (DIAG_KBD_HW, "Key up event: 0x%x, Modifiers:%02s", key, ListModifiers ());
 
-			// Modifier keys.
-			if ( key == KEY_LSHIFT )        mod_keys &= ~MKY_LSHIFT;
-			else if ( key == KEY_RSHIFT )   mod_keys &= ~MKY_RSHIFT;
-			else if ( key == KEY_LCTRL )    mod_keys &= ~MKY_LCTRL;
-			else if ( key == KEY_RCTRL )    mod_keys &= ~MKY_RCTRL;
-			else if ( key == KEY_LALT )     mod_keys &= ~MKY_LALT;
-			else if ( key == KEY_RALT )     mod_keys &= ~MKY_RALT;
-			else if ( key == KEY_CAPLK )    mod_keys &= ~MKY_CAPSLK;
-
 			// Process key release.
-			if ( (iKey = win_map_key (key)) > 0 ) wins[iActiveWin]->keyrelease (iKey);
+			if ( (iKey = win_map_key (key)) > 0 ) active_win->keyrelease (active_win, iKey);
 			}
 		}
 #endif
@@ -574,13 +419,13 @@ void win_handle_events()
 	}   
 /*...e*/
 
-void win_kbd_leds (BOOLEAN bCaps, BOOLEAN bNum, BOOLEAN bScroll)
+void kbd_chk_leds (int *mods)
     {
     static byte uLast = 0xFF;
     byte uLeds = 0;
-    if ( bCaps )    uLeds |= KEYB_LED_CAPS_LOCK;
-    if ( bNum )     uLeds |= KEYB_LED_NUM_LOCK;
-    if ( bScroll )  uLeds |= KEYB_LED_SCROLL_LOCK;
+    if ( *mods & MKY_CAPSLK )   uLeds |= KEYB_LED_CAPS_LOCK;
+    if ( *mods & MKY_NUMLK )    uLeds |= KEYB_LED_NUM_LOCK;
+    if ( *mods & MKY_SCRLLK )   uLeds |= KEYB_LED_SCROLL_LOCK;
     if ( uLeds != uLast ) SetKbdLeds (uLeds);
     uLast = uLeds;
     }

@@ -8,6 +8,7 @@
 #include "display_pico.h"
 #include "diag.h"
 #include "vid.h"
+#include "kbd.h"
 
 #if DEBUG
 #include <stdio.h>
@@ -67,6 +68,7 @@ static PIX_T colours[16] =
 	CLRMULT( PICO_SCANVIDEO_PIXEL_FROM_RGB8(  224, 224, 224 ) )	    /* white */
     };
 
+static WIN *vid_win = NULL;
 #ifdef DEBUG
 extern uint8_t vram[VRAM_SIZE];
 extern uint8_t regs[8];
@@ -554,25 +556,50 @@ byte vid_in2 (void)
 	return value;
 	}
 
+void vid_set_int (void)
+    {
+    vstat |= 0x80;
+    }
+
 void vid_clear_int (void)
     {
+    vstat &= 0x7F;
     }
 
 void vid_init(int emu, int width_scale, int height_scale)
     {
-    display_vdp ();
+    vid_win = win_create(
+        GWIDTH, GHEIGHT,
+        width_scale, height_scale,
+        "Memu Video",
+        NULL, /* display */
+        NULL, /* geometry */
+        NULL, 0,
+        kbd_win_keypress,
+        kbd_win_keyrelease
+        );
+    win_show (vid_win);
     }
 
 void vid_reset (void)
     {
     }
 
-void vid_term(void)
+void vid_term (void)
     {
+    }
+
+void vid_show (void)
+    {
+    display_vdp ();
     }
 
 void vid_max_scale (int *pxscl, int *pyscl)
     {
     *pxscl = 2;
     *pyscl = 2;
+    }
+
+void vid_refresh_vdeb (void)
+	{
     }

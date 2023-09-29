@@ -19,8 +19,10 @@ if("${TARGET}" STREQUAL "Pico")
 
   add_executable(memu-pico)
 
-  add_compile_options(-Werror -Wall -Wextra -Wnull-dereference)
+  #  add_compile_options(-Werror -Wall -Wextra -Wnull-dereference)
   #  add_link_options(-g)
+  target_compile_options(memu-pico PUBLIC -O1 -g)
+  target_link_options(memu-pico PUBLIC -g)
 
   target_compile_definitions(memu-pico PUBLIC
     -DPICO_SCANVIDEO_MAX_SCANLINE_BUFFER_WORDS=322
@@ -29,15 +31,19 @@ if("${TARGET}" STREQUAL "Pico")
     -D__Pico__
     -DPICO_PANIC_FUNCTION=fatal
     -DSMALL_MEM
+    -DHAVE_SID
     -DDYNAMIC_ROMS
     -DALT_EXIT=exit_pico
-    -DALT_KEYPRESS=test_cfg_key
+    -DHAVE_CONFIG
     -DALT_OPTIONS=cfg_options
-    -DALT_PRINTF=printf_pico
     -DALT_USAGE=cfg_usage
+    -DALT_PRINTF=printf_pico
     -DROM_PATCH_KBD
     -DROM_PATCH_TAPE
     -DMAP_PATH
+    -DHAVE_VDEB
+    -DHAVE_DISASS
+    -DZ80_DEBUG
     )
 
   if (SERIAL_DIAG)
@@ -63,7 +69,7 @@ elseif("${TARGET}" STREQUAL "XWin")
   set(src_defs
     -DLSB_FIRST
     -DDYNAMIC_ROMS
-    -DALT_KEYPRESS=test_cfg_key
+    -DHAVE_CONFIG
     -DALT_OPTIONS=cfg_options
     -DALT_USAGE=cfg_usage
     -DUNIX
@@ -97,6 +103,8 @@ elseif("${TARGET}" STREQUAL "XWin")
     
     target_compile_options(memu-x PUBLIC -g)
     target_link_options(memu-x PUBLIC -g)
+    # target_compile_options(memu-x PUBLIC -fsanitize=address -fsanitize=leak)
+    # target_link_options(memu-x PUBLIC -fsanitize=address -fsanitize=leak -static-libasan)
     
     target_compile_definitions(memu-x PUBLIC ${src_defs})
     
@@ -104,6 +112,7 @@ elseif("${TARGET}" STREQUAL "XWin")
       memu_src
       Z80_emu
       portaudio
+      mcheck
       X11
       m
       )
@@ -114,7 +123,7 @@ elseif("${TARGET}" STREQUAL "FBuf")
   set(src_defs
     -DLSB_FIRST
     -DDYNAMIC_ROMS
-    -DALT_KEYPRESS=test_cfg_key
+    -DHAVE_CONFIG
     -DALT_OPTIONS=cfg_options
     -DALT_USAGE=cfg_usage
     -DUNIX
@@ -182,7 +191,7 @@ elseif("${TARGET}" STREQUAL "RPi")
     -DALT_HANDLE_EVENTS=hw_handle_events
     -DALT_KBD_SENSE1=hw_kbd_sense_1
     -DALT_KBD_SENSE2=hw_kbd_sense_2
-    -DALT_KEYPRESS=test_cfg_key
+    -DHAVE_CONFIG
     -DALT_OPTIONS=hw_options
     -DALT_USAGE=hw_usage
     -DALT_Z80_OUT=hw_Z80_out
@@ -221,7 +230,7 @@ elseif("${TARGET}" STREQUAL "Win")
     -D_CRT_SECURE_NO_WARNINGS
     -DLSB_FIRST
     -DDYNAMIC_ROMS
-    -DALT_KEYPRESS=test_cfg_key
+    -DHAVE_CONFIG
     -DALT_OPTIONS=cfg_options
     -DALT_USAGE=cfg_usage
     -DWIN32
@@ -348,16 +357,16 @@ elseif("${TARGET}" STREQUAL "Circle")
     -DHAVE_UI
     -DHAVE_VDEB
     -DHAVE_VGA
-	-DALT_EXIT=hw_exit
+    -DALT_EXIT=hw_exit
     -DALT_INIT=hw_init
+    -DHAVE_CONFIG
     -DALT_OPTIONS=hw_options
     -DALT_USAGE=hw_usage
-	-DALT_Z80_OUT=hw_Z80_out
+    -DALT_Z80_OUT=hw_Z80_out
     -DALT_Z80_IN=hw_Z80_in
-	-DALT_KEYPRESS=test_cfg_key
     -DALT_KBD_SENSE1=hw_kbd_sense_1
     -DALT_KBD_SENSE2=hw_kbd_sense_2
-	-DALT_KEYIN=hw_key_scan
+    -DALT_KEYIN=hw_key_scan
     -DALT_HANDLE_EVENTS=hw_handle_events
     -DALT_PRINTF=printf_circle
     -DUSE_VCHIQ_SOUND=1

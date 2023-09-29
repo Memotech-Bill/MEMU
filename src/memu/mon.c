@@ -78,60 +78,9 @@ static byte mon_adr_lo;
 static byte mon_adr_hi;
 static byte mon_ascd;
 static byte mon_atrd;
-
-#define	N_CRTC_REGISTERS 16
-
-/* These are the values that AZMON.MAC initially sets them to. */
-static byte mon_crtc_registers_init[N_CRTC_REGISTERS] =
-	{
-	15*8-1,		/* Horizontal total */
-	COLUMNS,	/* Horizontal displayed */
-	82,		/* Horizontal sync position */
-	9,		/* Horizontal and vertical sync widths */
-	30,		/* Vertical total */
-	3,		/* Vertical total adjust */
-	ROWS,		/* Vertical displayed */
-	27,		/* Vertical sync position */
-	0,		/* Interlace and skew */
-	9,		/* Maximum raster address */
-	0x60,		/* Cursor start raster with blink enable (0x40) and blink speed (0x20) */
-	9,		/* Cursor end raster */
-	0,		/* Display start address (high) */
-	0,		/* Display start address (low) */
-	0,		/* Cursor address (high) */
-	0,		/* Cursor address (low) */
-	};
-
-static byte mon_crtc_registers[N_CRTC_REGISTERS];
-
 static byte mon_crtc_address;
 
 /* The driver emulation state */
-
-#define	N_COLS 8
-
-static COL mon_cols[N_COLS] =
-	{
-		/* normal colours */
-		{ 0x00,0x00,0x00 }, /* black */
-		{ 0xff,0x00,0x00 }, /* red */
-		{ 0x00,0xff,0x00 }, /* green */
-		{ 0xff,0xff,0x00 }, /* yellow */
-		{ 0x00,0x00,0xff }, /* blue */ 
-		{ 0xff,0x00,0xff }, /* magenta */
-		{ 0x00,0xff,0xff }, /* cyan */
-		{ 0xff,0xff,0xff }, /* white */
-	};
-
-#define	N_COLS_MONO 4
-
-static COL mon_cols_mono[N_COLS_MONO] =
-	{
-		{ 0x00,0x00,0x00 }, /* black */
-		{ 0x00,0x40,0x00 }, /* pale green */
-		{ 0x00,0xc0,0x00 }, /* normal green */
-		{ 0x00,0xff,0x00 }, /* bright green */
-	};
 
 #define	ATTR_FG_R       0x01
 #define	ATTR_FG_G       0x02
@@ -151,13 +100,14 @@ static COL mon_cols_mono[N_COLS_MONO] =
 
 #define	SCREEN_RAM      2048
 
-static byte mon_glyphs[SCREEN_RAM];
-static byte mon_attrs [SCREEN_RAM];
+static WIN *mon_win;
+static TXTBUF *mon_tbuf;
 static int mon_x, mon_y;
 static byte mon_print_attr;
 static byte mon_non_print_attr;
 static BOOLEAN mon_cursor_on;
 static BOOLEAN mon_scroll;
+static BOOLEAN mon_scrolled = FALSE;
 static byte mon_write_mask;
 
 static BOOLEAN mon_ascrt_no_colour;
@@ -190,22 +140,19 @@ static int mon_mode;
 #define	STATE_ESC_B_N  18
 static int mon_state;
 
-static WIN *mon_win = NULL;
 static BOOLEAN mon_win_changed;
 #ifdef HAVE_TH
 static BOOLEAN mon_th_changed;
 #endif
 static BOOLEAN mon_blink_blank;
-
-static BOOLEAN mon_kbd_shift_l;
-static BOOLEAN mon_kbd_shift_r;
-static BOOLEAN mon_kbd_ctrl_l;
-static BOOLEAN mon_kbd_ctrl_r;
-static BOOLEAN mon_kbd_caps_lock;
-static BOOLEAN mon_kbd_shift_lock;
-static int     mon_kbd_key;
 static BOOLEAN mon_kbd_pressed;
 /*...e*/
+
+#ifdef __Pico__
+#define DRAW_GLYPH(...)
+#else
+#define DRAW_GLYPH(...) twin_draw_glyph (__VA_ARGS__)
+#endif
 
 /*...smon_out30 \45\ set address low\44\ and copy to screen:0:*/
 /* Address low.
@@ -219,9 +166,10 @@ void mon_out30(byte value)
 		{
 		word adr = ( (((word)(mon_adr_hi&0x07))<<8) | mon_adr_lo );
 		if ( mon_adr_hi & 0x40 )
-			mon_glyphs[adr] = mon_ascd;
+			mon_tbuf->ram[adr].ch = mon_ascd;
 		if ( mon_adr_hi & 0x20 )
-			mon_attrs [adr] = mon_atrd;
+			mon_tbuf->ram[adr].at = mon_atrd;
+		if ( mon_adr_hi & 0x60 ) DRAW_GLYPH (mon_win, adr);
 		mon_refresh();
 		}
 	}
@@ -260,9 +208,10 @@ void mon_out34 (byte count)
         for ( int i = 0; i < count; ++i )
             {
             if ( mon_adr_hi & 0x40 )
-                mon_glyphs[adr] = mon_ascd;
+                mon_tbuf->ram[adr].ch = mon_ascd;
             if ( mon_adr_hi & 0x20 )
-                mon_attrs [adr] = mon_atrd;
+                mon_tbuf->ram[adr].at = mon_atrd;
+            if ( mon_adr_hi & 0x60 ) DRAW_GLYPH (mon_win, adr);
             ++adr;
             adr &= 0x07FF;
             }
@@ -276,7 +225,7 @@ void mon_out38(byte value)
 	{
 	diag_message(DIAG_MON_HW, "select CRTC register %d", value);
 	value &= 0x1f; /* Only low 5 bits are significant */
-	if ( value >= N_CRTC_REGISTERS )
+	if ( value >= NREG80C )
 		{
 		if ( ( mon_emu & MONEMU_IGNORE_INIT ) == 0 )
 			fatal("attempt to select CRTC register %d", value);
@@ -291,7 +240,7 @@ void mon_out38(byte value)
 void mon_out39(byte value)
 	{
 	diag_message(DIAG_MON_HW, "write CRTC register %d,0x%02x", mon_crtc_address, value);
-	mon_crtc_registers[mon_crtc_address] = value;
+	mon_tbuf->reg[mon_crtc_address] = value;
 	switch ( mon_crtc_address )
 		{
 		case 10:
@@ -307,15 +256,17 @@ void mon_out39(byte value)
 			break;
 		case 12:    /* Start address (low) */
 		case 13:    /* Start address (high) */
+            mon_scrolled = TRUE;
+            /* Fall through */
 		case 14:    /* Cursor address (low) */
 		case 15:    /* Cursor address (high) */
 			{
 			word base;
 			word adr;
-			base = (((word)(mon_crtc_registers[12] & 0x07))<<8) |
-			         (word) mon_crtc_registers[13]              ;
-			adr  = (((word)(mon_crtc_registers[14] & 0x07))<<8) |
-			         (word) mon_crtc_registers[15]              ;
+			base = (((word)(mon_tbuf->reg[12] & 0x07))<<8) |
+			         (word) mon_tbuf->reg[13]              ;
+			adr  = (((word)(mon_tbuf->reg[14] & 0x07))<<8) |
+			         (word) mon_tbuf->reg[15]              ;
 			adr  =  ( adr - base ) & 0x7ff;
 			mon_x = adr % COLUMNS;
 			mon_y = adr / COLUMNS;
@@ -348,7 +299,7 @@ byte mon_in32(void)
 	word adr = ( (((word)(mon_adr_hi&0x07))<<8) | mon_adr_lo );
 	if ( (mon_adr_hi&0x80) == 0x00 )
 		{
-		byte value = mon_glyphs[adr];
+		byte value = mon_tbuf->ram[adr].ch;
 		diag_message(DIAG_MON_HW, "read ASCII data returns 0x%02x", value);
 		return value;
 		}
@@ -363,7 +314,7 @@ byte mon_in33(void)
 	word adr = ( (((word)(mon_adr_hi&0x07))<<8) | mon_adr_lo );
 	if ( (mon_adr_hi&0x80) == 0x00 )
 		{
-		byte value = mon_attrs[adr];
+		byte value = mon_tbuf->ram[adr].at;
 		diag_message(DIAG_MON_HW, "read attribute data returns 0x%02x", value);
 		return value;
 		}
@@ -391,7 +342,7 @@ byte mon_in38(void)
    but we allow them all to be read. */
 byte mon_in39(void)
 	{
-	if ( mon_crtc_address >= N_CRTC_REGISTERS )
+	if ( mon_crtc_address >= NREG80C )
 		fatal("read of CRTC register %d not emulated", mon_crtc_address);
 	switch ( mon_crtc_address )
 		{
@@ -400,16 +351,16 @@ byte mon_in39(void)
 			/* Cursor address.
 			   Make sure its right before anyone reads it. */
 			{
-			word adr = ((((word)(mon_crtc_registers[12] & 0x07))<<8) |
-			        (word)mon_crtc_registers[13]) + mon_y*COLUMNS+mon_x;
-			mon_crtc_registers[14] = (byte) ((adr>>8)&0x07);
-			mon_crtc_registers[15] = (byte)  adr    ;
+			word adr = ((((word)(mon_tbuf->reg[12] & 0x07))<<8) |
+			        (word)mon_tbuf->reg[13]) + mon_y*COLUMNS+mon_x;
+			mon_tbuf->reg[14] = (byte) ((adr>>8)&0x07);
+			mon_tbuf->reg[15] = (byte)  adr    ;
 			}
 			break;
 		}
 	diag_message(DIAG_MON_HW, "read CRTC register %d returned 0x%02x",
-		mon_crtc_address, mon_crtc_registers[mon_crtc_address]);
-	return mon_crtc_registers[mon_crtc_address];
+		mon_crtc_address, mon_tbuf->reg[mon_crtc_address]);
+	return mon_tbuf->reg[mon_crtc_address];
 	}
 /*...e*/
 
@@ -427,17 +378,18 @@ static void mon_write_lf(void)
 	else if ( mon_scroll )
 		{
 		int x;
-		word	adr = (((word)(mon_crtc_registers[12] & 0x07))<<8) |
-			        (word)mon_crtc_registers[13]      ;
+		word	adr = (((word)(mon_tbuf->reg[12] & 0x07))<<8) |
+			        (word)mon_tbuf->reg[13]      ;
 		adr   =  ( adr + COLUMNS ) & 0x7ff;
-		mon_crtc_registers[12]  =  (byte) ( adr >> 8 );
-		mon_crtc_registers[13]  =  (byte) adr;
+		mon_tbuf->reg[12]  =  (byte) ( adr >> 8 );
+		mon_tbuf->reg[13]  =  (byte) adr;
 		adr   += ( ROWS - 1 ) * COLUMNS;
 		for ( x = 0; x < COLUMNS; x++ )
 			{
 			adr   &= 0x7ff;
-			mon_glyphs[adr] = ' ';
-			mon_attrs [adr] = mon_non_print_attr;
+			mon_tbuf->ram[adr].ch = ' ';
+			mon_tbuf->ram[adr].at = mon_non_print_attr;
+            DRAW_GLYPH (mon_win, adr);
 			++adr;
 			}
 		}
@@ -507,13 +459,14 @@ static void mon_write_bkg(byte b)
 static void mon_write_eol(void)
 	{
 	int x;
-	word adr = ((((word)(mon_crtc_registers[12] & 0x07))<<8) |
-			        (word)mon_crtc_registers[13]) + mon_y*COLUMNS+mon_x;
+	word adr = ((((word)(mon_tbuf->reg[12] & 0x07))<<8) |
+			        (word)mon_tbuf->reg[13]) + mon_y*COLUMNS+mon_x;
 	for ( x = mon_x; x < COLUMNS; x++ )
 		{
 		adr   &= 0x7ff;
-		mon_glyphs[adr] = ' ';
-		mon_attrs [adr] = mon_non_print_attr;
+		mon_tbuf->ram[adr].ch = ' ';
+		mon_tbuf->ram[adr].at = mon_non_print_attr;
+        DRAW_GLYPH (mon_win, adr);
 		++adr;
 		}
 	}
@@ -537,13 +490,14 @@ static void mon_write_clr(void)
 	{
 	int x, y;
 	word adr = 0;
-	mon_crtc_registers[12] = 0;
-	mon_crtc_registers[13] = 0;
+	mon_tbuf->reg[12] = 0;
+	mon_tbuf->reg[13] = 0;
 	for ( y = 0; y < ROWS; y++ )
 		for ( x = 0; x < COLUMNS; x++ )
 			{
-			mon_glyphs[adr] = ' ';
-			mon_attrs [adr] = mon_non_print_attr;
+			mon_tbuf->ram[adr].ch = ' ';
+			mon_tbuf->ram[adr].at = mon_non_print_attr;
+            DRAW_GLYPH (mon_win, adr);
 			++adr;
 			}
 	mon_x = 0;
@@ -582,8 +536,8 @@ static void mon_write_inslin(void)
 	{
 	int x, y;
 	word adr1, adr2;
-	word base = ((((word)(mon_crtc_registers[12] & 0x07))<<8) |
-	               (word) mon_crtc_registers[13]              );
+	word base = ((((word)(mon_tbuf->reg[12] & 0x07))<<8) |
+	               (word) mon_tbuf->reg[13]              );
 	for ( y = ROWS-1; y > mon_y; y-- )
 		{
 		adr1  =  base + COLUMNS * ( y - 1 );
@@ -592,8 +546,9 @@ static void mon_write_inslin(void)
 			{
 			adr1  &= 0x7ff;
 			adr2  &= 0x7ff;
-			mon_glyphs[adr2] = mon_glyphs[adr1];
-			mon_attrs [adr2] = mon_attrs [adr1];
+			mon_tbuf->ram[adr2].ch = mon_tbuf->ram[adr1].ch;
+			mon_tbuf->ram[adr2].at = mon_tbuf->ram[adr1].at;
+            DRAW_GLYPH (mon_win, adr2);
 			++adr1;
 			++adr2;
 			}
@@ -602,8 +557,9 @@ static void mon_write_inslin(void)
 	for ( x = 0; x < COLUMNS; x++ )
 		{
 		adr1  &= 0x7ff;
-		mon_glyphs[adr1] = ' ';
-		mon_attrs [adr1] = mon_non_print_attr;
+		mon_tbuf->ram[adr1].ch = ' ';
+		mon_tbuf->ram[adr1].at = mon_non_print_attr;
+        DRAW_GLYPH (mon_win, adr1);
 		++adr1;
 		}
 	}
@@ -614,8 +570,8 @@ static void mon_write_dellin(void)
 	int x, y;
 	word adr1 = 0;  // Initialisation to keep compiler happy.
     word adr2;
-	word base = ((((word)(mon_crtc_registers[12] & 0x07))<<8) |
-	               (word) mon_crtc_registers[13]              );
+	word base = ((((word)(mon_tbuf->reg[12] & 0x07))<<8) |
+	               (word) mon_tbuf->reg[13]              );
 	for ( y = mon_y; y < ROWS-1; y++ )
 		{
 		adr1  =  base + COLUMNS * y;
@@ -624,8 +580,9 @@ static void mon_write_dellin(void)
 			{
 			adr1  &= 0x7ff;
 			adr2  &= 0x7ff;
-			mon_glyphs[adr1] = mon_glyphs[adr2];
-			mon_attrs [adr1] = mon_attrs [adr2];
+			mon_tbuf->ram[adr1].ch = mon_tbuf->ram[adr2].ch;
+			mon_tbuf->ram[adr1].at = mon_tbuf->ram[adr2].at;
+            DRAW_GLYPH (mon_win, adr1);
 			++adr1;
 			++adr2;
 			}
@@ -633,8 +590,9 @@ static void mon_write_dellin(void)
 	for ( x = 0; x < COLUMNS; x++ )
 		{
 		adr1  &= 0x7ff;
-		mon_glyphs[adr1] = ' ';
-		mon_attrs [adr1] = mon_non_print_attr;
+		mon_tbuf->ram[adr1].ch = ' ';
+		mon_tbuf->ram[adr1].at = mon_non_print_attr;
+        DRAW_GLYPH (mon_win, adr1);
 		++adr1;
 		}
 	}
@@ -965,98 +923,47 @@ static byte mon_char_to_glyph(char c)
 
 static void mon_write_char(char c)
 	{
-	word adr = (((((word)(mon_crtc_registers[12] & 0x07))<<8) |
-	               (word) mon_crtc_registers[13]              ) + mon_y*COLUMNS+mon_x) & 0x7ff;
-	mon_glyphs[adr] = mon_char_to_glyph(c);
-	mon_attrs [adr] = mon_print_attr;
+	word adr = (((((word)(mon_tbuf->reg[12] & 0x07))<<8) |
+	               (word) mon_tbuf->reg[13]              ) + mon_y*COLUMNS+mon_x) & 0x7ff;
+	mon_tbuf->ram[adr].ch = mon_char_to_glyph(c);
+	mon_tbuf->ram[adr].at = mon_print_attr;
+    DRAW_GLYPH (mon_win, adr);
 	mon_write_fwd();
 	}
 /*...e*/
 
-/*...smon_refresh_win:0:*/
-static void mon_refresh_win_glyph(byte glyph, byte attr, byte *d)
-	{
-	byte fg =   (attr & ATTRS_FG)      ;
-	byte bg = ( (attr & ATTRS_BG) >> 3);
-	byte *s;
-	int x, y;
-	if ( (attr & ATTR_BLINK) != 0 && !mon_blink_blank )
-		s = mon_blank_prom;
-	else if ( attr & ATTR_GRAPHICS )
-		s = mon_graphic_prom[glyph];
-	else
-		s = mon_alpha_prom[glyph];
-	for ( y = 0; y < GLYPH_HEIGHT; y++ )
-		{
-		byte row = *s++;
-		for ( x = 0; x < GLYPH_WIDTH; x++ )
-			*d++ = (byte) ( ( row & (0x80>>x) ) ? fg : bg );
-		d += ( -GLYPH_WIDTH + COLUMNS*GLYPH_WIDTH );
-		}
-	}
-
-static void mon_refresh_win_uline(byte glyph, byte attr, byte *d)
-	{
-	byte fg =   (attr & ATTRS_FG)      ;
-	byte bg = ( (attr & ATTRS_BG) >> 3);
-	byte *s, row;
-	int x;
-	if ( attr & ATTR_GRAPHICS )
-		s = mon_graphic_prom[glyph];
-	else
-		s = mon_alpha_prom[glyph];
-	d += ( (GLYPH_HEIGHT-1) * COLUMNS*GLYPH_WIDTH );
-	row = s[GLYPH_HEIGHT-1];
-	for ( x = 0; x < GLYPH_WIDTH; x++ )
-		*d++ = (byte) ( ( row & (0x80>>x) ) ? bg : fg );
-	}
-
+#ifndef __Pico__
 void mon_refresh_win(void)
 	{
-	byte *d = mon_win->data;
-	byte  glyph, attr;
 	int x, y;
-	word adr = ((((word)(mon_crtc_registers[12] & 0x07))<<8) |
-			        (word)mon_crtc_registers[13]);
+	word adr = ((((word)(mon_tbuf->reg[12] & 0x07))<<8) | (word)mon_tbuf->reg[13]);
 	for ( y = 0; y < ROWS; y++ )
 		{
 		for ( x = 0; x < COLUMNS; x++ )
 			{
 			adr   &= 0x7ff;
-			glyph = mon_glyphs[adr];
-			attr  = mon_attrs [adr];
+			if (mon_scrolled || (mon_tbuf->ram[adr].at & ATTR_BLINK)) twin_draw_glyph (mon_win, adr);
 			++adr;
-			if ( mon_emu & MONEMU_WIN_MONO )
-				{
-				byte fg = 2, bg = 0, ul = 2;
-				if ( attr & ATTR_BRIGHT )
-					fg = 3;
-				if ( attr & ATTR_BACKGROUND )
-					{ bg = 1; ul = 3; }
-				if ( attr & ATTR_REVERSE )
-					{ fg = 0; bg = ul; ul = 0; }
-				mon_refresh_win_glyph(glyph, (attr&(ATTR_BLINK|ATTR_GRAPHICS))|(bg<<3)|fg, d);
-				if ( attr & ATTR_ULINE )
-					mon_refresh_win_uline(glyph, (attr&ATTR_GRAPHICS)|(bg<<3)|ul, d);
-				}
-			else
-				mon_refresh_win_glyph(glyph, attr, d);
- 
-			d += GLYPH_WIDTH;
 			}
-		d += ( -COLUMNS*GLYPH_WIDTH +COLUMNS*GLYPH_WIDTH*GLYPH_HEIGHT );
 		}
+    mon_scrolled = FALSE;
 	if ( mon_cursor_on && !mon_blink_blank && (mon_y<ROWS))
 		/* Draw a white block over the character */
 		{
-		byte attr = ( mon_emu & MONEMU_WIN_MONO )
-			? (ATTR_GRAPHICS|003)
-			: (ATTR_GRAPHICS|ATTR_FG_R|ATTR_FG_G|ATTR_FG_B) ;
-		d = mon_win->data + mon_y*COLUMNS*GLYPH_WIDTH*GLYPH_HEIGHT + mon_x*GLYPH_WIDTH;
-		mon_refresh_win_glyph(0xff, attr, d);
+        adr = (((((word)(mon_tbuf->reg[12] & 0x07))<<8) | (word)mon_tbuf->reg[13])
+            + COLUMNS * mon_y + mon_x) & 0x7FF;
+        twin_draw_csr (mon_win, adr);
 		}
-	win_refresh(mon_win);
+	win_refresh (mon_win);
+	if ( mon_cursor_on && !mon_blink_blank && (mon_y<ROWS))
+		/* Restore character at cursor */
+		{
+        adr = (((((word)(mon_tbuf->reg[12] & 0x07))<<8) | (word)mon_tbuf->reg[13])
+            + COLUMNS * mon_y + mon_x) & 0x7FF;
+        twin_draw_glyph (mon_win, adr);
+		}
 	}
+#endif
 /*...e*/
 /*...smon_refresh_th:0:*/
 #ifdef HAVE_TH
@@ -1121,8 +1028,8 @@ static void mon_refresh_th(void)
 	int h = ( y_size < ROWS    ) ? y_size : ROWS   ;
 	byte  glyph, attr;
 	int x, y;
-	word adr = ((((word)(mon_crtc_registers[12] & 0x07))<<8) |
-	              (word) mon_crtc_registers[13]              );
+	word adr = ((((word)(mon_tbuf->reg[12] & 0x07))<<8) |
+	              (word) mon_tbuf->reg[13]              );
 	th_setcsr(CSR_OFF);
 	for ( y = 0; y < h; y++ )
 		{
@@ -1130,8 +1037,8 @@ static void mon_refresh_th(void)
 		for ( x = 0; x < w; x++ )
 			{
 			adr   &= 0x7ff;
-			glyph = mon_glyphs[adr];
-			attr  = mon_attrs [adr];
+			glyph = mon_tbuf->ram[adr].ch;
+			attr  = mon_tbuf->ram[adr].at;
 			++adr;
 			mon_refresh_th_glyph(glyph, attr);
 			}
@@ -1180,14 +1087,19 @@ void mon_refresh(void)
 
 void mon_refresh_blink(void)
 	{
+#ifndef __Pico__
 	BOOLEAN new_blink_blank = ( (get_millis()%1000) > 500 );
 	if ( new_blink_blank != mon_blink_blank || mon_win_changed )
 		{
 		mon_blink_blank = new_blink_blank;
 		mon_win_changed = FALSE;
 		if ( mon_emu & MONEMU_WIN )
+            {
+            twin_set_blink (mon_blink_blank);
 			mon_refresh_win();
+            }
 		}
+#endif
 #ifdef HAVE_TH
 	if ( mon_th_changed )
 		{
@@ -1200,7 +1112,9 @@ void mon_refresh_blink(void)
 
 void mon_refresh_vdeb (void)
     {
+#ifndef __Pico__
 	if ( mon_emu & MONEMU_WIN ) mon_refresh_win ();
+#endif
 #ifdef HAVE_TH
 	if ( mon_emu & MONEMU_TH ) mon_refresh_th ();
 #endif
@@ -1379,26 +1293,6 @@ void mon_write(char c)
 #endif
 	}
 /*...e*/
- 
-/*...smon_kdb_win_keypress:0:*/
-/*...smon_is_ctrl:0:*/
-static BOOLEAN mon_is_ctrl(int wk)
-	{
-	if ( wk >= 'a' && wk <= 'z' )
-		return TRUE;
-	switch ( wk )
-		{
-		case '`':
-		case '[':
-		case '\\':
-		case ']':
-		case '^':
-		case '_':
-			return TRUE;
-		}
-	return FALSE;
-	}
-/*...e*/
 /*...smon_map_wk:0:*/
 /* Map WK_ values to the values you'd get when reading through the
    keyboard driver. */
@@ -1427,80 +1321,9 @@ static int mon_map_wk(int wk)
 	for ( i = 0; i < sizeof(mon_keymap)/sizeof(mon_keymap[0]); i++ )
 		if ( wk == mon_keymap[i].wk )
 			return mon_keymap[i].k;
-	return -1;
+	return wk;
 	}
 /*...e*/
-
-void mon_kbd_win_keypress(int wk)
-	{
-	diag_message(DIAG_MON_KBD_WIN_KEY, "mon_kbd_win_keypress 0x%04x", wk);
-	switch ( wk )
-		{
-		case WK_Shift_L:
-			mon_kbd_shift_l = TRUE;
-			break;
-		case WK_Shift_R:
-			mon_kbd_shift_r = TRUE;
-			break;
-		case WK_Control_L:
-			mon_kbd_ctrl_l = TRUE;
-			break;
-		case WK_Control_R:
-			mon_kbd_ctrl_r = TRUE;
-			break;
-		case WK_Caps_Lock:
-			mon_kbd_caps_lock = !mon_kbd_caps_lock;
-			break;
-		case WK_Shift_Lock:
-			mon_kbd_shift_lock = !mon_kbd_shift_lock;
-			break;
-		default:
-			{
-			int k;
-			if ( (k = mon_map_wk(wk)) != -1 )
-				mon_kbd_key = k;
-			else if ( wk >= 0 && wk < 0x100 )
-				{
-				if ( (mon_kbd_ctrl_l||mon_kbd_ctrl_r) &&
-				     mon_is_ctrl(wk) )
-					mon_kbd_key = (wk&31);
-				else if ( wk >= 'a' && wk <= 'z' &&
-				          (mon_kbd_shift_lock||mon_kbd_caps_lock||mon_kbd_shift_l||mon_kbd_shift_r) )
-					mon_kbd_key = (wk-'a'+'A');
-				else if ( mon_kbd_caps_lock||mon_kbd_shift_l||mon_kbd_shift_r )
-					mon_kbd_key = win_shifted_wk(wk);
-				else
-					mon_kbd_key = wk;
-				}
-			}
-			break;
-		}
-	}
-/*...e*/
-/*...smon_kbd_win_keyrelease:0:*/
-void mon_kbd_win_keyrelease(int wk)
-	{
-	diag_message(DIAG_MON_KBD_WIN_KEY, "mon_kbd_win_keyrelease 0x%04x", wk);
-	switch ( wk )
-		{
-		case WK_Shift_L:
-			mon_kbd_shift_l = FALSE;
-			break;
-		case WK_Shift_R:
-			mon_kbd_shift_r = FALSE;
-			break;
-		case WK_Control_L:
-			mon_kbd_ctrl_l = FALSE;
-			break;
-		case WK_Control_R:
-			mon_kbd_ctrl_r = FALSE;
-			break;
-		case WK_Caps_Lock:
-			break;
-		case WK_Shift_Lock:
-			break;
-		}
-	}
 /*...e*/
 /*...smon_kdb_map_th:0:*/
 #ifdef HAVE_TH
@@ -1574,13 +1397,13 @@ int mon_kbd_read(void)
 		{
 		if ( mon_emu & MONEMU_WIN )
 			{
-			if ( mon_kbd_key != -1 )
-				{
-				int ch = mon_kbd_key;
-				mon_kbd_key = -1;
-				return ch;
-				}
-			win_handle_events();
+            int wk = twin_kbd_test (mon_win);
+            if ( wk >= 0 )
+                {
+                int ch = mon_map_wk (wk);
+                if ( ch != 0 )
+                    return ch;
+                }
 			}
 #ifdef HAVE_TH
 		if ( mon_emu & MONEMU_TH )
@@ -1627,12 +1450,13 @@ int mon_kbd_read_non_wait(void)
 #endif
 	if ( mon_emu & MONEMU_WIN )
 		{
-		if ( mon_kbd_key != -1 )
-			{
-			int ch = mon_kbd_key;
-			mon_kbd_key = -1;
-			return ch;
-			}
+        int wk = twin_kbd_test (mon_win);
+        if ( wk >= 0 )
+            {
+            int ch = mon_map_wk (wk);
+            if ( ch != 0 )
+                return ch;
+            }
 		win_handle_events();
 		mon_refresh_blink();
 		}
@@ -1667,7 +1491,7 @@ BOOLEAN mon_kbd_status(void)
 #endif
 	if ( mon_emu & MONEMU_WIN )
 		{
-		if ( mon_kbd_key != -1 )
+		if ( twin_kbd_stat (mon_win) )
 			return TRUE;
 		win_handle_events();
 		mon_refresh_blink();
@@ -1683,28 +1507,24 @@ BOOLEAN mon_kbd_status(void)
 
 /*...smon_init:0:*/
 /*...skeypress:0:*/
-static void keypress(int wk)
+static void keypress (WIN *win, int wk)
 	{
-	kbd_win_keypress(wk);
-	mon_kbd_win_keypress(wk);
+	kbd_win_keypress (win, wk);
+	twin_keypress (win, wk);
 	}
 /*...e*/
 /*...skeyrelease:0:*/
-static void keyrelease(int wk)
+static void keyrelease (WIN *win, int wk)
 	{
-	kbd_win_keyrelease(wk);
-	mon_kbd_win_keyrelease(wk);
+	kbd_win_keyrelease (win, wk);
+	twin_keyrelease (win, wk);
 	}
 /*...e*/
 
 void mon_init(int emu, int width_scale, int height_scale)
 	{
-	int i;
+	mon_emu = emu;
 
-	mon_emu             = emu;
-
-	for ( i = 0; i < N_CRTC_REGISTERS; i++ )
-		mon_crtc_registers[i] = mon_crtc_registers_init[i];
 	mon_crtc_address    = 0;
 	mon_adr_hi          = 0;
 	mon_adr_lo          = 0;
@@ -1720,34 +1540,32 @@ void mon_init(int emu, int width_scale, int height_scale)
 	mon_mode            = MODE_STANDARD;
 	mon_state           = STATE_NORMAL;
 
-	mon_kbd_shift_l     = FALSE;
-	mon_kbd_shift_r     = FALSE;
-	mon_kbd_ctrl_l      = FALSE;
-	mon_kbd_ctrl_r      = FALSE;
-	mon_kbd_caps_lock   = FALSE;
-	mon_kbd_shift_lock  = FALSE;
-	mon_kbd_key         = -1; /* no keypress from window yet */
 	mon_kbd_pressed     = TRUE; /* for stdin based emulation */
-
-	mon_write_clr();
 
 	if ( mon_emu & MONEMU_WIN )
 		{
-		mon_init_prom();
-		mon_win = win_create(
-			COLUMNS*GLYPH_WIDTH, ROWS*GLYPH_HEIGHT,
-			width_scale, height_scale,
+        mon_win = twin_create (width_scale, height_scale,
 			mon_title ? mon_title : "Memu Monitor",
 			mon_display, /* display */
 			NULL, /* geometry */
-			(mon_emu & MONEMU_WIN_MONO) ? mon_cols_mono : mon_cols,
-			(mon_emu & MONEMU_WIN_MONO) ? N_COLS_MONO   : N_COLS  ,
-			keypress,
-			keyrelease
+            keypress, keyrelease,
+            mon_emu & MONEMU_WIN_MONO
 			);
-		mon_win_changed = TRUE;
-		win_refresh(mon_win);
+        mon_tbuf = mon_win->tbuf;
 		}
+    else
+        {
+        mon_win = NULL;
+        mon_tbuf = tbuf_create (mon_emu & MONEMU_WIN_MONO);
+        }
+
+	mon_write_clr();
+    mon_win_changed = TRUE;
+#ifndef __Pico__
+    win_refresh(mon_win);
+#endif
+    win_show (mon_win);
+        
 #ifdef HAVE_TH
 	if ( mon_emu & MONEMU_TH )
 		{
@@ -1762,10 +1580,14 @@ void mon_term(void)
 	{
 	if ( mon_emu & MONEMU_WIN )
 		{
-		if ( mon_win != NULL )
-			win_delete(mon_win);
+        win_delete(mon_win);
 		mon_win = NULL;
 		}
+    else
+        {
+        free (mon_tbuf);
+        }
+    mon_tbuf = NULL;
 #ifdef HAVE_TH
 	if ( mon_emu & MONEMU_TH )
 		th_deinit();
@@ -1820,4 +1642,9 @@ void mon_max_scale (int *pxscl, int *pyscl)
 WIN * mon_getwin (void)
     {
     return mon_win;
+    }
+
+void mon_show (void)
+    {
+    win_show (mon_win);
     }

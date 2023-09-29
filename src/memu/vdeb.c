@@ -6,7 +6,6 @@
 #include "dis.h"
 #include "mem.h"
 #include "monprom.h"
-#include "win.h"
 #include "vid.h"
 #include "mon.h"
 #include "ui.h"
@@ -18,17 +17,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define WINVDEB_WTH          80
-#define WINVDEB_HGT          24
+#define WINVDEB_WTH         80
+#define WINVDEB_HGT         24
 
-#define CLR_BACKGROUND      0
-#define CLR_HIGHBACK        1
-#define CLR_NORMAL          2
-#define CLR_HIGHLIGHT       3
-#define CLR_COUNT           4
-
-#define STY_NORMAL          ( 16 * CLR_NORMAL    + CLR_BACKGROUND )
-#define STY_HIGHLIGHT       ( 16 * CLR_HIGHLIGHT + CLR_HIGHBACK )
+#define STY_NORMAL          0x06
+#define STY_HIGHLIGHT       0x03
 
 #define COL_L           0
 #define COL_R           50
@@ -39,14 +32,8 @@
 #define ROW_PR          9
 #define ROW_DATA        11
 
-static WIN *vdeb_win  =  NULL;
-static int  vdeb_wk   =  -1;
-static COL vdeb_clr[CLR_COUNT] = {
-    {   0,   0,   0 },   /* Backgound */
-    {  64,  64,  64 },   /* Highlighted background */
-    {   0, 255, 255 },   /* Normal text */
-    { 255, 255,   0 },   /* Highlighted text */
-    };
+static WIN *vdeb_win    =  NULL;
+static WIN *run_win     =  NULL;
 
 static enum { vm_dis, vm_stp, vm_trc, vm_run } vmode = vm_dis;  // Execution mode
 static BOOLEAN bFollow = TRUE;  // Listing follows PC
@@ -56,8 +43,7 @@ static word dtop = 0;           // Top of data
 static word daddr = 0;          // Current data address
 static word taddr = 0;          // Stack address to halt trace
 static int  ireg = 0;           // Current register pair (0 = None)
-static int  mods = 0;           // Keyboard shift status
-#ifndef __circle__
+#ifdef HAVE_PROFILE
 static unsigned int nprofl = 0;     // Number of profiled steps
 static unsigned int *profl = NULL;  //  Profile of instruction execution
 #endif
@@ -94,181 +80,6 @@ struct st_wpt
 
 struct st_wpt   wpt_hi;         // Watch points in high memory
 struct st_wpt   wpt_pg[16];     // Watch points in paged memory
-
-typedef int (*PVALID)(int);     // Edit validator function prototype
-
-//  Key press event handler - record key pressed.
-static void vdeb_keypress(int wk)
-    {
-//    int mods = win_mod_keys ();
-    if ( wk == WK_Shift_L )         mods |= MKY_LSHIFT;
-    else if ( wk == WK_Shift_R )    mods |= MKY_RSHIFT;
-    else if ( wk == WK_Caps_Lock )  mods ^= MKY_CAPSLK;
-    else if ( wk == WK_F10 )        kbd_diag = TRUE;
-    else if ( kbd_diag ) diag_control (wk);
-    else if ( mods & ( MKY_LSHIFT | MKY_RSHIFT ) ) vdeb_wk = win_shifted_wk (wk);
-    else if ( ( mods & MKY_CAPSLK ) && ( wk >= 'a' ) && ( wk <= 'z' ) ) vdeb_wk = wk & 0x5F;
-    else vdeb_wk =  wk;
-    }
-
-//  Key release event handler - does nothing.
-static void vdeb_keyrelease(int wk)
-    {
-    if ( wk == WK_Shift_L )         mods &= ~ MKY_LSHIFT;
-    else if ( wk == WK_Shift_R )    mods &= ~ MKY_RSHIFT;
-    else if ( wk == WK_F10 )        kbd_diag = FALSE;
-    }
-
-//  Display text on config screen - Uses the monitor ROM font
-static void vdeb_print (int iRow, int iCol, int iSty, const char *psTxt, int nCh)
-    {
-    BOOLEAN  bEOT;
-    int  iFG =  iSty >> 4;
-    int  iBG =  iSty & 0x0f;
-    byte *pby   =  vdeb_win->data + GLYPH_HEIGHT * vdeb_win->width * iRow + GLYPH_WIDTH * iCol;
-    int  ch;
-    byte by;
-    int  iScan, iPix, iCh;
-    if ( nCh <= 0 )   nCh   =  (int) strlen (psTxt);
-
-    for ( iScan = 0; iScan < GLYPH_HEIGHT; ++iScan )
-        {
-        bEOT  =  FALSE;
-        for ( iCh = 0; iCh < nCh; ++iCh )
-            {
-            if ( ! bEOT )
-                {
-                ch =  psTxt[iCh];
-                if ( ch == '\0' )
-                    {
-                    bEOT  =  TRUE;
-                    ch =  ' ';
-                    }
-                else if ( ch < 0 )   ch =  '?';
-                }
-            else  ch =  ' ';
-            by =  mon_alpha_prom[ch][iScan];
-            for ( iPix = 0; iPix < GLYPH_WIDTH; ++iPix )
-                {
-                *pby  =  ( by & 0x80 ) ? iFG : iBG;
-                ++pby;
-                by = by << 1;
-                }
-            }
-        pby   += vdeb_win->width - GLYPH_WIDTH * nCh;
-        }
-    }
-
-//  Dispays a cursor (inverted video)
-static void vdeb_csr (int iRow, int iCol, int iSty)
-    {
-    int  iFG =  iSty >> 4;
-    int  iBG =  iSty & 0x0f;
-    int  iPix;
-    byte *pby   =  vdeb_win->data + ( GLYPH_HEIGHT * ( iRow + 1 ) - 1 ) * vdeb_win->width + GLYPH_WIDTH * iCol;
-    for ( iPix = 0; iPix < GLYPH_WIDTH; ++iPix )
-        {
-        if ( *pby == iFG )   *pby  =  iBG;
-        else                 *pby  =  iFG;
-        ++pby;
-        }
-    }
-
-//  Wait for a key press
-#ifdef   ALT_KEYIN
-extern int ALT_KEYIN (void);
-#endif
-
-static int vdeb_key (void)
-    {
-    win_refresh (vdeb_win);
-    vdeb_wk   =  -1;
-    while ( vdeb_wk < 0 )
-        {
-        win_handle_events ();
-#ifdef   ALT_KEYIN
-        if (vdeb_wk >= 0 )  break;
-        vdeb_wk =  ALT_KEYIN ();
-#endif
-        }
-    return   vdeb_wk;
-    }
-
-//  Edit a line of text - exit on return or escape
-static int vdeb_edit (int iRow, int iCol, int nWth, int iSty, int nLen, char *psText, PVALID vld)
-    {
-    int  nCh    =  (int) strlen (psText);
-    int  iCsr   =  0;
-    int  iScl   =  0;
-    int  wk;
-    while (TRUE)
-        {
-        if ( ( iCsr - iScl ) >= nWth )   iScl  =  iCsr - nWth + 1;
-        else if ( iCsr < iScl )          iScl  =  iCsr;
-        vdeb_print (iRow, iCol, iSty, &psText[iScl], nWth);
-        vdeb_csr (iRow, iCol + iCsr - iScl, iSty);
-        wk =  vdeb_key ();
-        switch (wk)
-            {
-            case  WK_Return:
-            case  WK_Escape:
-            {
-            return   wk;
-            }
-            case  WK_Left:
-            {
-            if ( iCsr > 0 )   --iCsr;
-            break;
-            }
-            case  WK_Home:
-            {
-            iCsr  =  0;
-            break;
-            }
-            case  WK_End:
-            {
-            iCsr  =  nCh;
-            break;
-            }
-            case  WK_Right:
-            {
-            if ( iCsr < nCh ) ++iCsr;
-            break;
-            }
-            case  WK_Delete:
-            {
-            if ( iCsr < nCh )
-                {
-                strcpy (&psText[iCsr], &psText[iCsr+1]);
-                --nCh;
-                }
-            break;
-            }
-            case  WK_BackSpace:
-            {
-            if ( iCsr > 0 )
-                {
-                --iCsr;
-                strcpy (&psText[iCsr], &psText[iCsr+1]);
-                --nCh;
-                }
-            break;
-            }
-            default:
-            {
-            if ( vld != NULL )  wk = vld (wk);
-            if ( ( nCh < nLen - 1 ) && ( wk >= ' ' ) && ( wk <= '~' ) )
-                {
-                memmove (&psText[iCsr+1], &psText[iCsr], nCh + 1 - iCsr);
-                psText[iCsr]   =  wk;
-                ++nCh;
-                ++iCsr;
-                }
-            break;
-            }
-            }
-        }
-    }
 
 int vld_hex (int wk)
     {
@@ -314,9 +125,9 @@ BOOLEAN GetHex (const char *psPrpt, int nHex, int *pval)
     int nPr = (int) strlen (psPrpt);
     int wk;
     sHex[0] = '\0';
-    vdeb_print (ROW_PR, COL_R, STY_NORMAL, psPrpt, nPr);
-    wk = vdeb_edit (ROW_PR, COL_R + nPr, nHex + 1, STY_NORMAL, sizeof (sHex), sHex, vld_hex);
-    vdeb_print (ROW_PR, COL_R, STY_NORMAL, "", nPr + nHex + 1);
+    twin_print (vdeb_win, ROW_PR, COL_R, STY_NORMAL, psPrpt, nPr);
+    wk = twin_edit (vdeb_win, ROW_PR, COL_R + nPr, nHex + 1, STY_NORMAL, sizeof (sHex), sHex, vld_hex);
+    twin_print (vdeb_win, ROW_PR, COL_R, STY_NORMAL, "", nPr + nHex + 1);
     if ( wk == WK_Return ) return HexVal (sHex, pval);
     return FALSE;
     }
@@ -327,9 +138,9 @@ BOOLEAN GetBreakLoc (const char *psPrpt, int *paddr, int *piob)
     int nPr = (int) strlen (psPrpt);
     int wk;
     sHex[0] = '\0';
-    vdeb_print (ROW_PR, COL_R, STY_NORMAL, psPrpt, nPr);
-    wk = vdeb_edit (ROW_PR, COL_R + nPr, 8, STY_NORMAL, sizeof (sHex), sHex, vld_brk);
-    vdeb_print (ROW_PR, COL_R, STY_NORMAL, "", nPr + 8);
+    twin_print (vdeb_win, ROW_PR, COL_R, STY_NORMAL, psPrpt, nPr);
+    wk = twin_edit (vdeb_win, ROW_PR, COL_R + nPr, 8, STY_NORMAL, sizeof (sHex), sHex, vld_brk);
+    twin_print (vdeb_win, ROW_PR, COL_R, STY_NORMAL, "", nPr + 8);
     if ( wk == WK_Return )
         {
         int addr;
@@ -589,17 +400,17 @@ void vdeb_init (void)
         memset (&wpt_pg, 0, sizeof (wpt_pg));
         bWPt = TRUE;
         }
-    vdeb_win  =  win_create (GLYPH_WIDTH * WINVDEB_WTH, GLYPH_HEIGHT * WINVDEB_HGT,
-        cfg.mon_width_scale, cfg.mon_height_scale,
-        "Visual Debugger",
-        NULL, NULL,
-        vdeb_clr, CLR_COUNT,
-        vdeb_keypress, vdeb_keyrelease);
+    vdeb_win  =  twin_create (cfg.mon_width_scale, cfg.mon_height_scale,
+        "Visual Debugger", NULL, NULL, twin_keypress, twin_keyrelease, 0);
+    twin_csr_style (vdeb_win, 0x20, 9);
     vmode = vm_stp;
     }
 
 void vdeb_break (void)
     {
+    WIN *win = win_current ();
+    if ( win != vdeb_win ) run_win = win;
+    // printf ("vdeb_break: run_win = %p\n", run_win);
     kbd_diag = FALSE;   // kbd_win_keyrelease (WK_F10);
     if ( vmode == vm_dis ) vdeb_init ();
     vmode = vm_stp;
@@ -608,7 +419,11 @@ void vdeb_break (void)
 void vdeb_term (void)
     {
     vmode = vm_dis;
-    if ( vdeb_win != NULL ) win_delete (vdeb_win);
+    if ( vdeb_win != NULL )
+        {
+        win_delete (vdeb_win);
+        vdeb_win = NULL;
+        }
     }
 
 void wpt_add (struct st_wpt *pwpt, word addr)
@@ -721,42 +536,42 @@ void vdeb_regs (Z80 *R)
     int n;
     for ( n = 0; n < 8; ++n )
         {
-        vdeb_print (ROW_REG, COL_R + n, STY_NORMAL, ( flags & 1 ) ? &sFlag[n] : " ", 1);
+        twin_print (vdeb_win, ROW_REG, COL_R + n, STY_NORMAL, ( flags & 1 ) ? &sFlag[n] : " ", 1);
         flags >>= 1;
         }
     sprintf (sReg, "%-3s %04X", "AF", R->AF.W);
-    vdeb_print (ROW_REG + 1, COL_R, ( ireg == 1 ) ? STY_HIGHLIGHT : STY_NORMAL, sReg, 8);
+    twin_print (vdeb_win, ROW_REG + 1, COL_R, ( ireg == 1 ) ? STY_HIGHLIGHT : STY_NORMAL, sReg, 8);
     sprintf (sReg, "%-3s %04X", "HL", R->HL.W);
-    vdeb_print (ROW_REG + 2, COL_R, ( ireg == 2 ) ? STY_HIGHLIGHT : STY_NORMAL, sReg, 8);
+    twin_print (vdeb_win, ROW_REG + 2, COL_R, ( ireg == 2 ) ? STY_HIGHLIGHT : STY_NORMAL, sReg, 8);
     sprintf (sReg, "%-3s %04X", "BC", R->BC.W);
-    vdeb_print (ROW_REG + 3, COL_R, ( ireg == 3 ) ? STY_HIGHLIGHT : STY_NORMAL, sReg, 8);
+    twin_print (vdeb_win, ROW_REG + 3, COL_R, ( ireg == 3 ) ? STY_HIGHLIGHT : STY_NORMAL, sReg, 8);
     sprintf (sReg, "%-3s %04X", "DE", R->DE.W);
-    vdeb_print (ROW_REG + 4, COL_R, ( ireg == 4 ) ? STY_HIGHLIGHT : STY_NORMAL, sReg, 8);
+    twin_print (vdeb_win, ROW_REG + 4, COL_R, ( ireg == 4 ) ? STY_HIGHLIGHT : STY_NORMAL, sReg, 8);
     sprintf (sReg, "%-3s %04X", "AF'", R->AF1.W);
-    vdeb_print (ROW_REG + 1, COL_R + 10, ( ireg == 5 ) ? STY_HIGHLIGHT : STY_NORMAL, sReg, 8);
+    twin_print (vdeb_win, ROW_REG + 1, COL_R + 10, ( ireg == 5 ) ? STY_HIGHLIGHT : STY_NORMAL, sReg, 8);
     sprintf (sReg, "%-3s %04X", "HL'", R->HL1.W);
-    vdeb_print (ROW_REG + 2, COL_R + 10, ( ireg == 6 ) ? STY_HIGHLIGHT : STY_NORMAL, sReg, 8);
+    twin_print (vdeb_win, ROW_REG + 2, COL_R + 10, ( ireg == 6 ) ? STY_HIGHLIGHT : STY_NORMAL, sReg, 8);
     sprintf (sReg, "%-3s %04X", "BC'", R->BC1.W);
-    vdeb_print (ROW_REG + 3, COL_R + 10, ( ireg == 7 ) ? STY_HIGHLIGHT : STY_NORMAL, sReg, 8);
+    twin_print (vdeb_win, ROW_REG + 3, COL_R + 10, ( ireg == 7 ) ? STY_HIGHLIGHT : STY_NORMAL, sReg, 8);
     sprintf (sReg, "%-3s %04X", "DE'", R->DE1.W);
-    vdeb_print (ROW_REG + 4, COL_R + 10, ( ireg == 8 ) ? STY_HIGHLIGHT : STY_NORMAL, sReg, 8);
+    twin_print (vdeb_win, ROW_REG + 4, COL_R + 10, ( ireg == 8 ) ? STY_HIGHLIGHT : STY_NORMAL, sReg, 8);
     sprintf (sReg, "%-3s %04X", "IX", R->IX.W);
-    vdeb_print (ROW_REG + 1, COL_R + 20, ( ireg ==  9 ) ? STY_HIGHLIGHT : STY_NORMAL, sReg, 8);
+    twin_print (vdeb_win, ROW_REG + 1, COL_R + 20, ( ireg ==  9 ) ? STY_HIGHLIGHT : STY_NORMAL, sReg, 8);
     sprintf (sReg, "%-3s %04X", "IY", R->IY.W);
-    vdeb_print (ROW_REG + 2, COL_R + 20, ( ireg == 10 ) ? STY_HIGHLIGHT : STY_NORMAL, sReg, 8);
+    twin_print (vdeb_win, ROW_REG + 2, COL_R + 20, ( ireg == 10 ) ? STY_HIGHLIGHT : STY_NORMAL, sReg, 8);
     sprintf (sReg, "%-3s %04X", "SP", R->SP.W);
-    vdeb_print (ROW_REG + 3, COL_R + 20, ( ireg == 11 ) ? STY_HIGHLIGHT : STY_NORMAL, sReg, 8);
+    twin_print (vdeb_win, ROW_REG + 3, COL_R + 20, ( ireg == 11 ) ? STY_HIGHLIGHT : STY_NORMAL, sReg, 8);
     sprintf (sReg, "%-3s %04X", "PC", R->PC.W);
-    vdeb_print (ROW_REG + 4, COL_R + 20, ( ireg == 12 ) ? STY_HIGHLIGHT : STY_NORMAL, sReg, 8);
+    twin_print (vdeb_win, ROW_REG + 4, COL_R + 20, ( ireg == 12 ) ? STY_HIGHLIGHT : STY_NORMAL, sReg, 8);
     sprintf (sReg, "%-3s %02X", "I", R->I);
-    vdeb_print (ROW_REG + 5, COL_R, ( ireg == 13 ) ? STY_HIGHLIGHT : STY_NORMAL, sReg, 8);
+    twin_print (vdeb_win, ROW_REG + 5, COL_R, ( ireg == 13 ) ? STY_HIGHLIGHT : STY_NORMAL, sReg, 8);
     sprintf (sReg, "%-3s %02X", "IFF", R->IFF);
-    vdeb_print (ROW_REG + 5, COL_R + 10, ( ireg == 14 ) ? STY_HIGHLIGHT : STY_NORMAL, sReg, 8);
+    twin_print (vdeb_win, ROW_REG + 5, COL_R + 10, ( ireg == 14 ) ? STY_HIGHLIGHT : STY_NORMAL, sReg, 8);
     flags = R->IFF;
     sprintf (sReg, "%c%d%c%c%c", ( flags & IFF_IEN ) ? 'E' : ' ', ( flags & IFF_IMODE ) >> 1,
         ( flags & IFF_IENX ) ? 'X' : ' ', ( flags & IFF_IEN2 ) ? 'S' : ' ',
         ( flags & IFF_HALT ) ? 'H' : ' ');
-    vdeb_print (ROW_REG + 5, COL_R + 20, STY_NORMAL, sReg, 5);
+    twin_print (vdeb_win, ROW_REG + 5, COL_R + 20, STY_NORMAL, sReg, 5);
     }
 
 void vdeb_ins (int iRow, int iCol, int nLen, int iSty, word *addr)
@@ -768,7 +583,7 @@ void vdeb_ins (int iRow, int iCol, int nLen, int iSty, word *addr)
         ++(*addr);
         }
     sAsm[nLen] = '\0';
-    vdeb_print (iRow, iCol, iSty, sAsm, nLen);
+    twin_print (vdeb_win, iRow, iCol, iSty, sAsm, nLen);
     }
 
 void vdeb_dis (Z80 *R)
@@ -807,7 +622,7 @@ void vdeb_dis (Z80 *R)
                 iSty = STY_HIGHLIGHT;
                 }
             sprintf (sAddr, "%02X:%04X ", ios, addr);
-            vdeb_print (n, COL_L, iSty, sAddr, 8);
+            twin_print (vdeb_win, n, COL_L, iSty, sAddr, 8);
             vdeb_ins (n, COL_L + 8, COL_R - COL_L - 9, iSty, &addr);
             }
         if ( bFound || ! bFollow ) return;
@@ -826,7 +641,7 @@ void vdeb_data (void)
     for ( n = 0; n < WINVDEB_HGT - ROW_DATA; ++n )
         {
         sprintf (sText, "%04X", addr);
-        vdeb_print (n + ROW_DATA, COL_R, STY_NORMAL, sText, 4);
+        twin_print (vdeb_win, n + ROW_DATA, COL_R, STY_NORMAL, sText, 4);
         for ( i = 0; i < 8; ++i )
             {
             byte b = RdZ80 (addr);
@@ -834,7 +649,7 @@ void vdeb_data (void)
                 sprintf (sText, " %c ", b);
             else
                 sprintf (sText, " %02X", b);
-            vdeb_print (n + ROW_DATA, COL_R + 4 + 3 * i,
+            twin_print (vdeb_win, n + ROW_DATA, COL_R + 4 + 3 * i,
                 ( addr == daddr ) ? STY_HIGHLIGHT : STY_NORMAL, sText, 3);
             ++addr;
             }
@@ -845,27 +660,33 @@ void vdeb_running (BOOLEAN bRun)
     {
     if ( bRun )
         {
-        vdeb_print (ROW_INS, COL_R, STY_HIGHLIGHT, "Running", WINVDEB_WTH - COL_R);
+        twin_print (vdeb_win, ROW_INS, COL_R, STY_HIGHLIGHT, "Running", WINVDEB_WTH - COL_R);
         win_refresh (vdeb_win);
+        // printf ("vdeb_running: win_show (%p)\n", run_win);
+        if ( run_win != NULL ) win_show (run_win);
         }
     else
         {
-        vdeb_print (ROW_INS, COL_R, STY_NORMAL, "", WINVDEB_WTH - COL_R);
+        WIN *win = win_current ();
+        if ( win != vdeb_win ) run_win = win;
+        // printf ("vdeb_running: run_win = %p\n", run_win);
+        twin_print (vdeb_win, ROW_INS, COL_R, STY_NORMAL, "", WINVDEB_WTH - COL_R);
+        win_show (vdeb_win);
         }
     }
 
-#ifndef __circle__
+#ifdef HAVE_PROFILE
 void pcount (void)
     {
     char sCount[11];
     if ( profl != NULL )
         {
         sprintf (sCount, "%10u", nprofl);
-        vdeb_print (ROW_PR, COL_P, STY_NORMAL, sCount, WINVDEB_WTH - COL_P);
+        twin_print (vdeb_win, ROW_PR, COL_P, STY_NORMAL, sCount, WINVDEB_WTH - COL_P);
         }
     else
         {
-        vdeb_print (ROW_PR, COL_P, STY_NORMAL, "", WINVDEB_WTH - COL_P);
+        twin_print (vdeb_win, ROW_PR, COL_P, STY_NORMAL, "", WINVDEB_WTH - COL_P);
         }
     }
 
@@ -941,7 +762,7 @@ void vdeb (Z80 *R)
     int addr;
     int iob;
     // Collect profile data
-#ifndef __circle__
+#ifdef HAVE_PROFILE
     if ( profl != NULL )
         {
         ++nprofl;
@@ -967,12 +788,14 @@ void vdeb (Z80 *R)
     vdeb_regs (R);
     vdeb_dis (R);
     vdeb_data ();
-#ifndef __circle__
+#ifdef HAVE_PROFILE
     pcount ();
 #endif
     vid_refresh_vdeb ();
     mon_refresh_vdeb ();
+#ifdef HAVE_UI
     ui_refresh ();
+#endif
 #ifdef HAVE_VGA
     if ( cfg.bVGA ) vga_refresh ();
 #endif
@@ -982,12 +805,12 @@ void vdeb (Z80 *R)
     while (TRUE)
         {
 #ifdef __circle__
-        vdeb_print (ROW_PR, COL_R, STY_NORMAL, "BCDGILNQRSTWX ?", COL_P - COL_R);
+        twin_print (vdeb_win, ROW_PR, COL_R, STY_NORMAL, "BCDGILNQRSTWX ?", COL_P - COL_R);
 #else
-        vdeb_print (ROW_PR, COL_R, STY_NORMAL, "BCDGILNPQRSTWX ?", COL_P - COL_R);
+        twin_print (vdeb_win, ROW_PR, COL_R, STY_NORMAL, "BCDGILNPQRSTWX ?", COL_P - COL_R);
 #endif
-        int key = vdeb_key ();
-        vdeb_print (ROW_PR, COL_R, STY_NORMAL, "", COL_P - COL_R);
+        int key = twin_kbd_in (vdeb_win);
+        twin_print (vdeb_win, ROW_PR, COL_R, STY_NORMAL, "", COL_P - COL_R);
         if ( ( key >= 'a' ) && ( key <= 'z' ) ) key -= 32;
         switch (key)
             {
@@ -1056,15 +879,15 @@ void vdeb (Z80 *R)
                 sCond[0] = '\0';
                 pbrk = GetBreak ((word) addr, (byte) iob);
                 pbrk->bk = bkAll;
-                vdeb_print (ROW_PR, COL_R, STY_NORMAL, "Cond>        ", 0);
+                twin_print (vdeb_win, ROW_PR, COL_R, STY_NORMAL, "Cond>        ", 0);
                 while (TRUE)
                     {
-                    if ( vdeb_edit (ROW_PR, COL_R + 6, 9, STY_NORMAL, sizeof (sCond), sCond, vld_cond)
+                    if ( twin_edit (vdeb_win, ROW_PR, COL_R + 6, 9, STY_NORMAL, sizeof (sCond), sCond, vld_cond)
                         == WK_Escape )
                         break;
                     if ( BreakCond (pbrk, sCond) ) break;
                     }
-                vdeb_print (ROW_PR, COL_R, STY_NORMAL, "", 14);
+                twin_print (vdeb_win, ROW_PR, COL_R, STY_NORMAL, "", 14);
                 }
             break;
             }
@@ -1194,7 +1017,7 @@ void vdeb (Z80 *R)
                 }
             break;
             }
-#ifndef __circle__
+#ifdef HAVE_PROFILE
             case 'P':
             {
             if ( profl == NULL )
@@ -1215,8 +1038,8 @@ void vdeb (Z80 *R)
 #endif
             case 'Q':
             {
-            vdeb_print (ROW_PR, COL_R, STY_NORMAL, "Quit ? ", 0);
-            key = vdeb_key ();
+            twin_print (vdeb_win, ROW_PR, COL_R, STY_NORMAL, "Quit ? ", 0);
+            key = twin_kbd_in (vdeb_win);
             if ( ( key == 'Y' ) || ( key == 'y' ) )
                 {
                 vdeb_term ();

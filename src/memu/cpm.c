@@ -790,7 +790,7 @@ static void bdos_open_file(Z80 *r)
         sprintf(hostfilename, "%s/%s", drive_a, filename2);
     else
         hostfn = force_fn;
-	if ( (fp = fopen(hostfn, "rb+")) != NULL ) 
+    if ( (fp = fopen(hostfn, "rb+")) != NULL ) 
 		{
 		openfile = emalloc(sizeof(OPENFILE));
 		openfile->addr = fcb_addr;

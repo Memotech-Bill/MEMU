@@ -20,6 +20,7 @@
 #include "diag.h"
 #include "common.h"
 #include "win.h"
+#include "kbd.h"
 
 /*...vtypes\46\h:0:*/
 /*...vdiag\46\h:0:*/
@@ -30,12 +31,14 @@
 /*...sWIN_PRIV:0:*/
 typedef struct
     {
+    int iWin;
     int width, height;
     int width_scale, height_scale;
     int n_cols;
     byte *data;
-    void (*keypress)(int);
-    void (*keyrelease)(int);
+    void (*keypress)(WIN *, int);
+    void (*keyrelease)(WIN *, int);
+    TXTBUF *tbuf;
     /* Private window data below - Above must match definition of WIN in win.h */
     HANDLE hmutex;        /* Control access to an instance of this class */
     HANDLE heventCreated; /* Signalled when window initialised etc. */
@@ -646,11 +649,11 @@ WIN *win_create(
     const char *display,
     const char *geometry,
     COL *cols, int n_cols,
-    void (*keypress)(int k),
-    void (*keyrelease)(int k)
+    void (*keypress)(WIN *, int),
+    void (*keyrelease)(WIN *, int)
     )
     {
-    WIN_PRIV *win = (WIN_PRIV *) emalloc(sizeof(WIN_PRIV));
+    WIN_PRIV *win = (WIN_PRIV *) win_alloc(sizeof(WIN_PRIV), width * height);
     int i;
 
     if ( ! win_inited )
@@ -678,10 +681,6 @@ WIN *win_create(
     /* Event which gets signalled when window destroyed */
     win->heventDeleted = CreateEvent(NULL, TRUE, FALSE, NULL);
 
-    /* Space to record the pixel data */
-    win->data = emalloc(width*height);
-    memset(win->data, 0, width*height);
-
     /* Record the palette */
     for ( i = 0; i < n_cols; i++ )
         {
@@ -701,6 +700,7 @@ WIN *win_create(
     return (WIN *) win;
     }
 /*...e*/
+
 /*...swin_delete:0:*/
 void win_delete(WIN *win_pub)
     {
@@ -758,14 +758,13 @@ void win_delete(WIN *win_pub)
         win->hpalette = NULL;
         }
     */
-    if ( win->data != NULL )
-        {
-        free(win->data);
-        win->data = NULL;
-        }
-    free(win);
+    win_free(win);
     }
 /*...e*/
+
+void win_term (void)
+    {
+    }
 
 /*...swin_refresh:0:*/
 void win_refresh(WIN *win_pub)
@@ -785,62 +784,15 @@ void win_refresh(WIN *win_pub)
     }
 /*...e*/
 
-BOOLEAN win_active (WIN *win)
+void kbd_chk_leds (int *mods)
     {
-    return TRUE;
+    if ( GetKeyState (VK_CAPITAL) & 1 ) *mods |= MKY_CAPSLK;
+    else                                *mods &= ~ MKY_CAPSLK;
+    if ( GetKeyState (VK_NUMLOCK) & 1 ) *mods |= MKY_NUMLK;
+    else                                *mods &= ~ MKY_NUMLK;
+    if ( GetKeyState (VK_SCROLL) & 1 )  *mods |= MKY_SCRLLK;
+    else                                *mods &= ~ MKY_SCRLLK;
     }
-
-void win_kbd_leds (BOOLEAN bCaps, BOOLEAN bNum, BOOLEAN bScroll)
-    {
-    }
-
-void win_leds_state (BOOLEAN *bCaps, BOOLEAN *bNum, BOOLEAN *bScroll)
-    {
-    *bCaps = GetKeyState (VK_CAPITAL) & 1;
-    *bNum = GetKeyState (VK_NUMLOCK) & 1;
-    *bScroll = GetKeyState (VK_SCROLL) & 1;
-    }
-
-/*...swin_shifted_wk:0:*/
-/* Keys of the host keyboard have an unshifted label and a shifted label
-   written on them, eg: unshifted "1", shifted "!". Alphabetic keys typically
-   omit the unshifted lowercase letter, but notionally it is there.
-   This module returns WK_ values with names which reflect unshifted label.
-   Sometimes the module user will want to know the equivelent shifted label.
-
-   The problem with this code is that it assumes the UK keyboard layout. */
-
-int win_shifted_wk(int wk)
-    {
-    if ( wk >= 'a' && wk <= 'z' )
-        return wk-'a'+'A';
-    switch ( wk )
-        {
-        case '1':   return '!';
-        case '2':   return '"';
-        case '3':   return '#'; /* pound */
-        case '4':   return '$';
-        case '5':   return '%';
-        case '6':   return '^';
-        case '7':   return '&';
-        case '8':   return '*';
-        case '9':   return '(';
-        case '0':   return ')';
-        case '-':   return '_';
-        case '=':   return '+';
-        case '[':   return '{';
-        case ']':   return '}';
-        case ';':   return ':';
-        case '\'':  return '@';
-        case '#':   return '~';
-        case '\\':  return '|';
-        case ',':   return '<';
-        case '.':   return '>';
-        case '/':   return '?';
-        default:    return ( wk >= 0 && wk < 0x100 ) ? wk : -1;
-        }
-    }
-/*...e*/
 
 /*...swin_handle_events:0:*/
 void win_handle_events()
@@ -851,9 +803,9 @@ void win_handle_events()
         iPtr = iKBOut;
         if ( ++iKBOut >= LEN_KEYBUF ) iKBOut = 0;
         if ( keybuf[iPtr].wk & WK_Release )
-            keybuf[iPtr].win->keyrelease (keybuf[iPtr].wk & (~WK_Release));
+            keybuf[iPtr].win->keyrelease (active_win, keybuf[iPtr].wk & (~WK_Release));
         else
-            keybuf[iPtr].win->keypress (keybuf[iPtr].wk);
+            keybuf[iPtr].win->keypress (active_win, keybuf[iPtr].wk);
         }
     /* It seems important to some versions of Windows at least,
        that we only shut everything down from the main thread. */
@@ -911,7 +863,6 @@ void win_max_size (const char *display, int *pWth, int *pHgt)
     *pHgt = GetSystemMetrics (SM_CYFULLSCREEN) - iYBorder;
     }
 
-void win_term (void)
+void win_show (WIN *win)
     {
     }
-

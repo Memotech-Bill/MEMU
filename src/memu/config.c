@@ -14,7 +14,6 @@
 #include <unistd.h>
 #endif
 #include "config.h"
-#include "cfgwin.h"
 #include "diag.h"
 #define DYNAMIC_ROMS 1
 #include "memu.h"
@@ -51,6 +50,11 @@
 #ifdef WIN32
 #define strcasecmp _stricmp
 #endif
+
+#define STY_NORMAL          0x06    // Cyan
+#define STY_HIGHLIGHT       0x03    // Yellow
+#define STY_DISABLED        0x04    // Blue
+#define STY_HELP            0x02    // Green
 
 #define CFG_MTX500          0
 #define CFG_MTX512          1
@@ -106,6 +110,7 @@
 #define INIT_NFILE          20
 #define MAX_PATH            260
 
+static WIN * cfg_win    =   NULL;
 static const char *  config_fn  =   NULL;
 static const char *  disk_dir   =   NULL;
 static int     rom_enable   =   0xff;
@@ -136,51 +141,6 @@ static BOOLEAN bNoApply     =   FALSE;
 static int     iCfgExit     =   0;
 static BOOLEAN bCfgExit     =   FALSE;
 static int     iRowHelp     =   ROW_HELP;
-static int  cfg_wk   =  -1;
-
-static int mods = 0;
-
-//  Key press event handler - record key pressed.
-void cfg_keypress(int wk)
-    {
-//    int mods = win_mod_keys ();
-    if ( wk == WK_Shift_L )         mods |= MKY_LSHIFT;
-    else if ( wk == WK_Shift_R )    mods |= MKY_RSHIFT;
-    else if ( wk == WK_Caps_Lock )  mods ^= MKY_CAPSLK;
-    if ( mods & ( MKY_LSHIFT | MKY_RSHIFT ) ) cfg_wk = win_shifted_wk (wk);
-    else if ( ( mods & MKY_CAPSLK ) && ( wk >= 'a' ) && ( wk <= 'z' ) ) cfg_wk = wk & 0x5F;
-    else cfg_wk =  wk;
-    }
-
-//  Key release event handler - does nothing.
-void cfg_keyrelease(int wk)
-    {
-    if ( wk == WK_Shift_L )         mods &= ~ MKY_LSHIFT;
-    else if ( wk == WK_Shift_R )    mods &= ~ MKY_RSHIFT;
-    }
-
-//  Wait for a key press
-#ifdef   ALT_KEYIN
-extern int ALT_KEYIN (void);
-#endif
-
-int cfg_key (void)
-    {
-    // diag_message (DIAG_INIT, "Entered cfg_key");
-    cfg_refresh ();
-    cfg_wk   =  -1;
-    while ( cfg_wk < 0 )
-        {
-        // diag_message (DIAG_INIT, "Call kbd_periodic");
-        win_handle_events ();
-#ifdef   ALT_KEYIN
-        if (cfg_wk >= 0 )  break;
-        cfg_wk =  ALT_KEYIN ();
-#endif
-        }
-    // diag_message (DIAG_INIT, "Return cfg_wk = %d", cfg_wk);
-    return   cfg_wk;
-    }
 
 //  Test for entering config mode
 BOOLEAN test_cfg_key (int wk)
@@ -203,6 +163,15 @@ BOOLEAN test_cfg_key (int wk)
     return FALSE;
     }
 
+static void config_term (void)
+    {
+    if ( cfg_win != NULL )
+        {
+        win_delete (cfg_win);
+        cfg_win  =  NULL;
+        }
+    }
+
 //  Set configuration file name
 
 void config_set_file (const char *psFile)
@@ -213,82 +182,7 @@ void config_set_file (const char *psFile)
 //  Display a help message
 static void cfg_help (const char *psHelp)
     {
-    cfg_print (iRowHelp, 0, STY_HELP, psHelp, WINCFG_WTH);
-    }
-
-//  Edit a line of text - exit on return or escape
-static int cfg_edit (int iRow, int iCol, int nWth, int iSty, int nLen, char *psText)
-    {
-    int  nCh    =  (int) strlen (psText);
-    int  iCsr   =  0;
-    int  iScl   =  0;
-    int  wk;
-    while (TRUE)
-        {
-        if ( ( iCsr - iScl ) >= nWth )   iScl  =  iCsr - nWth + 1;
-        else if ( iCsr < iScl )          iScl  =  iCsr;
-        cfg_print (iRow, iCol, iSty, &psText[iScl], nWth);
-        cfg_csr (iRow, iCol + iCsr - iScl, iSty);
-        wk =  cfg_key ();
-        switch (wk)
-            {
-            case  WK_Return:
-            case  WK_Escape:
-            {
-            return   wk;
-            }
-            case  WK_Left:
-            {
-            if ( iCsr > 0 )   --iCsr;
-            break;
-            }
-            case  WK_Home:
-            {
-            iCsr  =  0;
-            break;
-            }
-            case  WK_End:
-            {
-            iCsr  =  nCh;
-            break;
-            }
-            case  WK_Right:
-            {
-            if ( iCsr < nCh ) ++iCsr;
-            break;
-            }
-            case  WK_Delete:
-            {
-            if ( iCsr < nCh )
-                {
-                strcpy (&psText[iCsr], &psText[iCsr+1]);
-                --nCh;
-                }
-            break;
-            }
-            case  WK_BackSpace:
-            {
-            if ( iCsr > 0 )
-                {
-                --iCsr;
-                strcpy (&psText[iCsr], &psText[iCsr+1]);
-                --nCh;
-                }
-            break;
-            }
-            default:
-            {
-            if ( ( nCh < nLen - 1 ) && ( wk >= ' ' ) && ( wk <= '~' ) )
-                {
-                memmove (&psText[iCsr+1], &psText[iCsr], nCh + 1 - iCsr);
-                psText[iCsr]   =  wk;
-                ++nCh;
-                ++iCsr;
-                }
-            break;
-            }
-            }
-        }
+    twin_print (cfg_win, iRowHelp, 0, STY_HELP, psHelp, WINCFG_WTH);
     }
 
 //  Display mode selection
@@ -325,10 +219,10 @@ static void row_cfg_draw (int info, int iState)
     sCfg[47] =  ( iCfgCur == CFG_CPM_MONO   ) ? '*' : ' ';
     sCfg[62] =  ( iCfgCur == CFG_CPM_COLOUR ) ? '*' : ' ';
 #endif
-    cfg_print (ROW_CFG, 0, STY_NORMAL, sCfg, 0);
+    twin_print (cfg_win, ROW_CFG, 0, STY_NORMAL, sCfg, 0);
     if ( iState == STATE_FOCUS )
         {
-        cfg_print (ROW_CFG, nSelWth*iCfgSel, STY_HIGHLIGHT, &sCfg[nSelWth*iCfgSel], nSelWth);
+        twin_print (cfg_win, ROW_CFG, nSelWth*iCfgSel, STY_HIGHLIGHT, &sCfg[nSelWth*iCfgSel], nSelWth);
         cfg_help (psHelp[iCfgSel]);
         }
     }
@@ -364,108 +258,7 @@ static BOOLEAN row_cfg_key (int info, int wk)
         }
     return   TRUE;
     }
-/*
-//  Display keyboard map selection
-static void row_kbd_draw (int info, int iState)
-{
-static char sNomap[] =  " [ ] Normal  ";
-static char sRemap[] =  " [ ] Remapped";
-static char sNoNd[]  =  " [ ] No  ";
-static char sNode[]  =  " [ ] Yes ";
-static char *psHelp[] = {   "<Space> to select: Keys match PC keyboard - Problems with some games",
-"<Space> to select: Keys match MTX keyboard - Not always PC key symbols",
-"<Space> to select: Disable NODE Ring",
-"<space> to select: Enable NODE Ring"};
-int iSel;
-int iSty;
-if ( iState == STATE_FOCUS ) iSel = iSelKbdN;
-else iSel = -1;
-if ( ( cfg.rom_fn[ROM_NODE] == NULL ) || ( iCfgCur == CFG_CPM_MONO ) || ( iCfgCur == CFG_CPM_COLOUR ) )
-{
-iSty = STY_DISABLED;
-bCfgNode = FALSE;
-}
-else iSty = STY_NORMAL;
-if ( bCfgRemap )
-{
-sNomap[2]   =  ' ';
-sRemap[2]   =  '*';
-}
-else
-{
-sNomap[2]   =  '*';
-sRemap[2]   =  ' ';
-}
-if ( bCfgNode )
-{
-sNoNd[2]    =  ' ';
-sNode[2]    =  '*';
-}
-else
-{
-sNoNd[2]    =  '*';
-sNode[2]    =  ' ';
-}
-cfg_print (ROW_KEYMAP, 0, STY_NORMAL, "Keyboard: ", 0);
-cfg_print (ROW_KEYMAP, 10, ( iSel == 0 ) ? STY_HIGHLIGHT : STY_NORMAL, sNomap, 0);
-cfg_print (ROW_KEYMAP, 23, ( iSel == 1 ) ? STY_HIGHLIGHT : STY_NORMAL, sRemap, 0);
-cfg_print (ROW_KEYMAP, 40, iSty, "Node ROM: ", 0);
-cfg_print (ROW_KEYMAP, 50, ( iSel == 2 ) ? STY_HIGHLIGHT : iSty, sNoNd, 0);
-cfg_print (ROW_KEYMAP, 59, ( iSel == 3 ) ? STY_HIGHLIGHT : iSty, sNode, 0);
-if ( iState == STATE_FOCUS ) cfg_help (psHelp[iSelKbdN]);
-}
 
-//  Key processing for keyboard map selection
-static BOOLEAN row_kbd_key (int info, int wk)
-{
-int nSel;
-if ( ( cfg.rom_fn[ROM_NODE] == NULL ) || ( iCfgCur == CFG_CPM_MONO ) || ( iCfgCur == CFG_CPM_COLOUR ) )
-{
-nSel = 2;
-bCfgNode = FALSE;
-}
-else nSel = 4;
-switch (wk)
-{
-case  WK_Left:
-{
-if ( iSelKbdN == 0 ) iSelKbdN = nSel;
---iSelKbdN;
-break;
-}
-case  WK_Right:
-{
-++iSelKbdN;
-if ( iSelKbdN == nSel ) iSelKbdN = 0;
-break;
-}
-case  WK_Return:
-case  ' ':
-{
-if ( iSelKbdN == 0 )      bCfgRemap = FALSE;
-else if ( iSelKbdN == 1 ) bCfgRemap = TRUE;
-else if ( ( iSelKbdN == 2 ) && ( bCfgNode ) )
-{
-bCfgNode = FALSE;
-bNoApply = TRUE;
-bCfgRedraw = TRUE;
-}
-else if ( ( iSelKbdN == 3 ) && ( ! bCfgNode ) )
-{
-bCfgNode = TRUE;
-bNoApply = TRUE;
-bCfgRedraw = TRUE;
-}
-break;
-}
-default:
-{
-return   FALSE;
-}
-}
-return   TRUE;
-}
-*/
 //  Display keyboard map selection
 static void row_kbd_draw (int info, int iState)
     {
@@ -502,12 +295,12 @@ static void row_kbd_draw (int info, int iState)
         sNoSnd[2]   =  '*';
         sSound[2]   =  ' ';
         }
-    cfg_print (ROW_KEYMAP, 0, STY_NORMAL, "Keyboard: ", 0);
-    cfg_print (ROW_KEYMAP, 10, ( iSel == 0 ) ? STY_HIGHLIGHT : STY_NORMAL, sNomap, 0);
-    cfg_print (ROW_KEYMAP, 24, ( iSel == 1 ) ? STY_HIGHLIGHT : STY_NORMAL, sRemap, 0);
-    cfg_print (ROW_KEYMAP, 40, STY_NORMAL, "Sound: ", 0);
-    cfg_print (ROW_KEYMAP, 50, ( iSel == 2 ) ? STY_HIGHLIGHT : STY_NORMAL, sNoSnd, 0);
-    cfg_print (ROW_KEYMAP, 59, ( iSel == 3 ) ? STY_HIGHLIGHT : STY_NORMAL, sSound, 0);
+    twin_print (cfg_win, ROW_KEYMAP, 0, STY_NORMAL, "Keyboard: ", 0);
+    twin_print (cfg_win, ROW_KEYMAP, 10, ( iSel == 0 ) ? STY_HIGHLIGHT : STY_NORMAL, sNomap, 0);
+    twin_print (cfg_win, ROW_KEYMAP, 24, ( iSel == 1 ) ? STY_HIGHLIGHT : STY_NORMAL, sRemap, 0);
+    twin_print (cfg_win, ROW_KEYMAP, 40, STY_NORMAL, "Sound: ", 0);
+    twin_print (cfg_win, ROW_KEYMAP, 50, ( iSel == 2 ) ? STY_HIGHLIGHT : STY_NORMAL, sNoSnd, 0);
+    twin_print (cfg_win, ROW_KEYMAP, 59, ( iSel == 3 ) ? STY_HIGHLIGHT : STY_NORMAL, sSound, 0);
     if ( iState == STATE_FOCUS ) cfg_help (psHelp[iSelKbdN]);
     }
 
@@ -578,9 +371,9 @@ static void row_topt_draw (int info, int iState)
         sNo[2]  =  '*';
         sYes[2] =  ' ';
         }
-    cfg_print (ROW_TAPEOPT, 0, STY_NORMAL, "Audio tapes: ", 0);
-    cfg_print (ROW_TAPEOPT, 14, ( iSel == 0 ) ? STY_HIGHLIGHT : STY_NORMAL, sNo, 0);
-    cfg_print (ROW_TAPEOPT, 24, ( iSel == 1 ) ? STY_HIGHLIGHT : STY_NORMAL, sYes, 0);
+    twin_print (cfg_win, ROW_TAPEOPT, 0, STY_NORMAL, "Audio tapes: ", 0);
+    twin_print (cfg_win, ROW_TAPEOPT, 14, ( iSel == 0 ) ? STY_HIGHLIGHT : STY_NORMAL, sNo, 0);
+    twin_print (cfg_win, ROW_TAPEOPT, 24, ( iSel == 1 ) ? STY_HIGHLIGHT : STY_NORMAL, sYes, 0);
     if ( bTapeOver )
         {
         sNo[2]  =  ' ';
@@ -591,9 +384,9 @@ static void row_topt_draw (int info, int iState)
         sNo[2]  =  '*';
         sYes[2] =  ' ';
         }
-    cfg_print (ROW_TAPEOPT, 40, STY_NORMAL, "Overwrite tapes: ", 0);
-    cfg_print (ROW_TAPEOPT, 57, ( iSel == 2 ) ? STY_HIGHLIGHT : STY_NORMAL, sNo, 0);
-    cfg_print (ROW_TAPEOPT, 67, ( iSel == 3 ) ? STY_HIGHLIGHT : STY_NORMAL, sYes, 0);
+    twin_print (cfg_win, ROW_TAPEOPT, 40, STY_NORMAL, "Overwrite tapes: ", 0);
+    twin_print (cfg_win, ROW_TAPEOPT, 57, ( iSel == 2 ) ? STY_HIGHLIGHT : STY_NORMAL, sNo, 0);
+    twin_print (cfg_win, ROW_TAPEOPT, 67, ( iSel == 3 ) ? STY_HIGHLIGHT : STY_NORMAL, sYes, 0);
     if ( iState == STATE_FOCUS ) cfg_help (psHelp[iSelTopt]);
     }
 
@@ -670,12 +463,12 @@ static int cfg_choose (int iRowChoose, int nItem, char **ppsItem)
             for ( iCol = 0; ( iCol < nCol ) && ( iItem < nItem ); ++iCol, ++iItem )
                 {
                 if ( iItem == iChoose )
-                    cfg_print (iRow + iRowChoose, iCol * nWth, STY_HIGHLIGHT, ppsItem[iItem], nWth);
+                    twin_print (cfg_win, iRow + iRowChoose, iCol * nWth, STY_HIGHLIGHT, ppsItem[iItem], nWth);
                 else
-                    cfg_print (iRow + iRowChoose, iCol * nWth, STY_NORMAL, ppsItem[iItem], nWth);
+                    twin_print (cfg_win, iRow + iRowChoose, iCol * nWth, STY_NORMAL, ppsItem[iItem], nWth);
                 }
             }
-        switch (cfg_key ())
+        switch (twin_kbd_in (cfg_win))
             {
             case  WK_Right:
             {
@@ -716,12 +509,12 @@ static int cfg_choose (int iRowChoose, int nItem, char **ppsItem)
             case  WK_Return:
             case  ' ':
             {
-            cfg_clear_rows (iRowChoose, WINCFG_HGT);
+            twin_clear_rows (cfg_win, iRowChoose, WINCFG_HGT);
             return   iChoose;
             }
             case  WK_Escape:
             {
-            cfg_clear_rows (iRowChoose, WINCFG_HGT);
+            twin_clear_rows (cfg_win, iRowChoose, WINCFG_HGT);
             return   -1;
             }
             }
@@ -756,9 +549,9 @@ static char *cfg_new_file (int iRowChoose, const char *psDir, int nExt, const ch
     strncpy (sFile, psExt, MAX_PATH);
     sFile[MAX_PATH-1]   =  '\0';
     cfg_help ("Enter new file name below, <Return> to finish, <Esc> to cancel");
-    cfg_print (iRowChoose, 0, STY_NORMAL, "New file:", 0);
-    wk = cfg_edit (iRowChoose, 10, WINCFG_WTH - 10, STY_NORMAL, MAX_PATH, sFile);
-    cfg_clear_rows (iRowChoose, iRowChoose + 1);
+    twin_print (cfg_win, iRowChoose, 0, STY_NORMAL, "New file:", 0);
+    wk = twin_edit (cfg_win, iRowChoose, 10, WINCFG_WTH - 10, STY_NORMAL, MAX_PATH, sFile, NULL);
+    twin_clear_rows (cfg_win, iRowChoose, iRowChoose + 1);
     if ( wk == WK_Return )
         {
         FILE  *pfil;
@@ -868,16 +661,16 @@ static void file_draw (int iRow, const char *psTitle, const char *psFile, int iS
         }
     if ( iState == STATE_FOCUS )
         {
-        cfg_print (iRow, 0, STY_HIGHLIGHT, sLine, WINCFG_WTH);
+        twin_print (cfg_win, iRow, 0, STY_HIGHLIGHT, sLine, WINCFG_WTH);
         cfg_help ("<Space> to change selected file");
         }
     else if ( iState == STATE_NORMAL )
         {
-        cfg_print (iRow, 0, STY_NORMAL, sLine, WINCFG_WTH);
+        twin_print (cfg_win, iRow, 0, STY_NORMAL, sLine, WINCFG_WTH);
         }
     else
         {
-        cfg_print (iRow, 0, STY_DISABLED, sLine, WINCFG_WTH);
+        twin_print (cfg_win, iRow, 0, STY_DISABLED, sLine, WINCFG_WTH);
         }
     }
 
@@ -988,9 +781,9 @@ static void row_dropt_draw (int info, int iState)
         sNo[2]  =  '*';
         sYes[2] =  ' ';
         }
-    cfg_print (ROW_DRIVEOPT, 0, iSty, "Huge SiDiscs: ", 0);
-    cfg_print (ROW_DRIVEOPT, 14, ( iSel == 0 ) ? STY_HIGHLIGHT : iSty, sNo, 0);
-    cfg_print (ROW_DRIVEOPT, 24, ( iSel == 1 ) ? STY_HIGHLIGHT : iSty, sYes, 0);
+    twin_print (cfg_win, ROW_DRIVEOPT, 0, iSty, "Huge SiDiscs: ", 0);
+    twin_print (cfg_win, ROW_DRIVEOPT, 14, ( iSel == 0 ) ? STY_HIGHLIGHT : iSty, sNo, 0);
+    twin_print (cfg_win, ROW_DRIVEOPT, 24, ( iSel == 1 ) ? STY_HIGHLIGHT : iSty, sYes, 0);
     if ( iSidEmu & SIDEMU_NO_SAVE )
         {
         sNo[2]  =  '*';
@@ -1001,9 +794,9 @@ static void row_dropt_draw (int info, int iState)
         sNo[2]  =  ' ';
         sYes[2] =  '*';
         }
-    cfg_print (ROW_DRIVEOPT, 40, iSty, "Save silicon drives: ", 0);
-    cfg_print (ROW_DRIVEOPT, 61, ( iSel == 2 ) ? STY_HIGHLIGHT : iSty, sNo, 0);
-    cfg_print (ROW_DRIVEOPT, 71, ( iSel == 3 ) ? STY_HIGHLIGHT : iSty, sYes, 0);
+    twin_print (cfg_win, ROW_DRIVEOPT, 40, iSty, "Save silicon drives: ", 0);
+    twin_print (cfg_win, ROW_DRIVEOPT, 61, ( iSel == 2 ) ? STY_HIGHLIGHT : iSty, sNo, 0);
+    twin_print (cfg_win, ROW_DRIVEOPT, 71, ( iSel == 3 ) ? STY_HIGHLIGHT : iSty, sYes, 0);
     if ( iState == STATE_FOCUS ) cfg_help (psHelp[iSelDropt]);
     }
 
@@ -1074,7 +867,7 @@ static void cfg_cf_card_row (const char *psPart[NCF_PART], int iRow, int iState)
         }
     else
         {
-        cfg_print (9, 0, ( iState == STATE_FOCUS ) ? STY_HIGHLIGHT : STY_NORMAL, "Exit", 0);
+        twin_print (cfg_win, 9, 0, ( iState == STATE_FOCUS ) ? STY_HIGHLIGHT : STY_NORMAL, "Exit", 0);
         }
     }
 
@@ -1087,10 +880,10 @@ static BOOLEAN cfg_cf_card (int iCard, const char *psDir, const char *psPart[NCF
     int iSel = 0;
     int wk;
     int i;
-    cfg_clear_rows (0, WINCFG_HGT);
+    twin_clear_rows (cfg_win, 0, WINCFG_HGT);
     iRowHelp = NCF_PART + 2;
     sprintf (sLine, "Partitions for Compact Flash Card %d", iCard);
-    cfg_print (0, 0, STY_HELP, sLine, 0);
+    twin_print (cfg_win, 0, 0, STY_HELP, sLine, 0);
     for ( i = 0; i <= NCF_PART; ++i )
         {
         cfg_cf_card_row (psPart, i, STATE_NORMAL);
@@ -1098,7 +891,7 @@ static BOOLEAN cfg_cf_card (int iCard, const char *psDir, const char *psPart[NCF
     while (TRUE)
         {
         cfg_cf_card_row (psPart, iSel, STATE_FOCUS);
-        wk =  cfg_key ();
+        wk =  twin_kbd_in (cfg_win);
         cfg_cf_card_row (psPart, iSel, STATE_NORMAL);
         switch (wk)
             {
@@ -1112,7 +905,7 @@ static BOOLEAN cfg_cf_card (int iCard, const char *psDir, const char *psPart[NCF
             case ' ':
                 if ( iSel == NCF_PART )
                     {
-                    cfg_clear_rows (0, WINCFG_HGT);
+                    twin_clear_rows (cfg_win, 0, WINCFG_HGT);
                     return bChg;
                     }
                 psFile = cfg_choose_file (NCF_PART + 3, psDir, ( iSel == 0 ? 3 : 2),
@@ -1125,7 +918,7 @@ static BOOLEAN cfg_cf_card (int iCard, const char *psDir, const char *psPart[NCF
                     }
                 break;
             case WK_Escape:
-                cfg_clear_rows (0, WINCFG_HGT);
+                twin_clear_rows (cfg_win, 0, WINCFG_HGT);
                 return bChg;
                 break;
             }
@@ -1151,7 +944,7 @@ static void row_drive_draw (int iDrive, int iState)
                 && ( strcmp (psPart, "<None>") != 0 ) ) ++nPart;
             }
         sprintf (sLine, "Compact Flash Card %d: %d Active Partitions", iDrive, nPart);
-        cfg_print (ROW_DRIVE + iDrive, 0, ( iState == STATE_FOCUS ) ? STY_HIGHLIGHT : STY_NORMAL,
+        twin_print (cfg_win, ROW_DRIVE + iDrive, 0, ( iState == STATE_FOCUS ) ? STY_HIGHLIGHT : STY_NORMAL,
             sLine, 0);
         cfg_help ("<Space> to edit CF partitions");
         return;
@@ -1510,7 +1303,9 @@ static void cfg_init (void)
     iCfgExit =  0; 
     bNoApply    =   FALSE;
 
-    cfg_wininit ();
+    cfg_win  =  twin_create (cfg.mon_width_scale, cfg.mon_height_scale,
+        "MEMU Configuration", NULL, NULL, twin_keypress, twin_keyrelease, FALSE);
+    twin_csr_style (cfg_win, 0x20, 9);
     }
 
 #ifdef ALT_SAVE_CFG
@@ -1530,11 +1325,11 @@ static void cfg_save (const char *psConfig)
         fprintf (pfil, "-mem-blocks %d\n", mem_get_alloc ());
         for ( rom = 0; rom < 8; ++rom )
             {
-            if ( cfg.rom_fn[rom] != NULL ) fprintf (pfil, "-rom%d \"%s\"\n", rom, cfg.rom_fn[rom]);
+            if ( cfg.rom_fn[rom] != NULL ) fprintf (pfil, "-rom%d \"%s\"\n", rom, PMapMapped (cfg.rom_fn[rom]));
             }
 #ifdef HAVE_CFX2
         if ( cfg.rom_cfx2 != NULL )
-            fprintf (pfil, "%s \"%s\"\n", ( cfg.bCFX2 ? "-cfx2" : "-no-cfx2" ), cfg.rom_cfx2);
+            fprintf (pfil, "%s \"%s\"\n", ( cfg.bCFX2 ? "-cfx2" : "-no-cfx2" ), PMapMapped (cfg.rom_cfx2));
 #endif
         if ( cfg.kbd_emu & KBDEMU_REMAP ) fprintf (pfil, "-kbd-remap\n");
         fprintf (pfil, "-kbd-country %d\n", ( cfg.kbd_emu & KBDEMU_COUNTRY ) >> 2);
@@ -1588,14 +1383,14 @@ static void cfg_save (const char *psConfig)
             fprintf (pfil, "-mon-size %d\n", cfg.mon_height_scale);
             }
         if ( disk_dir != NULL ) fprintf (pfil, "-disk-dir \"%s\"\n", disk_dir);
-        if ( cfg.fn_sdxfdc[0] != NULL ) fprintf (pfil, "-sdx-mfloppy \"%s\"\n", cfg.fn_sdxfdc[0]);
-        if ( cfg.fn_sdxfdc[1] != NULL ) fprintf (pfil, "-sdx-mfloppy2 \"%s\"\n", cfg.fn_sdxfdc[1]);
+        if ( cfg.fn_sdxfdc[0] != NULL ) fprintf (pfil, "-sdx-mfloppy \"%s\"\n", PMapMapped (cfg.fn_sdxfdc[0]));
+        if ( cfg.fn_sdxfdc[1] != NULL ) fprintf (pfil, "-sdx-mfloppy2 \"%s\"\n", PMapMapped (cfg.fn_sdxfdc[1]));
 #ifdef HAVE_SID
         if ( cfg.sid_emu & SIDEMU_HUGE ) fprintf (pfil, "-sidisc-huge\n");
         if ( cfg.sid_emu & SIDEMU_NO_SAVE ) fprintf (pfil, "-sidisc-no-save\n");
         for ( iDisk = 0; iDisk < N_SIDISC; ++iDisk )
             if ( cfg.sid_fn[iDisk] != NULL )
-                fprintf (pfil, "-sidisc-file %d \"%s\"\n", iDisk, cfg.sid_fn[iDisk]);
+                fprintf (pfil, "-sidisc-file %d \"%s\"\n", iDisk, PMapMapped (cfg.sid_fn[iDisk]));
 #endif
 #ifdef HAVE_CFX2
         for ( iDisk = 0; iDisk < NCF_CARD; ++iDisk )
@@ -1604,7 +1399,7 @@ static void cfg_save (const char *psConfig)
             for ( iPart = 0; iPart < NCF_PART; ++iPart )
                 {
                 if ( cfg.fn_cfx2[iDisk][iPart] != NULL )
-                    fprintf (pfil, "-cf-image %d:%d \"%s\"\n", iDisk, iPart, cfg.fn_cfx2[iDisk][iPart]);
+                    fprintf (pfil, "-cf-image %d:%d \"%s\"\n", iDisk, iPart, PMapMapped (cfg.fn_cfx2[iDisk][iPart]));
                 }
             }
 #endif
@@ -1699,7 +1494,7 @@ static void cfg_restart (void)
                 {
                 mon_term ();
                 cfg.mon_emu &= ~( MONEMU_WIN | MONEMU_TH | MONEMU_CONSOLE );
-                cfg_set_display ();
+                // cfg_set_display ();
                 }
             mem_alloc (2);
             rom_enable = ROMEN_ASSEM | ROMEN_BASIC;
@@ -1712,7 +1507,7 @@ static void cfg_restart (void)
                 {
                 mon_term ();
                 cfg.mon_emu &= ~( MONEMU_WIN | MONEMU_TH | MONEMU_CONSOLE );
-                cfg_set_display ();
+                // cfg_set_display ();
                 }
             mem_alloc (4);
             rom_enable = ROMEN_ASSEM | ROMEN_BASIC;
@@ -1725,7 +1520,7 @@ static void cfg_restart (void)
                 {
                 mon_term ();
                 cfg.mon_emu &= ~( MONEMU_WIN | MONEMU_TH | MONEMU_CONSOLE );
-                cfg_set_display ();
+                // cfg_set_display ();
                 }
             mem_alloc (SDX_MEM_BLOCKS);
             rom_enable = ROMEN_ASSEM | ROMEN_BASIC | ROMEN_SDX2;
@@ -1749,7 +1544,7 @@ static void cfg_restart (void)
                 if ( cfg.mon_emu & ( MONEMU_WIN | MONEMU_TH | MONEMU_CONSOLE ) ) mon_term ();
                 cfg.mon_emu = MONEMU_WIN | MONEMU_IGNORE_INIT | MONEMU_WIN_MONO;
                 mon_init (cfg.mon_emu, cfg.mon_width_scale, cfg.mon_height_scale);
-                cfg_set_display ();
+                // cfg_set_display ();
                 }
             break;
             }
@@ -1767,7 +1562,7 @@ static void cfg_restart (void)
                 if ( cfg.mon_emu & ( MONEMU_WIN | MONEMU_TH | MONEMU_CONSOLE ) ) mon_term ();
                 cfg.mon_emu = MONEMU_WIN | MONEMU_IGNORE_INIT;
                 mon_init (cfg.mon_emu, cfg.mon_width_scale, cfg.mon_height_scale);
-                cfg_set_display ();
+                // cfg_set_display ();
                 }
             break;
             }
@@ -1778,7 +1573,7 @@ static void cfg_restart (void)
                 {
                 mon_term ();
                 cfg.mon_emu &= ~( MONEMU_WIN | MONEMU_TH | MONEMU_CONSOLE );
-                cfg_set_display ();
+                // cfg_set_display ();
                 }
             /*
             if ( cfg.mon_emu != ( MONEMU_WIN | MONEMU_IGNORE_INIT ) )
@@ -1831,16 +1626,16 @@ static void row_exit_draw (int info, int iState)
         "<Space> to select: Make changes and restart MEMU",
         "<Space> to select: Exit MEMU"
         };
-    cfg_print (ROW_EXIT, 0, STY_NORMAL, psExit, 0);
+    twin_print (cfg_win, ROW_EXIT, 0, STY_NORMAL, psExit, 0);
     if ( ( iCfgCur != iCfgOld ) || bNoApply )
         {
-        cfg_print (ROW_EXIT, 0, STY_DISABLED, psExit, 9);
+        twin_print (cfg_win, ROW_EXIT, 0, STY_DISABLED, psExit, 9);
         }
     if ( iState == STATE_FOCUS )
         {
         if ( ( ( iCfgCur != iCfgOld ) || bNoApply ) && ( iCfgExit == EXIT_APPLY ) )
             iCfgExit =  EXIT_RESTART;
-        cfg_print (ROW_EXIT, 9*iCfgExit, STY_HIGHLIGHT, &psExit[9*iCfgExit], 9);
+        twin_print (cfg_win, ROW_EXIT, 9*iCfgExit, STY_HIGHLIGHT, &psExit[9*iCfgExit], 9);
         cfg_help (psHelp[iCfgExit]);
         }
     }
@@ -2012,7 +1807,7 @@ void config (void)
             bCfgRedraw  =  FALSE;
             }
         cfg_ui[iFocus].draw (cfg_ui[iFocus].info, STATE_FOCUS);
-        wk =  cfg_key ();
+        wk =  twin_kbd_in (cfg_win);
         // printf ("cfg_key = %d\n", wk);
         cfg_ui[iFocus].draw (cfg_ui[iFocus].info, STATE_NORMAL);
         if ( ! cfg_ui[iFocus].key (cfg_ui[iFocus].info, wk) )
@@ -2043,7 +1838,7 @@ void config (void)
     }
 
 //  Read configuration file and generate argument list
-BOOLEAN read_config (const char *psFile, int *pargc, const char ***pargv)
+BOOLEAN read_config (const char *psFile, int *pargc, const char ***pargv, int *pi)
     {
     FILE *pfil;
     char **argv;
@@ -2053,6 +1848,13 @@ BOOLEAN read_config (const char *psFile, int *pargc, const char ***pargv)
     int  ich, nch;
     BOOLEAN  bFirst;
     BOOLEAN  bQuote;
+    /*
+    printf ("Before read_config: argc = %d, i = %d\n", *pargc, *pi);
+    for (int i = 0; i < *pargc; ++i)
+        {
+        printf ("%s\n", (*pargv)[i]);
+        }
+    */
     psFile = PMapPath (psFile);
     char *psDir = strdup (psFile);
     if ( psDir != NULL )
@@ -2134,8 +1936,8 @@ BOOLEAN read_config (const char *psFile, int *pargc, const char ***pargv)
         free ((void *) psArg);
         return   FALSE;
         }
-    memcpy (argv, *pargv, (*pargc) * sizeof (char *));
-    iarg =   *pargc;
+    memcpy (argv, *pargv, (*pi + 1) * sizeof (char *));
+    iarg =   *pi + 1;
     bFirst   =  TRUE;
     bQuote   =  FALSE;
     for ( ich = 0; ich < nch; ++ich )
@@ -2164,9 +1966,17 @@ BOOLEAN read_config (const char *psFile, int *pargc, const char ***pargv)
             ++iarg;
             }
         }
+    if ( *pi < *pargc - 1 ) memcpy (&argv[iarg], *pargv + *pi + 1, (*pargc - *pi - 1) * sizeof (char *));
     *pargc   += narg;
     *pargv   =  (const char ** ) argv;
     diag_message (DIAG_INIT, "Total arguments = %d", *pargc);
+    /*
+    printf ("After read_config: argc = %d, i = %d\n", *pargc, *pi);
+    for (int i = 0; i < *pargc; ++i)
+        {
+        printf ("%s\n", (*pargv)[i]);
+        }
+    */
     return   TRUE;
     }
 
@@ -2182,7 +1992,7 @@ BOOLEAN cfg_options (int *pargc, const char ***pargv, int *pi)
         if ( ++(*pi) == (*pargc) )
             usage((*pargv)[*pi-1]);
         config_fn   =  (*pargv)[*pi];
-        read_config (config_fn, pargc, pargv);
+        read_config (config_fn, pargc, pargv, pi);
         }
     else if ( !strcmp((*pargv)[*pi], "-no-ignore-faults") )
         {
@@ -2241,3 +2051,10 @@ void cfg_usage (void)
     fprintf(stderr, "       -mon-size            sets 80 col size (but does not enable it)\n");
     fprintf(stderr, "       -disk-dir dir        directory containg disk images\n");
     }
+
+#ifndef __Pico__
+WIN * get_cfg_win (void)
+    {
+    return cfg_win;
+    }
+#endif

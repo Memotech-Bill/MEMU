@@ -10,10 +10,12 @@ typedef enum {pmapNone = -1, pmapWork, pmapCfg, pmapExe, pmapHome, pmapCount} PM
 
 void PMapRootDir (PMapMode pmap, const char *psDir, BOOLEAN bCopy);
 const char *PMapPath (const char *psPath);
+const char *PMapMapped (const char *psPath);
 
 #else
 #define PMapRootDir(x, y, z)
 #define PMapPath(x)     x
+#define PMapMapped(x)   x
 
 #endif
 #endif

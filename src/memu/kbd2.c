@@ -55,17 +55,8 @@ static struct s_keyinfo keyinfo[] =
     {WK_Return,         {0x56,0x56,0x56,0x56,0x56,0x56,0x56,0x56},NKEY}, // 0x0D - Keyboard Return (ENTER)
     {WK_Escape,         {0x10,0x10,0x10,0x10,0x10,0x10,0x10,0x10},NKEY}, // 0x1B - Keyboard ESCAPE
     {' ',               {0x78,0x78,0x78,0x78,0x78,0x78,0x78,0x78},NKEY}, // 0x20 - Keyboard Spacebar
-    {'!',               {NKEY,0x00,NKEY,0x00,NKEY,0x00,NKEY,0x00},NKEY}, // 0x21 - Keyboard 1 and !
-    {'"',               {NKEY,0x11,NKEY,0x11,NKEY,0x11,NKEY,0x11},NKEY}, // 0x22 - Keyboard 2 and "
     {'#',               {0x55,0x16,0x68,0x16,0x55,0x16,0x68,0x16},NKEY}, // 0x23 - Keyboard # and ~
-    {'$',               {NKEY,0x12,NKEY,0x12,NKEY,0x12,NKEY,0x12},NKEY}, // 0x24 - Keyboard 4 and $
-    {'%',               {NKEY,0x02,NKEY,0x02,NKEY,0x02,NKEY,0x02},NKEY}, // 0x25 - Keyboard 5 and %
-    {'&',               {NKEY,0x13,NKEY,0x13,NKEY,0x13,NKEY,0x13},NKEY}, // 0x26 - Keyboard 7 and &
     {'\'',              {0x35,0x03,0x58,0x58,0x35,0x03,0x58,0x58},NKEY}, // 0x27 - Keyboard ' and @
-    {'(',               {NKEY,0x14,NKEY,0x14,NKEY,0x14,NKEY,0x14},NKEY}, // 0x28 - Keyboard 9 and (
-    {')',               {NKEY,0x04,NKEY,0x04,NKEY,0x04,NKEY,0x04},NKEY}, // 0x29 - Keyboard 0 and )
-    {'*',               {NKEY,0x55,NKEY,0x55,NKEY,0x55,NKEY,0x55},NKEY}, // 0x2A - Keyboard 8 and *
-    {'+',               {NKEY,0x45,NKEY,0x45,NKEY,0x45,NKEY,0x45},NKEY}, // 0x2B - Keyboard = and +
     {',',               {0x64,0x64,0x64,0x64,0x64,0x64,0x64,0x64},NKEY}, // 0x2C - Keyboard , and <
     {'-',               {0x05,0x75,0x05,0x75,0x05,0x75,0x05,0x75},NKEY}, // 0x2D - Keyboard - and _
     {'.',               {0x74,0x74,0x74,0x74,0x74,0x74,0x74,0x74},NKEY}, // 0x2E - Keyboard . and >
@@ -74,50 +65,17 @@ static struct s_keyinfo keyinfo[] =
     {'1',               {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00},NKEY}, // 0x31 - Keyboard 1 and !
     {'2',               {0x11,0x11,0x11,0x11,0x11,0x11,0x11,0x11},NKEY}, // 0x32 - Keyboard 2 and "
     {'3',               {0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01},NKEY}, // 0x33 - Keyboard 3 and £
-    {'4',               {0x12,0x12,0x12,0x12,0x12,0x12,0x12,0x12},NKEY}, // 0x34 - Keyboard 4 and ,0x
+    {'4',               {0x12,0x12,0x12,0x12,0x12,0x12,0x12,0x12},NKEY}, // 0x34 - Keyboard 4 and $
     {'5',               {0x02,0x02,0x02,0x02,0x02,0x02,0x02,0x02},NKEY}, // 0x35 - Keyboard 5 and %
     {'6',               {0x13,0x05,0x13,0x48,0x13,0x05,0x13,0x48},NKEY}, // 0x36 - Keyboard 6 and ^
     {'7',               {0x03,0x13,0x03,0x13,0x03,0x13,0x03,0x13},NKEY}, // 0x37 - Keyboard 7 and &
     {'8',               {0x14,0x55,0x14,0x55,0x14,0x55,0x14,0x55},NKEY}, // 0x38 - Keyboard 8 and *
     {'9',               {0x04,0x14,0x04,0x14,0x04,0x14,0x04,0x14},NKEY}, // 0x39 - Keyboard 9 and (
-    {':',               {NKEY,NKEY,NKEY,0x68,NKEY,NKEY,NKEY,0x68},NKEY}, // 0x3A - Keyboard ; and :
     {';',               {0x45,NKEY,0x45,0x68,0x45,NKEY,0x45,0x68},NKEY}, // 0x3B - Keyboard ; and :
-    {'<',               {NKEY,0x64,NKEY,0x64,NKEY,0x64,NKEY,0x64},NKEY}, // 0x3C - Keyboard , and <
     {'=',               {0x16,0x45,0x48,0x45,0x16,0x45,0x48,0x45},NKEY}, // 0x3D - Keyboard = and +
-    {'>',               {NKEY,0x74,NKEY,0x74,NKEY,0x74,NKEY,0x74},NKEY}, // 0x3E - Keyboard . and >
-    {'?',               {NKEY,0x65,NKEY,0x65,NKEY,0x65,NKEY,0x65},NKEY}, // 0x3F - Keyboard / and ?
-    {'@',               {NKEY,0x35,NKEY,0x58,NKEY,0x35,NKEY,0x58},NKEY}, // 0x40 - Keyboard ' and @
-    {'A',               {0x50,0x50,0x50,0x50,0x50,0x50,0x50,0x50},NKEY}, // 0x41 - Keyboard a and A
-    {'B',               {0x72,0x72,0x72,0x72,0x72,0x72,0x72,0x72},NKEY}, // 0x42 - Keyboard b and B
-    {'C',               {0x71,0x71,0x71,0x71,0x71,0x71,0x71,0x71},NKEY}, // 0x43 - Keyboard c and C
-    {'D',               {0x51,0x51,0x51,0x51,0x51,0x51,0x51,0x51},NKEY}, // 0x44 - Keyboard d and D
-    {'E',               {0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31},NKEY}, // 0x45 - Keyboard e and E
-    {'F',               {0x42,0x42,0x42,0x42,0x42,0x42,0x42,0x42},NKEY}, // 0x46 - Keyboard f and F
-    {'G',               {0x52,0x52,0x52,0x52,0x52,0x52,0x52,0x52},NKEY}, // 0x47 - Keyboard g and G
-    {'H',               {0x43,0x43,0x43,0x43,0x43,0x43,0x43,0x43},NKEY}, // 0x48 - Keyboard h and H
-    {'I',               {0x24,0x24,0x24,0x24,0x24,0x24,0x24,0x24},NKEY}, // 0x49 - Keyboard i and I
-    {'J',               {0x53,0x53,0x53,0x53,0x53,0x53,0x53,0x53},NKEY}, // 0x4A - Keyboard j and J
-    {'K',               {0x44,0x44,0x44,0x44,0x44,0x44,0x44,0x44},NKEY}, // 0x4B - Keyboard k and K
-    {'L',               {0x54,0x54,0x54,0x54,0x54,0x54,0x54,0x54},NKEY}, // 0x4C - Keyboard l and L
-    {'M',               {0x73,0x73,0x73,0x73,0x73,0x73,0x73,0x73},NKEY}, // 0x4D - Keyboard m and M
-    {'N',               {0x63,0x63,0x63,0x63,0x63,0x63,0x63,0x63},NKEY}, // 0x4E - Keyboard n and N
-    {'O',               {0x34,0x34,0x34,0x34,0x34,0x34,0x34,0x34},NKEY}, // 0x4F - Keyboard o and O
-    {'P',               {0x25,0x25,0x25,0x25,0x25,0x25,0x25,0x25},NKEY}, // 0x50 - Keyboard p and P
-    {'Q',               {0x30,0x30,0x30,0x30,0x30,0x30,0x30,0x30},NKEY}, // 0x51 - Keyboard q and Q
-    {'R',               {0x22,0x22,0x22,0x22,0x22,0x22,0x22,0x22},NKEY}, // 0x52 - Keyboard r and R
-    {'S',               {0x41,0x41,0x41,0x41,0x41,0x41,0x41,0x41},NKEY}, // 0x53 - Keyboard s and S
-    {'T',               {0x32,0x32,0x32,0x32,0x32,0x32,0x32,0x32},NKEY}, // 0x54 - Keyboard t and T
-    {'U',               {0x33,0x33,0x33,0x33,0x33,0x33,0x33,0x33},NKEY}, // 0x55 - Keyboard u and U
-    {'V',               {0x62,0x62,0x62,0x62,0x62,0x62,0x62,0x62},NKEY}, // 0x56 - Keyboard v and V
-    {'W',               {0x21,0x21,0x21,0x21,0x21,0x21,0x21,0x21},NKEY}, // 0x57 - Keyboard w and W
-    {'X',               {0x61,0x61,0x61,0x61,0x61,0x61,0x61,0x61},NKEY}, // 0x58 - Keyboard x and X
-    {'Y',               {0x23,0x23,0x23,0x23,0x23,0x23,0x23,0x23},NKEY}, // 0x59 - Keyboard y and Y
-    {'Z',               {0x70,0x70,0x70,0x70,0x70,0x70,0x70,0x70},NKEY}, // 0x5A - Keyboard z and Z
     {'[',               {0x26,0x26,0x26,0x26,0x26,0x26,0x26,0x26},NKEY}, // 0x5B - Keyboard [ and {
     {'\\',              {0x06,0x06,0x06,0x06,0x06,0x06,0x06,0x06},NKEY}, // 0x5C - Keyboard \ and |
     {']',               {0x46,0x46,0x46,0x46,0x46,0x46,0x46,0x46},NKEY}, // 0x5D - Keyboard ] and }
-    {'^',               {NKEY,0x05,NKEY,0x48,NKEY,0x05,NKEY,0x48},NKEY}, // 0x5E - Keyboard 6 and ^
-    {'_',               {NKEY,0x75,NKEY,0x75,NKEY,0x75,NKEY,0x75},NKEY}, // 0x5F - Keyboard - and _
     {'`',               {NKEY,0x35,NKEY,0x35,NKEY,0x35,NKEY,0x35},NKEY}, // 0x60 - Keyboard ` and ~
     {'a',               {0x50,0x50,0x50,0x50,0x50,0x50,0x50,0x50},NKEY}, // 0x61 - Keyboard a and A
     {'b',               {0x72,0x72,0x72,0x72,0x72,0x72,0x72,0x72},NKEY}, // 0x62 - Keyboard b and B
@@ -145,10 +103,6 @@ static struct s_keyinfo keyinfo[] =
     {'x',               {0x61,0x61,0x61,0x61,0x61,0x61,0x61,0x61},NKEY}, // 0x78 - Keyboard x and X
     {'y',               {0x23,0x23,0x23,0x23,0x23,0x23,0x23,0x23},NKEY}, // 0x79 - Keyboard y and Y
     {'z',               {0x70,0x70,0x70,0x70,0x70,0x70,0x70,0x70},NKEY}, // 0x7A - Keyboard z and Z
-    {'{',               {NKEY,0x26,NKEY,0x26,NKEY,0x26,NKEY,0x26},NKEY}, // 0x7B - Keyboard [ and {
-    {'|',               {NKEY,0x06,NKEY,0x06,NKEY,0x06,NKEY,0x06},NKEY}, // 0x7C - Keyboard \ and |
-    {'}',               {NKEY,0x46,NKEY,0x46,NKEY,0x46,NKEY,0x46},NKEY}, // 0x7D - Keyboard ] and }
-    {'~',               {NKEY,0x16,NKEY,0x16,NKEY,0x16,NKEY,0x16},NKEY}, // 0x7E - Keyboard # and ~
     {WK_Left,           {0x37,0x37,0x37,0x37,0x37,0x37,0x37,0x37},NKEY}, // 0x100 - Keyboard Left Arrow
     {WK_Right,          {0x47,0x47,0x47,0x47,0x47,0x47,0x47,0x47},NKEY}, // 0x101 - Keyboard Right Arrow
     {WK_Up,             {0x27,0x27,0x27,0x27,0x27,0x27,0x27,0x27},NKEY}, // 0x102 - Keyboard Up Arrow
@@ -201,6 +155,7 @@ static struct s_keyinfo keyinfo[] =
 
 static int kbd_emu = 0;
 static int kbd_mode = 0;
+int kbd_mods = 0;
 
 static int kbd_drive;
 static word kbd_sense[8];
@@ -249,31 +204,94 @@ static struct s_keyinfo *kbd_find (int iKey)
     return NULL;
     }
 
-void kbd_chk_leds (int *mode)
+/*...skbd_shifted_wk:0:*/
+/* Keys of the host keyboard have an unshifted label and a shifted label
+   written on them, eg: unshifted "1", shifted "!". Alphabetic keys typically
+   omit the unshifted lowercase letter, but notionally it is there.
+   This module returns WK_ values with names which reflect unshifted label.
+   Sometimes the module user will want to know the equivelent shifted label.
+
+   The problem with this code is that it assumes the UK keyboard layout. */
+
+int kbd_shifted_wk(int wk)
+	{
+	if ( wk >= 'a' && wk <= 'z' )
+		return wk-'a'+'A';
+	switch ( wk )
+		{
+		case '1':	return '!';
+		case '2':	return '"';
+		case '3':	return '#'; /* pound */
+		case '4':	return '$';
+		case '5':	return '%';
+		case '6':	return '^';
+		case '7':	return '&';
+		case '8':	return '*';
+		case '9':	return '(';
+		case '0':	return ')';
+		case '-':	return '_';
+		case '=':	return '+';
+		case '[':	return '{';
+		case ']':	return '}';
+		case ';':	return ':';
+		case '\'':	return '@';
+		case '#':	return '~';
+		case '\\':	return '|';
+		case ',':	return '<';
+		case '.':	return '>';
+		case '/':	return '?';
+		default:	return ( wk >= 0 && wk < 0x100 ) ? wk : -1;
+		}
+	}
+/*...e*/
+
+void kbd_mod_keypress (int wk)
     {
-#ifdef WIN32
-    BOOLEAN bCaps, bNum, bScrl;
-    if ( kbd_emu & KBDEMU_REMAP )
-        {
-        win_leds_state (&bCaps, &bNum, &bScrl);
-        if ( bScrl ) *mode |= KMD_SCRLK;
-        else         *mode &= ~KMD_SCRLK;
-        }
-#endif
+    if ( wk == WK_Shift_L )             kbd_mods |= MKY_LSHIFT;
+    else if ( wk == WK_Shift_R )        kbd_mods |= MKY_RSHIFT;
+    else if ( wk == WK_Control_L )      kbd_mods |= MKY_LCTRL;
+    else if ( wk == WK_Control_R )      kbd_mods |= MKY_RCTRL;
+    else if ( wk == WK_PC_Alt_L )       kbd_mods |= MKY_LALT;
+    else if ( wk == WK_PC_Alt_R )       kbd_mods |= MKY_RALT;
+    else if ( wk == WK_Mac_Cmd_L )      kbd_mods |= MKY_LALT;
+    else if ( wk == WK_Mac_Cmd_R )      kbd_mods |= MKY_RALT;
+    else if ( wk == WK_Num_Lock )       kbd_mods ^= MKY_NUMLK;
+    else if ( wk == WK_Caps_Lock )      kbd_mods ^= MKY_CAPSLK;
+    else if ( wk == WK_Scroll_Lock )    kbd_mods ^= MKY_SCRLLK;
+    else if ( wk == WK_Shift_Lock )     kbd_mods ^= MKY_SHFTLK;
+    kbd_chk_leds (&kbd_mods);
+
+    if ( (kbd_mods & (MKY_LCTRL | MKY_RCTRL)) && (wk >= WK_F1) && (wk <= WK_F10)) win_show_num (wk - WK_F1);
+    }
+
+void kbd_mod_keyrelease (int wk)
+    {
+    if ( wk == WK_Shift_L )         kbd_mods &= ~ MKY_LSHIFT;
+    else if ( wk == WK_Shift_R )    kbd_mods &= ~ MKY_RSHIFT;
+    else if ( wk == WK_Control_L )  kbd_mods &= ~ MKY_LCTRL;
+    else if ( wk == WK_Control_R )  kbd_mods &= ~ MKY_RCTRL;
+    else if ( wk == WK_PC_Alt_L )   kbd_mods &= ~ MKY_LALT;
+    else if ( wk == WK_PC_Alt_R )   kbd_mods &= ~ MKY_RALT;
+    else if ( wk == WK_Mac_Cmd_L )  kbd_mods &= ~ MKY_LALT;
+    else if ( wk == WK_Mac_Cmd_R )  kbd_mods &= ~ MKY_RALT;
     }
 
 #ifdef ALT_KEYPRESS
-extern BOOLEAN ALT_KEYPRESS (int wk);
+extern BOOLEAN ALT_KEYPRESS (WIN *win, int wk);
 #endif
 
-void kbd_win_keypress (int wk)
+#if HAVE_CONFIG
+BOOLEAN test_cfg_key (int wk);
+#endif
+
+void kbd_win_keypress (WIN *win, int wk)
     {
+    kbd_mod_keypress (wk);
+#if HAVE_CONFIG
+    if ( test_cfg_key (wk) ) return;
+#endif
 #ifdef ALT_KEYPRESS
-    if ( ALT_KEYPRESS(wk) )
-        {
-        diag_message (DIAG_INIT, "Config completed");
-        return;
-        }
+    if ( ALT_KEYPRESS(win, wk) ) return;
 #endif
     struct s_keyinfo *pki;
     if ( kbd_diag )
@@ -304,20 +322,10 @@ void kbd_win_keypress (int wk)
                 diag_message (DIAG_KBD_WIN_KEY, "rst_keys = 0x%02X", rst_keys);
                 break;
             case NUML:
-                if ( kbd_emu & KBDEMU_REMAP )
-                    {
-                    kbd_mode ^= KMD_NUMLK;
-                    kbd_chk_leds (&kbd_mode);
-                    win_kbd_leds (FALSE, kbd_mode & KMD_NUMLK, kbd_mode & KMD_SCRLK);
-                    }
+                if ( kbd_emu & KBDEMU_REMAP ) kbd_mode ^= KMD_NUMLK;
                 break;
             case SCRL:
-                if ( kbd_emu & KBDEMU_REMAP )
-                    {
-                    kbd_mode ^= KMD_SCRLK;
-                    kbd_chk_leds (&kbd_mode);
-                    win_kbd_leds (FALSE, kbd_mode & KMD_NUMLK, kbd_mode & KMD_SCRLK);
-                    }
+                if ( kbd_emu & KBDEMU_REMAP ) kbd_mode ^= KMD_SCRLK;
                 break;
             case DIAK:
                 kbd_diag = TRUE;
@@ -336,13 +344,14 @@ void kbd_win_keypress (int wk)
     }
 
 #ifdef ALT_KEYRELEASE
-extern BOOLEAN ALT_KEYRELEASE(int wk);
+extern BOOLEAN ALT_KEYRELEASE(WIN *win, int wk);
 #endif
 
-void kbd_win_keyrelease(int wk)
+void kbd_win_keyrelease(WIN *win, int wk)
     {
+    kbd_mod_keyrelease (wk);
 #ifdef ALT_KEYRELEASE
-    if ( ALT_KEYRELEASE (wk) ) return;
+    if ( ALT_KEYRELEASE (win, wk) ) return;
 #endif
     struct s_keyinfo *pki = kbd_find (wk);
     diag_message (DIAG_KBD_WIN_KEY, "Key released 0x%02X '%c' pki = %p", wk,
@@ -816,6 +825,7 @@ static char autotype_line[L_LINE+1];
 /* Called here every 50th of a second */
 void kbd_periodic (void)
     {
+    WIN *win = win_current ();
     diag_message (DIAG_KBD_AUTO_TYPE, "kbd_periodic");
     while ( kbd_qke_first != NULL )
         {
@@ -834,7 +844,7 @@ void kbd_periodic (void)
             int key = kbd_qke_first->value;
             diag_message (DIAG_KBD_AUTO_TYPE, "auto-type press 0x%02X %c", key,
                 ( ( key > 0x20 ) && ( key < 0x7F ) ) ? key : '.');
-            kbd_win_keypress (key);
+            kbd_win_keypress (win, key);
             kbd_qke_dequeue ();
             break;
             }
@@ -843,7 +853,7 @@ void kbd_periodic (void)
             int key = kbd_qke_first->value;
             diag_message (DIAG_KBD_AUTO_TYPE, "auto-type release 0x%02X %c", key,
                 ( ( key > 0x20 ) && ( key < 0x7F ) ) ? key : '.');
-            kbd_win_keyrelease (key);
+            kbd_win_keyrelease (win, key);
             kbd_qke_dequeue ();
             }
             break;
@@ -1012,6 +1022,7 @@ void kbd_init(int emu)
 
     kbd_emu = emu;
     kbd_mode = 0;
+    kbd_mods = 0;
 
     for ( i = 0; i < 8; i++ )
         {
@@ -1021,17 +1032,24 @@ void kbd_init(int emu)
 #endif
         }
 
+#ifdef ROM_PATCH_KBD
+    if ( kbd_emu & KBDEMU_REMAP )
+        {
+        kbd_mode = KMD_SCRLK;
+        kbd_mods = MKY_SCRLLK;
+        }
+#else
     if ( kbd_emu & KBDEMU_REMAP )
         {
         kbd_apply_remap ();
         kbd_mode = KMD_SCRLK;
+        kbd_mods = MKY_SCRLLK;
         }
     else
         {
         kbd_apply_unmap ();
         }
-    kbd_chk_leds (&kbd_mode);
-    win_kbd_leds (FALSE, kbd_mode & KMD_NUMLK, kbd_mode & KMD_SCRLK);
+#endif
     }
 
 int kbd_get_emu (void)
@@ -1045,3 +1063,26 @@ void kbd_term(void)
     kbd_emu = 0;
     }
 /*...e*/
+
+char * ListModifiers (void)
+	{
+	static char sMods[31];
+	sMods[0] =  '\0';
+	if ( kbd_mods == 0 ) strcpy (sMods, " None");
+	if ( kbd_mods & MKY_LSHIFT )  strcat (sMods, " LS");
+	if ( kbd_mods & MKY_RSHIFT )  strcat (sMods, " RS");
+	if ( kbd_mods & MKY_LCTRL )   strcat (sMods, " LC");
+	if ( kbd_mods & MKY_RCTRL )   strcat (sMods, " RC");
+	if ( kbd_mods & MKY_LALT )    strcat (sMods, " LA");
+	if ( kbd_mods & MKY_RALT )    strcat (sMods, " RA");
+	if ( kbd_mods & MKY_CAPSLK )  strcat (sMods, " CL");
+	if ( kbd_mods & MKY_NUMLK )   strcat (sMods, " NL");
+	if ( kbd_mods & MKY_SCRLLK )  strcat (sMods, " SL");
+	if ( kbd_mods & MKY_SHFTLK )  strcat (sMods, " LK");
+	return   &sMods[1];
+	}
+
+int kbd_mod_keys (void)
+    {
+    return kbd_mods;
+    }

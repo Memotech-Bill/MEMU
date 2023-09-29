@@ -30,7 +30,7 @@ typedef struct
 /*...sdirt_open:0:*/
 DIRT *dirt_open(const char *dirname, int *rc)
 	{
-    printf ("dirt_open (%s)\n", dirname);
+    // printf ("dirt_open (%s)\n", dirname);
 	DIRT *dirt;
 	*rc = DIRTE_OK;
 	if ( ( dirt = (DIRT *) malloc (sizeof (DIRT)) ) == NULL )

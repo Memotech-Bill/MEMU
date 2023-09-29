@@ -617,7 +617,6 @@ byte sdxfdc_in (word port)
    
 void sdxfdc_init (int drive, const char *psFile)
    {
-   psFile = PMapPath (psFile);
    if ( ( drive < 0 ) || ( drive >= SDX_DRIVES ) )
       {
       if ( ! diag_flags[DIAG_BAD_PORT_IGNORE] ) fatal ("Attempt to configure an invalid drive");
@@ -630,7 +629,7 @@ void sdxfdc_init (int drive, const char *psFile)
       }
    if ( psFile && psFile[0] )
       {
-      fdc_fd[drive]     =  fopen (psFile, "r+b");
+      fdc_fd[drive]     =  fopen (PMapPath (psFile), "r+b");
       if ( fdc_fd[drive] == NULL )
          {
          if ( ! diag_flags[DIAG_BAD_PORT_IGNORE] ) fatal ("Failed to open MFLOPPY file: %s", psFile);

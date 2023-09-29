@@ -16,6 +16,15 @@ diag.h - Diagnostic code
 /*...vtypes\46\h:0:*/
 /*...e*/
 
+#ifdef HAVE_VDEB
+#ifndef HAVE_DISASS
+#define HAVE_DISASS 1
+#endif
+#ifndef Z80_DEBUG
+#define Z80_DEBUG   1
+#endif
+#endif
+
 #define	DIAGM_CONSOLE               0x00000001
 #define	DIAGM_FILE                  0x00000002
 #define	DIAGM_RING                  0x00000004

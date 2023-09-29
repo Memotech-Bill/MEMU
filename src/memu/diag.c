@@ -20,7 +20,7 @@ diag.c - Diagnostic code
 
 #include "types.h"
 #include "diag.h"
-#ifndef SMALL_MEM
+#ifdef HAVE_VDEB
 #include "vdeb.h"
 #endif
 #include "memu.h"
@@ -220,6 +220,9 @@ void diag_message(unsigned int flag, const char *fmt, ...)
             }
 		va_end(vars);
         strcat (s, "\n");
+#ifdef SERIAL_DIAG
+        printf (s);
+#endif
 		if ( diag_methods & DIAGM_CONSOLE )
 			{
 			fputs(s, stdout);
@@ -302,13 +305,15 @@ void diag_control(int c)
 	{
 	switch ( c )
 		{
-     LM(case 'h': vdeb_break (); break;)
 		case 'c': diag_methods ^= DIAGM_CONSOLE; break;
 		case 'a': diag_flags[DIAG_SPEED_UP         ] ^= TRUE; break;
 		case 'b': diag_flags[DIAG_MEM_IOBYTE       ] ^= TRUE; break;
      LM(case 'd': diag_flags[DIAG_ACT_MEM_DUMP     ]  = TRUE; break;)
 //      case 'e': snd_query (); break;
 		case 'f': diag_flags[DIAG_CPM_BDOS_FILE    ] ^= TRUE; break;
+#ifdef HAVE_VDEB
+        case 'h': vdeb_break (); break;
+#endif
 		case 'i': diag_flags[DIAG_Z80_INTERRUPTS   ] ^= TRUE; break;
 		case 'k': diag_flags[DIAG_KBD_SENSE        ] ^= TRUE; break;
      LM(case 'l': diag_flags[DIAG_ACT_SNA_LOAD     ]  = TRUE; break;)

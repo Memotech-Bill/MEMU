@@ -36,7 +36,7 @@
 #include "dirmap.h"
 
 #include "Z80.h"
-extern Z80 *GetZ80 (void);
+extern Z80 *get_Z80_regs (void);
 extern void DebugZ80Instruction(Z80 *r, const char *instruction);
 extern BOOLEAN dis_instruction(word *a, char *s);
 
@@ -157,18 +157,22 @@ void WrZ80(word addr, byte value)
     if ( mem_write[addr>>13] == NULL ) return;
 #endif
     if ( (addr>>13) != 0 || (mem_iobyte&0x80) != 0 )
+        {
         /* Normal write */
         mem_write[addr>>13][addr&0x1fff] = value;
 #ifdef HAVE_VDEB
         if ( bWrChk ) vdeb_mwrite (mem_iobyte, addr);
 #endif
+        }
     else
         /* Write to first 8KB in RELCPMH=0 mode, sets sub-page */
         {
 #ifdef SMALL_MEM
-        fatal ("ROM sub-pages not supported.");
+        Z80 *z80 = get_Z80_regs ();
+        diag_message(DIAG_MEM_SUBPAGE, "ROM sub-page set 0x%02x - NOT SUPPORTED, PC = 0x%04X", value, z80->PC.W);
 #else
-        diag_message(DIAG_MEM_SUBPAGE, "ROM sub-page set to 0x%02x", value);
+        Z80 *z80 = get_Z80_regs ();
+        diag_message(DIAG_MEM_SUBPAGE, "ROM sub-page set to 0x%02x, PC = 0x%04X", value, z80->PC.W);
         mem_set_rom_subpage(value);
 #endif
         }
@@ -620,7 +624,6 @@ void load_rompair (int rom, const char *fname)
     free(buf);
 #endif // SMALL_MEM
     }
-#endif
 
 void load_largerom (const char *psFlags, const char *psFile)
     {
@@ -646,6 +649,7 @@ void load_largerom (const char *psFlags, const char *psFile)
         ++psFlags;
         }
     }
+#endif
 
 #ifdef SMALL_MEM
 byte *mem_ram_ptr (word addr, word *psize)

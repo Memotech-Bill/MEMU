@@ -31,6 +31,7 @@ extern void vid_refresh(unsigned long long elapsed);
 extern void vid_refresh_vdeb(void);
 
 extern BOOLEAN vid_int_pending(void);
+extern void vid_set_int (void);
 extern void vid_clear_int(void);
 
 extern byte vid_vram_read(word addr);
@@ -47,5 +48,7 @@ extern void vid_set_title (const char *title);
 extern const char * vid_get_title (void);
 extern void vid_set_display (const char *display);
 extern const char * vid_get_display (void);
+
+extern void vid_show (void);
 
 #endif

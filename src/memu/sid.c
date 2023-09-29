@@ -19,10 +19,10 @@ Changing the content would not be detected, and corruption would result.
 */
 
 /*...sincludes:0:*/
-#include <stdio.h>
 #include <ctype.h>
 #include <string.h>
 
+#include "ff_stdio.h"
 #include "types.h"
 #include "diag.h"
 #include "common.h"
@@ -42,8 +42,15 @@ Changing the content would not be detected, and corruption would result.
 /*...svars:0:*/
 static int sid_emu;
 
-#define	SIDISC_SIZE (8*1024*1024)
+#ifdef SMALL_MEM
+#define BUFF_SID(emu)   1
+#define SIBUF_SIZE  128
+#else
+#define BUFF_SID(emu)   (emu & SIDEMU_HUGE)
 #define SIBUF_SIZE  1024
+#endif
+
+#define	SIDISC_SIZE (8*1024*1024)
 
 static byte *memory[N_SIDISC] =
 	{
@@ -146,11 +153,11 @@ void sid_out(word port, byte value)
                 }
 			if ( memory[drive] == NULL )
 				{
-                unsigned int nalloc = ( sid_emu & SIDEMU_HUGE ) ? SIBUF_SIZE : SIDISC_SIZE;
+                unsigned int nalloc = ( BUFF_SID(sid_emu) ) ? SIBUF_SIZE : SIDISC_SIZE;
 				memory[drive] = emalloc(nalloc);
                 memset(memory[drive], 0, nalloc);
 				}
-            if ( sid_emu & SIDEMU_HUGE )
+            if ( BUFF_SID(sid_emu) )
                 {
                 if ( ( ptr[drive] < base[drive] ) || ( ptr[drive] >= base[drive] + SIBUF_SIZE ) )
                     {
@@ -204,7 +211,7 @@ byte sid_in(word port)
 				ptr[drive] = 0;
 			if ( memory[drive] != NULL )
                 {
-                if ( sid_emu & SIDEMU_HUGE )
+                if ( BUFF_SID(sid_emu) )
                     {
                     if ( ( ptr[drive] < base[drive] ) || ( ptr[drive] >= base[drive] + SIBUF_SIZE ) )
                         {
@@ -265,17 +272,17 @@ void sid_load (int drive)
 //        active[drive] = 0;
 		if ( (fp[drive] = fopen(PMapPath (fns[drive]), "rb+")) != NULL )
 			{
-            unsigned int nalloc = ( sid_emu & SIDEMU_HUGE ) ? SIBUF_SIZE : SIDISC_SIZE;
+            unsigned int nalloc = ( BUFF_SID(sid_emu) ) ? SIBUF_SIZE : SIDISC_SIZE;
 			size_t file_size;
 			size_t n;
 			fseek(fp[drive], 0L, SEEK_END);
 			file_size = (unsigned) ftell(fp[drive]);
 			fseek(fp[drive], 0L, SEEK_SET);
-			size[drive] = ( (sid_emu & SIDEMU_HUGE) != 0 && file_size > SIDISC_SIZE ) ? file_size : SIDISC_SIZE;
+			size[drive] = ( (BUFF_SID(sid_emu)) != 0 && file_size > SIDISC_SIZE ) ? file_size : SIDISC_SIZE;
 //            active[drive] = file_size;
 			memory[drive] = emalloc(nalloc);
 			n = fread(memory[drive], 1, nalloc, fp[drive]);
-            if ( ! ( sid_emu & SIDEMU_HUGE ) )
+            if ( ! ( BUFF_SID(sid_emu) ) )
                 {
                 fclose(fp[drive]);
                 fp[drive] = NULL;
@@ -313,8 +320,8 @@ void sid_save (int drive, BOOLEAN bFree)
 		if ( fp[drive] != NULL )
 			{
 			fseek(fp[drive], base[drive], SEEK_SET);
-//            size_t nSave = ( sid_emu & SIDEMU_HUGE ) ? SIBUF_SIZE : active[drive];
-            size_t nSave = ( sid_emu & SIDEMU_HUGE ) ? SIBUF_SIZE : SIDISC_SIZE;
+//            size_t nSave = ( BUFF_SID(sid_emu) ) ? SIBUF_SIZE : active[drive];
+            size_t nSave = ( BUFF_SID(sid_emu) ) ? SIBUF_SIZE : SIDISC_SIZE;
 			size_t n = fwrite(memory[drive], 1, nSave, fp[drive]);
 			fclose(fp[drive]);
             fp[drive] = NULL;

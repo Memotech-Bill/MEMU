@@ -15,6 +15,7 @@ ui.c - User Interface
 #include "types.h"
 #include "common.h"
 #include "win.h"
+#include "kbd.h"
 #include "mem.h"
 #include "vid.h"
 #include "monprom.h"
@@ -267,13 +268,13 @@ static BOOLEAN ui_mem_snapshot = FALSE;
 static VIRTKBD ui_mem_vk;
 
 /*...sui_mem_keypress:0:*/
-static void ui_mem_keypress(int wk)
+static void ui_mem_keypress(WIN *win, int wk)
 	{
 	ui_vk_keypress(&ui_mem_vk, wk);
 	}
 /*...e*/
 /*...sui_mem_keyrelease:0:*/
-static void ui_mem_keyrelease(int wk)
+static void ui_mem_keyrelease(WIN *win, int wk)
 	{
 	}
 /*...e*/
@@ -557,13 +558,13 @@ static int ui_vram_digit = 0;
 static VIRTKBD ui_vram_vk;
 
 /*...sui_vram_keypress:0:*/
-static void ui_vram_keypress(int wk)
+static void ui_vram_keypress(WIN *win, int wk)
 	{
 	ui_vk_keypress(&ui_vram_vk, wk);
 	}
 /*...e*/
 /*...sui_vram_keyrelease:0:*/
-static void ui_vram_keyrelease(int wk)
+static void ui_vram_keyrelease(WIN *win, int wk)
 	{
 	}
 /*...e*/
@@ -788,13 +789,13 @@ static DISCTX *ui_dis_ctx;
 static VIRTKBD ui_dis_vk;
 
 /*...sui_dis_keypress:0:*/
-static void ui_dis_keypress(int wk)
+static void ui_dis_keypress(WIN *win, int wk)
 	{
 	ui_vk_keypress(&ui_dis_vk, wk);
 	}
 /*...e*/
 /*...sui_dis_keyrelease:0:*/
-static void ui_dis_keyrelease(int wk)
+static void ui_dis_keyrelease(WIN *win, int wk)
 	{
 	}
 /*...e*/

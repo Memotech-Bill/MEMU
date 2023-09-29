@@ -10,7 +10,6 @@ if("${TARGET}" STREQUAL "Pico")
 
   target_sources(memu_src INTERFACE
     ${CMAKE_CURRENT_LIST_DIR}/80col_pico.c
-    ${CMAKE_CURRENT_LIST_DIR}/cfgwin_pico.c
     ${CMAKE_CURRENT_LIST_DIR}/common.c
     ${CMAKE_CURRENT_LIST_DIR}/config.c
     ${CMAKE_CURRENT_LIST_DIR}/console_pico.c
@@ -18,14 +17,15 @@ if("${TARGET}" STREQUAL "Pico")
     ${CMAKE_CURRENT_LIST_DIR}/diag.c
     ${CMAKE_CURRENT_LIST_DIR}/dirt_ff.c
     ${CMAKE_CURRENT_LIST_DIR}/dirmap.c
-    ${CMAKE_CURRENT_LIST_DIR}/display_pico.c
+    ${CMAKE_CURRENT_LIST_DIR}/dis.c
     ${CMAKE_CURRENT_LIST_DIR}/ff_disk.c
     ${CMAKE_CURRENT_LIST_DIR}/ff_stdio.c
+    ${CMAKE_CURRENT_LIST_DIR}/kbd2.c
     ${CMAKE_CURRENT_LIST_DIR}/kbd_pico.c
     ${CMAKE_CURRENT_LIST_DIR}/main_pico.c
     ${CMAKE_CURRENT_LIST_DIR}/mem.c
     ${CMAKE_CURRENT_LIST_DIR}/memu.c
-    ${CMAKE_CURRENT_LIST_DIR}/mon_pico.c
+    ${CMAKE_CURRENT_LIST_DIR}/mon.c
     ${CMAKE_CURRENT_LIST_DIR}/monprom.c
     ${CMAKE_CURRENT_LIST_DIR}/printer.c
     ${CMAKE_CURRENT_LIST_DIR}/rom_os.c
@@ -33,16 +33,20 @@ if("${TARGET}" STREQUAL "Pico")
     ${CMAKE_CURRENT_LIST_DIR}/rom_basic.c
     ${CMAKE_CURRENT_LIST_DIR}/rom_boot_type07.c
     ${CMAKE_CURRENT_LIST_DIR}/rom_sdx_type07.c
+    ${CMAKE_CURRENT_LIST_DIR}/sid.c
     ${CMAKE_CURRENT_LIST_DIR}/sd_spi2.c
     ${CMAKE_CURRENT_LIST_DIR}/sdxfdc.c
     ${CMAKE_CURRENT_LIST_DIR}/snd_pico.c
     ${CMAKE_CURRENT_LIST_DIR}/tape.c
+    ${CMAKE_CURRENT_LIST_DIR}/txtwin.c
+    ${CMAKE_CURRENT_LIST_DIR}/vdeb.c
     ${CMAKE_CURRENT_LIST_DIR}/vid_pico.c
+    ${CMAKE_CURRENT_LIST_DIR}/win.c
+    ${CMAKE_CURRENT_LIST_DIR}/win_pico.c
     )
 
 elseif("${TARGET}" STREQUAL "XWin")
   set (xwin_src
-      ${CMAKE_CURRENT_LIST_DIR}/cfgwin.c
       ${CMAKE_CURRENT_LIST_DIR}/cfx2.c
       ${CMAKE_CURRENT_LIST_DIR}/common.c
       ${CMAKE_CURRENT_LIST_DIR}/config.c
@@ -74,10 +78,12 @@ elseif("${TARGET}" STREQUAL "XWin")
       ${CMAKE_CURRENT_LIST_DIR}/snd.c
       ${CMAKE_CURRENT_LIST_DIR}/spec.c
       ${CMAKE_CURRENT_LIST_DIR}/tape.c
+      ${CMAKE_CURRENT_LIST_DIR}/txtwin.c
       ${CMAKE_CURRENT_LIST_DIR}/ui.c
       ${CMAKE_CURRENT_LIST_DIR}/vdeb.c
       ${CMAKE_CURRENT_LIST_DIR}/vga.c
       ${CMAKE_CURRENT_LIST_DIR}/vid.c
+      ${CMAKE_CURRENT_LIST_DIR}/win.c
       ${CMAKE_CURRENT_LIST_DIR}/win_x.c
       )
   
@@ -119,7 +125,6 @@ elseif("${TARGET}" STREQUAL "XWin")
 elseif("${TARGET}" STREQUAL "FBuf")
   
   set (fbuf_src
-      ${CMAKE_CURRENT_LIST_DIR}/cfgwin.c
       ${CMAKE_CURRENT_LIST_DIR}/cfx2.c
       ${CMAKE_CURRENT_LIST_DIR}/common.c
       ${CMAKE_CURRENT_LIST_DIR}/config.c
@@ -149,10 +154,12 @@ elseif("${TARGET}" STREQUAL "FBuf")
       ${CMAKE_CURRENT_LIST_DIR}/snd.c
       ${CMAKE_CURRENT_LIST_DIR}/spec.c
       ${CMAKE_CURRENT_LIST_DIR}/tape.c
+      ${CMAKE_CURRENT_LIST_DIR}/txtwin.c
       ${CMAKE_CURRENT_LIST_DIR}/ui.c
       ${CMAKE_CURRENT_LIST_DIR}/vdeb.c
       ${CMAKE_CURRENT_LIST_DIR}/vga.c
       ${CMAKE_CURRENT_LIST_DIR}/vid.c
+      ${CMAKE_CURRENT_LIST_DIR}/win.c
       ${CMAKE_CURRENT_LIST_DIR}/win_fb.c
       )
     
@@ -199,7 +206,6 @@ elseif("${TARGET}" STREQUAL "RPi")
     )
   
   target_sources(memu_src INTERFACE
-    ${CMAKE_CURRENT_LIST_DIR}/cfgwin.c
     ${CMAKE_CURRENT_LIST_DIR}/cfx2.c
     ${CMAKE_CURRENT_LIST_DIR}/common.c
     ${CMAKE_CURRENT_LIST_DIR}/config.c
@@ -231,16 +237,17 @@ elseif("${TARGET}" STREQUAL "RPi")
     ${CMAKE_CURRENT_LIST_DIR}/spec.c
     ${CMAKE_CURRENT_LIST_DIR}/tape.c
     ${CMAKE_CURRENT_LIST_DIR}/TxtRead.c
+    ${CMAKE_CURRENT_LIST_DIR}/txtwin.c
     ${CMAKE_CURRENT_LIST_DIR}/ui.c
     ${CMAKE_CURRENT_LIST_DIR}/vdeb.c
     ${CMAKE_CURRENT_LIST_DIR}/vga.c
     ${CMAKE_CURRENT_LIST_DIR}/vid.c
+    ${CMAKE_CURRENT_LIST_DIR}/win.c
     ${CMAKE_CURRENT_LIST_DIR}/win_vc.c
     )
 
 elseif("${TARGET}" STREQUAL "Win")
   set (win_src
-      ${CMAKE_CURRENT_LIST_DIR}/cfgwin.c
       ${CMAKE_CURRENT_LIST_DIR}/cfx2.c
       ${CMAKE_CURRENT_LIST_DIR}/common.c
       ${CMAKE_CURRENT_LIST_DIR}/config.c
@@ -268,10 +275,12 @@ elseif("${TARGET}" STREQUAL "Win")
       ${CMAKE_CURRENT_LIST_DIR}/snd.c
       ${CMAKE_CURRENT_LIST_DIR}/spec.c
       ${CMAKE_CURRENT_LIST_DIR}/tape.c
+      ${CMAKE_CURRENT_LIST_DIR}/txtwin.c
       ${CMAKE_CURRENT_LIST_DIR}/ui.c
       ${CMAKE_CURRENT_LIST_DIR}/vdeb.c
       ${CMAKE_CURRENT_LIST_DIR}/vga.c
       ${CMAKE_CURRENT_LIST_DIR}/vid.c
+      ${CMAKE_CURRENT_LIST_DIR}/win.c
       ${CMAKE_CURRENT_LIST_DIR}/win_w32.c
       )
     
@@ -292,7 +301,6 @@ elseif("${TARGET}" STREQUAL "Win")
       )
 
     target_sources(memu_src INTERFACE
-      ${CMAKE_CURRENT_LIST_DIR}/cfgwin.c
       ${CMAKE_CURRENT_LIST_DIR}/cfx2.c
       ${CMAKE_CURRENT_LIST_DIR}/circleio.cpp
       ${CMAKE_CURRENT_LIST_DIR}/common.c
@@ -324,10 +332,12 @@ elseif("${TARGET}" STREQUAL "Win")
       ${CMAKE_CURRENT_LIST_DIR}/spec.c
       ${CMAKE_CURRENT_LIST_DIR}/tape.c
       ${CMAKE_CURRENT_LIST_DIR}/TxtRead.c
+      ${CMAKE_CURRENT_LIST_DIR}/txtwin.c
       ${CMAKE_CURRENT_LIST_DIR}/ui.c
       ${CMAKE_CURRENT_LIST_DIR}/vdeb.c
       ${CMAKE_CURRENT_LIST_DIR}/vid.c
       ${CMAKE_CURRENT_LIST_DIR}/vga.c
+      ${CMAKE_CURRENT_LIST_DIR}/win.c
       ${CMAKE_CURRENT_LIST_DIR}/win_cir.c
       )
 

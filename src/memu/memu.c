@@ -1481,6 +1481,7 @@ word LoopZ80(Z80 *r)
     {
     win_handle_events ();
 	display_wait_for_frame ();
+    vid_set_int ();
     ctc_trigger (0);
     return INT_NONE;
     }
@@ -2345,6 +2346,8 @@ void memu_reset(void)
     vid_reset ();
 	mem_set_iobyte(0x00);
 	mem_set_rom_subpage(0x00);
+    if (( mem_get_rom_enable () & 0x10 ) && ( mon_getwin () != NULL )) mon_show ();
+    else vid_show ();
 	ResetZ80(&z80);
 	}
 /*...e*/
@@ -2399,6 +2402,7 @@ int memu (int argc, const char *argv[])
     // diag_methods = DIAGM_CONSOLE;
     // diag_flags[DIAG_INIT] = TRUE;
 	mem_init_mtx();
+    mon_init_prom ();
 #ifdef SMALL_MEM
     // Set minimum working configuration
     static char sTapeDir[] = "tapes";
@@ -2480,6 +2484,7 @@ int memu (int argc, const char *argv[])
 			if ( ++i == argc )
 				opterror (argv[i-1]);
 			sscanf(argv[i], "%i", &nblocks);
+            if (nblocks > MAX_BLOCKS) nblocks = MAX_BLOCKS;
 			mem_alloc(nblocks);
 			}
 		else if ( !strcmp(argv[i], "-mem-mtx500") )

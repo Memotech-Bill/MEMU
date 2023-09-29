@@ -7,6 +7,7 @@
 #include "hardware.h"
 #include "gpio.h"
 #include "win.h"
+#include "kbd.h"
 #include "vid.h"
 #include "mon.h"
 #include "config.h"
@@ -542,7 +543,7 @@ BOOLEAN hw_Z80_in (word port, byte *value)
 		{
 		//	Printer strobe high and read status
 		gio_put (1, &pinPrnStb, 1);
-		*value	 =	gio_get (4, pinPrnSta) | 0xff;
+		*value	 =	gio_get (4, pinPrnSta) | 0xf0;
 		return TRUE;
 		}
 	if ( hwPIO && ( ( port & 0xff ) == 0x07 ) )
@@ -656,9 +657,6 @@ int hw_key_scan (void)
 		iKey = iScan[iKey];
 	return iKey;
 	}
-
-extern void win_next (void);
-extern void win_prev (void);
 
 BOOLEAN hw_handle_events (WIN *win)
 	{

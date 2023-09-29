@@ -55,11 +55,8 @@ static PMapMode PMapClass (const char *psPath)
     return pmapNone;
     }
 
-const char *PMapMap (PMapMode pmap, const char *psPath)
+static char *PMapAlloc (int nLen)
     {
-    // printf ("pmap = %d, psPath = "%s\n", pmap, psPath);
-    if ( pmap == pmapNone ) return psPath;
-    int nLen = strlen (rootdir[pmap]) + strlen (psPath);
     if ( psNewMap == NULL )
         {
         psNewMap = (char *) emalloc (nLen);
@@ -71,15 +68,42 @@ const char *PMapMap (PMapMode pmap, const char *psPath)
         psNewMap = (char *) emalloc (nLen);
         nNewLen = nLen;
         }
-    strcpy (psNewMap, rootdir[pmap]);
-    strcat (psNewMap, &psPath[psPath[1] == '/' ? 1 : 2]);
-    // printf ("psNewMap = %s\n", psNewMap);
     return psNewMap;
+    }
+
+const char *PMapMap (PMapMode pmap, const char *psPath)
+    {
+    // printf ("pmap = %d, psPath = "%s\n", pmap, psPath);
+    if ( pmap == pmapNone ) return psPath;
+    int nLen = strlen (rootdir[pmap]) + strlen (psPath);
+    char *psMap = PMapAlloc (nLen);
+    strcpy (psMap, rootdir[pmap]);
+    strcat (psMap, &psPath[psPath[1] == '/' ? 1 : 2]);
+    // printf ("psMap = %s\n", psMap);
+    return psMap;
     }
 
 const char *PMapPath (const char *psPath)
     {
     return PMapMap (PMapClass (psPath), psPath);
+    }
+
+const char *PMapMapped (const char *psPath)
+    {
+    if ((psPath[0] != '/') && (psPath[0] != '\\')) return psPath;
+    for (int pmap = 0; pmap < pmapCount; ++pmap)
+        {
+        int nLen = strlen (rootdir[pmap]);
+        if (( psPath[nLen] == psPath[0] ) && ( strncmp (psPath, rootdir[pmap], nLen) == 0 ))
+            {
+            char *psMap = PMapAlloc (strlen (psPath) - nLen + 3);
+            psMap[0] = '~';
+            psMap[1] = "WCEH"[pmap];
+            strcpy (&psMap[2], &psPath[nLen]);
+            return psMap;
+            }
+        }
+    return psPath;
     }
 
 #endif

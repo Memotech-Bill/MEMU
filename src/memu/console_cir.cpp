@@ -5,6 +5,7 @@
 #include "console.h"
 #include "monprom.h"
 #include "win.h"
+#include "kbd.h"
 #include "common.h"
 #include "kfuncs.h"
 
@@ -100,13 +101,13 @@ void CConsole::Dump (void)
 #endif
 
 //	Key press event handler - record key pressed.
-static void con_keypress (int wk)
+static void con_keypress (WIN *win, int wk)
 	{
 	con_wk =  wk;
 	}
 
 //	Key release event handler - does nothing.
-static void con_keyrelease (int wk)
+static void con_keyrelease (WIN *win, int wk)
 	{
     con_wk = -1;
 	}

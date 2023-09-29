@@ -28,6 +28,7 @@
 #include "diag.h"
 #include "common.h"
 #include "win.h"
+#include "kbd.h"
 
 /*...vtypes\46\h:0:*/
 /*...vdiag\46\h:0:*/
@@ -50,15 +51,16 @@ typedef struct
 
 struct st_winpriv
 	{
+    int iWin;
 	int width, height;
 	int width_scale, height_scale;
 	int n_cols;
 	byte *data;
-	void (*keypress)(int);
-	void (*keyrelease)(int);
+	void (*keypress)(WIN *, int);
+	void (*keyrelease)(WIN *, int);
+    TXTBUF tbuf;
 	/* Private window data below - Above must match definition of WIN in win.h */
 	byte *image;						// 	Pointer to image data (possibly scaled up)
-	int iWin;							// 	Window number
 	int img_w, img_h;					//	Scaled image dimensions
 	int left, top;						//	Position of top corner
 	int iDisplay;						//	VideoCore display number to use
@@ -68,10 +70,6 @@ struct st_winpriv
 	__u32 *cols;
 	};
 
-#define   MAX_WINS 10					//	Maximum number of separate windows
-static int n_wins = 0; 					//	Actual number of windows
-static WIN_PRIV *wins[MAX_WINS];		//	Pointer to each window structure
-static int iActiveWin = 0;				//	Currently active window
 #define	GPU_DEFAULT		3				//	Default GPU mode
 static int gpu_mode = GPU_DEFAULT;		//	GPU scaling mode
 //												1 = ARM upscaling
@@ -98,16 +96,6 @@ static struct
 	int	top;							//	Top margin
 	int bottom;							//	Bottom margin
 	} oscan;							//	Values obtained from GPU
-
-#define MKY_LSHIFT   0x01
-#define MKY_RSHIFT   0x02
-#define MKY_LCTRL    0x04
-#define MKY_RCTRL    0x08
-#define MKY_LALT     0x10
-#define MKY_RALT     0x20
-#define MKY_CAPSLK   0x40
-
-static int mod_keys  =  0;
 
 void set_gpu_mode (int mode)
 	{
@@ -315,7 +303,6 @@ static void win_kbd_init (void)
 		{
 		fatal ("Unable to get existing keyboard mode.");
 		}
-    diag_message (DIAG_WIN_HW, "old_keyboard_mode = %d", old_keyboard_mode);
 
 	tcgetattr (ttyfd, &tty_attr_old);
 	tty_init   =  TRUE;
@@ -380,7 +367,7 @@ void win_refresh (WIN *win_pub)
 		fatal ("Failed to transfer data for window %d", win->iWin);
 
 	//	Refresh display
-//   diag_message (DIAG_WIN_HW, "Refresh window %d, Active window = %d", win->iWin, iActiveWin);
+//   diag_message (DIAG_WIN_HW, "Refresh window %d, Active window = %d", win->iWin, active_win->iWin);
 	if ( win != win->vcd->winAct ) return;
 	update = vc_dispmanx_update_start (0);
 	if ( update == 0 ) fatal ("Failed to start display update");
@@ -395,8 +382,9 @@ void win_refresh (WIN *win_pub)
 //   diag_message (DIAG_WIN_HW, "Refresh complete");
 	}
 
-static void win_swap (WIN_PRIV *win)
+void win_show (WIN *win_pub)
 	{
+    WIN_PRIV *win = (WIN_PRIV *) win_pub;
 	VCD *vcd = win->vcd;
 	DISPMANX_UPDATE_HANDLE_T update;
     VC_DISPMANX_ALPHA_T alpha;
@@ -456,29 +444,11 @@ static void win_swap (WIN_PRIV *win)
                                 DISPMANX_NO_ROTATE);
 	diag_message (DIAG_WIN_HW, "Added new window element (%d)", win->iWin);
 	vcd->winAct = win;
-	iActiveWin = win->iWin;
+	active_win = win_pub;
 
 	if ( vc_dispmanx_update_submit_sync (update) != 0 )
 		fatal ("Failed to complete window update");
 	}
-
-void win_next (void)
-	{
-	if ( ++iActiveWin >= n_wins )	iActiveWin	=  0;
-	win_swap (wins[iActiveWin]);
-	}
-
-void win_prev (void)
-	{
-	if ( --iActiveWin < 0 )	iActiveWin	=  n_wins - 1;
-	win_swap (wins[iActiveWin]);
-	}
-
-BOOLEAN win_active (WIN *win_pub)
-    {
-	WIN_PRIV *win = (WIN_PRIV *) win_pub;
-    return ( win->iWin == iActiveWin );
-    }
 
 /*...e*/
 
@@ -503,8 +473,8 @@ WIN *win_create(
 	const char *display,
 	const char *geometry,
 	COL *cols, int n_cols,
-	void (*keypress)(int k),
-	void (*keyrelease)(int k)
+	void (*keypress)(WIN *, int),
+	void (*keyrelease)(WIN *, int)
 	)
 	{
 	WIN_PRIV *win;
@@ -519,12 +489,9 @@ WIN *win_create(
 
 	if ( ! tty_init )  win_kbd_init ();
 
-	win = (WIN_PRIV *) emalloc(sizeof(WIN_PRIV));
-	win->iWin            = n_wins;
+	win = (WIN_PRIV *) win_alloc(sizeof(WIN_PRIV), width * height);
 	win->width           = width;
 	win->height          = height;
-	win->data            = emalloc (width * height);
-	memset (win->data, 0, width * height);
 	win->keypress        = keypress;
 	win->keyrelease      = keyrelease;
 	win->n_cols          = n_cols;
@@ -535,7 +502,6 @@ WIN *win_create(
 	    diag_message (DIAG_WIN_HW, "Palette colour %d: r = %d, g = %d, b = %d, col = 0x%06x",
 			  i, cols[i].r, cols[i].g, cols[i].b, win->cols[i]);
 	  }
-	wins[n_wins++] =  win;
 
 	//	Create display layer
 	if ( display )	win->iDisplay = atoi (display);
@@ -595,7 +561,7 @@ WIN *win_create(
                                           &rect) != 0 )
 		fatal ("Failed to transfer data for window %d", win->iWin);
 	diag_message (DIAG_WIN_HW, "Created VC resource for window %d", win->iWin);
-	win_swap (win);
+	win_show ((WIN *)win);
 
 	return (WIN *) win;
 	}
@@ -604,16 +570,12 @@ WIN *win_create(
 /*...swin_delete:0:*/
 void win_term (void)
 	{
-	diag_message (DIAG_WIN_HW, "win_term");
 #ifndef	NOKBD
 	if ( tty_init )
 		{
 		tcsetattr (ttyfd, TCSAFLUSH, &tty_attr_old);
-        diag_message (DIAG_WIN_HW, "old_keyboard_mode = %d", old_keyboard_mode);
 		ioctl (ttyfd, KDSKBMODE, old_keyboard_mode);
 		tty_init = FALSE;
-        diag_message (DIAG_WIN_HW, "Restored keyboard mode");
-        tty_init = 0;
 		}
 #endif
 	if ( gpu_mode == 3 )	vc_restore ();
@@ -664,9 +626,9 @@ void win_delete (WIN *win_pub)
 			int i;
 			for ( i = 0; i < n_wins; ++i )
 				{
-				if ( ( wins[i] != win ) && ( wins[i]->vcd == vcd ) )
+				if ( ( wins[i] != win_pub ) && ( ((WIN_PRIV *) wins[i])->vcd == vcd ) )
 					{
-					win_swap (wins[i]);
+					win_show (wins[i]);
 					break;
 					}
 				}
@@ -682,22 +644,16 @@ void win_delete (WIN *win_pub)
 	win->resImg = 0;
 	diag_message (DIAG_WIN_HW, "Deleted image resource for window %d", win->iWin);
 
-	wins[iWin] = wins[--n_wins];
-	wins[iWin]->iWin  =  iWin;
 	if ( win->image != win->data )
 		{
 		free (win->image);
 		diag_message (DIAG_WIN_HW, "Freed upscaling buffer");
 		}
-	free (win->data);
 	free (win->cols);
-	free (win);
-	if ( ! n_wins )
-		{
-		win_term ();
-		}
+	win_free (win_pub);
 	}
 /*...e*/
+
 
 /*...swin_map_key:0:*/
 typedef struct
@@ -766,7 +722,6 @@ static MAPKS win_mapks[] =
 
 static int win_map_key (unsigned char ks)
 	{
-#ifndef	NOKBD
 	struct kbentry kbe;
 	int  i;
 
@@ -780,8 +735,8 @@ static int win_map_key (unsigned char ks)
 			}
 		}
 
+#if 0
 	// Have to deal with shift 3 (Pound sign) as a special case on UK keyboards.
-    /*
 	if ( ( ks == KEY_3 ) && ( mod_keys & ( MKY_LSHIFT | MKY_RSHIFT ) )
 		&& ( ( mod_keys & ( MKY_LCTRL | MKY_RCTRL | MKY_LALT | MKY_RALT ) ) == 0 ) )
 		{
@@ -789,7 +744,7 @@ static int win_map_key (unsigned char ks)
 		int   key   =  '#';
 		return   key;
 		}
-    */
+#endif
 
 	// Use keyboard mapping.
 	kbe.kb_table   =  K_NORMTAB;
@@ -812,7 +767,6 @@ static int win_map_key (unsigned char ks)
 		diag_message (DIAG_KBD_HW, "Key 0x%02x is type 0x%02x code 0x%02x", (int) ks, type, key);
 		}
 	diag_message (DIAG_KBD_HW, "Can't map ks = 0x%02x", ks);
-#endif
 	return   -1;
 	}
 
@@ -827,9 +781,11 @@ static int win_map_key (unsigned char ks)
 
    The problem with this code is that it assumes the UK keyboard layout. */
 
+#if 0
 int win_shifted_wk(int wk)
 	{
-#if (TRUE)
+	// This version of the code actually returns the shifted codes. No further conversion is necessary.
+	return   wk;
 	if ( wk >= 'a' && wk <= 'z' )
 		return wk-'a'+'A';
 	switch ( wk )
@@ -857,9 +813,6 @@ int win_shifted_wk(int wk)
 		case '/':   return '?';
 		default:   return ( wk >= 0 && wk < 0x100 ) ? wk : -1;
 		}
-#endif
-	// This version of the code actually returns the shifted codes. No further conversion is necessary.
-	return   wk;
 	}
 /*...e*/
 
@@ -877,6 +830,7 @@ static char * ListModifiers (void)
 	if ( mod_keys & MKY_CAPSLK )  strcat (sMods, " CL");
 	return   sMods;
 	}
+#endif
 
 /*...swin_handle_events:0:*/
 
@@ -889,63 +843,37 @@ void win_handle_events()
 	unsigned char  key = 0;
 
 #ifdef	 ALT_HANDLE_EVENTS
-	if ( ALT_HANDLE_EVENTS ((WIN *) wins[iActiveWin]) )	 return;
+	if ( ALT_HANDLE_EVENTS ((WIN *) active_win) )	 return;
 #endif
-#ifndef NOKBD
+
 	while ( read (ttyfd, &key, 1) > 0 )
 		{
 		if ( ( key & 0x80 ) == 0 )
 			{
 			// Key press.
-			diag_message (DIAG_KBD_HW, "Key down event: 0x%02x, Modifiers:%s", key, ListModifiers ());
+			diag_message (DIAG_KBD_HW, "Key down event: 0x%02x", key);
+            
+			// Exit on break.
 
-			// Modifier keys.
-			if ( key == KEY_LEFTSHIFT )         mod_keys |= MKY_LSHIFT;
-			else if ( key == KEY_RIGHTSHIFT )   mod_keys |= MKY_RSHIFT;
-			else if ( key == KEY_LEFTCTRL )     mod_keys |= MKY_LCTRL;
-			else if ( key == KEY_RIGHTCTRL )    mod_keys |= MKY_RCTRL;
-			else if ( key == KEY_LEFTALT )      mod_keys |= MKY_LALT;
-			else if ( key == KEY_RIGHTALT )     mod_keys |= MKY_RALT;
-			else if ( key == KEY_CAPSLOCK )     mod_keys |= MKY_CAPSLK;
-
-			// Select window.
-			if ( ( mod_keys & MKY_LCTRL ) && ( key >= KEY_F1 ) && ( key <= KEY_F8 ) )
+			if ( key == KEY_PAUSE )
 				{
-				if ( ( key - KEY_F1 ) < n_wins )  win_swap (wins[key - KEY_F1]);
-				return;
-				}
-
-			// Exit on ctrl+break.
-
-			if ( ( key == KEY_PAUSE ) && ( mod_keys & MKY_LCTRL ) )
-				{
-				diag_message (DIAG_KBD_HW, "Ctrl+Break keys pressed.");
-				terminate ("Ctrl+Break keys pressed.");
+				diag_message (DIAG_KBD_HW, "Break key pressed.");
+				terminate ("Break key pressed.");
 				}
 
 			// Process key press.
-			wins[iActiveWin]->keypress (win_map_key (key));
+			active_win->keypress (active_win, win_map_key (key));
 			}
 		else
 			{
 			// Key release.
 			key &= 0x7f;
-			diag_message (DIAG_KBD_HW, "Key up event: 0x%x, Modifiers:%02s", key, ListModifiers ());
-
-			// Modifier keys.
-			if ( key == KEY_LEFTSHIFT )         mod_keys &= ~MKY_LSHIFT;
-			else if ( key == KEY_RIGHTSHIFT )   mod_keys &= ~MKY_RSHIFT;
-			else if ( key == KEY_LEFTCTRL )     mod_keys &= ~MKY_LCTRL;
-			else if ( key == KEY_RIGHTCTRL )    mod_keys &= ~MKY_RCTRL;
-			else if ( key == KEY_LEFTALT )      mod_keys &= ~MKY_LALT;
-			else if ( key == KEY_RIGHTALT )     mod_keys &= ~MKY_RALT;
-			else if ( key == KEY_CAPSLOCK )     mod_keys &= ~MKY_CAPSLK;
+			diag_message (DIAG_KBD_HW, "Key up event: 0x%x", key);
 
 			// Process key release.
-			wins[iActiveWin]->keyrelease (win_map_key (key));
+			active_win->keyrelease (active_win, win_map_key (key));
 			}
 		}
-#endif
 	}   
 /*...e*/
 
@@ -953,13 +881,13 @@ void win_handle_events()
 #define KEYB_LED_NUM_LOCK       0x02
 #define KEYB_LED_SCROLL_LOCK    0x01
 
-void win_kbd_leds (BOOLEAN bCaps, BOOLEAN bNum, BOOLEAN bScroll)
+void kbd_chk_leds (int *mods)
     {
     static unsigned int uLast = 0xFF;
     unsigned int uLeds = 0;
-    if ( bCaps )    uLeds |= KEYB_LED_CAPS_LOCK;
-    if ( bNum )     uLeds |= KEYB_LED_NUM_LOCK;
-    if ( bScroll )  uLeds |= KEYB_LED_SCROLL_LOCK;
+    if ( *mods & MKY_CAPSLK )    uLeds |= KEYB_LED_CAPS_LOCK;
+    if ( *mods & MKY_NUMLK )     uLeds |= KEYB_LED_NUM_LOCK;
+    if ( *mods & MKY_SCRLLK )    uLeds |= KEYB_LED_SCROLL_LOCK;
     if ( uLeds != uLast ) ioctl (ttyfd, KDSETLED, &uLeds);
     uLast = uLeds;
     }

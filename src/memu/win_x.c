@@ -19,6 +19,7 @@ win.c - XWindows Window
 #include "diag.h"
 #include "common.h"
 #include "win.h"
+#include "kbd.h"
 
 /*...vtypes\46\h:0:*/
 /*...vdiag\46\h:0:*/
@@ -45,12 +46,14 @@ typedef struct dpystruct
 /*...sWIN_PRIV:0:*/
 typedef struct
 	{
+    int iWin;
 	int width, height;
 	int width_scale, height_scale;
 	int n_cols;
 	byte *data;
-	void (*keypress)(int);
-	void (*keyrelease)(int);
+	void (*keypress)(WIN *, int);
+	void (*keyrelease)(WIN *, int);
+    TXTBUF tbuf;
 	/* Private window data below - Above must match definition of WIN in win.h */
 	DPY *dpy;
 	GC gc;
@@ -151,10 +154,6 @@ void win_max_size (const char *display, int *pWth, int *pHgt)
     dpy_disconnect (dpy);
     }
 
-#define	MAX_WINS 10
-static int n_wins = 0; 
-static WIN_PRIV *wins[MAX_WINS];
-
 /*...swin_create:0:*/
 WIN *win_create(
 	int width, int height,
@@ -163,16 +162,13 @@ WIN *win_create(
 	const char *display,
 	const char *geometry,
 	COL *cols, int n_cols,
-	void (*keypress)(int k),
-	void (*keyrelease)(int k)
+	void (*keypress)(WIN *, int),
+	void (*keyrelease)(WIN *, int)
 	)
 	{
-	WIN_PRIV *win = (WIN_PRIV *) emalloc(sizeof(WIN_PRIV));
+	WIN_PRIV *win = (WIN_PRIV *) win_alloc(sizeof(WIN_PRIV), width * height);
     diag_message (DIAG_WIN_HW, "%s: win = %p", title, win);
 	int winx, winy, winw, winh, flags;
-
-	if ( n_wins == MAX_WINS )
-		fatal("too many windows");
 
 	win->width        = width;
 	win->height       = height;
@@ -182,8 +178,6 @@ WIN *win_create(
     diag_message (DIAG_WIN_HW, "%s: (%p)", title, win);
 
 	win->dpy = dpy_connect(display);
-
-	wins[n_wins++] = win;
 
 	if ( geometry != 0 )
 		{
@@ -295,7 +289,6 @@ WIN *win_create(
 	win->gc = XCreateGC(win->dpy->disp, win->w_bitmap, GCFunction, &gcv);
 	}
 
-	win->data = emalloc(width*height);
 	memset(win->data, 0, width*height);
     diag_message (DIAG_WIN_HW, "%s: win->data = %p", title, win->data);
 
@@ -420,18 +413,17 @@ default:
 			win->gc,                // Graphics context
 			win->ximage);           // Image to combine
     */
+    active_win = (WIN *) win;
 	return (WIN *) win;
 	}
 /*...e*/
+
 /*...swin_delete:0:*/
 void win_delete(WIN *win_pub)
 	{
 	if ( win_pub == NULL ) return;
 	WIN_PRIV *win = (WIN_PRIV *) win_pub;
 	XFreeGC(win->dpy->disp, win->gc);
-
-    diag_message (DIAG_WIN_HW, "win_delete %s: win->data = %p", win->title, win->data);
-	free(win->data);
 
     diag_message (DIAG_WIN_HW, "win_delete %s: ximage->data = %p", win->title, win->ximage->data);
 	free(win->ximage->data);
@@ -457,13 +449,8 @@ case PseudoColor:
 	XDestroyWindow(win->dpy->disp, win->w);
 
 	dpy_disconnect(win->dpy);
-
-	int i;
-	for ( i = 0; wins[i] != win; i++ )
-		;
-	wins[i] = wins[--n_wins];
     diag_message (DIAG_WIN_HW, "win_delete %s: win = %p", win->title, win);
-	free(win);
+	win_free ((WIN *) win);
 	}
 /*...e*/
 
@@ -764,55 +751,14 @@ static int win_map_key(KeySym ks)
 	}
 /*...e*/
 
-/*...swin_shifted_wk:0:*/
-/* Keys of the host keyboard have an unshifted label and a shifted label
-   written on them, eg: unshifted "1", shifted "!". Alphabetic keys typically
-   omit the unshifted lowercase letter, but notionally it is there.
-   This module returns WK_ values with names which reflect unshifted label.
-   Sometimes the module user will want to know the equivelent shifted label.
-
-   The problem with this code is that it assumes the UK keyboard layout. */
-
-int win_shifted_wk(int wk)
-	{
-	if ( wk >= 'a' && wk <= 'z' )
-		return wk-'a'+'A';
-	switch ( wk )
-		{
-		case '1':	return '!';
-		case '2':	return '"';
-		case '3':	return '#'; /* pound */
-		case '4':	return '$';
-		case '5':	return '%';
-		case '6':	return '^';
-		case '7':	return '&';
-		case '8':	return '*';
-		case '9':	return '(';
-		case '0':	return ')';
-		case '-':	return '_';
-		case '=':	return '+';
-		case '[':	return '{';
-		case ']':	return '}';
-		case ';':	return ':';
-		case '\'':	return '@';
-		case '#':	return '~';
-		case '\\':	return '|';
-		case ',':	return '<';
-		case '.':	return '>';
-		case '/':	return '?';
-		default:	return ( wk >= 0 && wk < 0x100 ) ? wk : -1;
-		}
-	}
-/*...e*/
-
 /*...swin_handle_events:0:*/
 /*...sfind_win_w:0:*/
 static WIN_PRIV *find_win_w(Window w)
 	{
 	int i;
 	for ( i = 0; i < n_wins; i++ )
-		if ( wins[i]->w == w )
-			return wins[i];
+		if ( ((WIN_PRIV *) wins[i])->w == w )
+			return (WIN_PRIV *) wins[i];
 	return NULL;
 	}
 /*...e*/
@@ -821,8 +767,8 @@ static WIN_PRIV *find_win_w_bitmap(Window w)
 	{
 	int i;
 	for ( i = 0; i < n_wins; i++ )
-		if ( wins[i]->w_bitmap == w )
-			return wins[i];
+		if ( ((WIN_PRIV *) wins[i])->w_bitmap == w )
+			return (WIN_PRIV *) wins[i];
 	return NULL;
 	}
 /*...e*/
@@ -881,13 +827,13 @@ case KeyPress:
 		char buf[128];
 		XComposeStatus cs;
 		if ( XLookupString(&(event.xkey), buf, 128, &ks, &cs) == 1 )
-			win_event_keypress(win, buf[0]);
+			win_event_keypress((WIN *) win, buf[0]);
 #endif
 		unsigned int modifiers = 0;
 		int wk;
 		XkbLookupKeySym(win->dpy->disp, event.xkey.keycode, modifiers, &modifiers, &ks);
 		if ( (wk = win_map_key(ks)) != -1 )
-			(*win->keypress)(wk);
+			(*win->keypress)((WIN *) win, wk);
 		}
 	break;
 /*...e*/
@@ -900,13 +846,13 @@ case KeyRelease:
 		char buf[128];
 		XComposeStatus cs;
 		if ( XLookupString(&(event.xkey), buf, 128, &ks, &cs) == 1 )
-			win_event_keyrelease(win, buf[0]);
+			win_event_keyrelease((WIN *) win, buf[0]);
 #endif
 		unsigned int modifiers = 0;
 		int wk;
 		XkbLookupKeySym(win->dpy->disp, event.xkey.keycode, modifiers, &modifiers, &ks);
 		if ( (wk = win_map_key(ks)) != -1 )
-			(*win->keyrelease)(wk);
+			(*win->keyrelease)((WIN *) win, wk);
 		}
 	break;
 /*...e*/
@@ -922,11 +868,6 @@ case ClientMessage:
 		}
 	}	
 /*...e*/
-
-BOOLEAN win_active (WIN *win)
-    {
-    return TRUE;
-    }
 
 // LED ordering to be confirmed
 #define KEYB_LED_CAPS_LOCK      3
@@ -959,6 +900,18 @@ void win_kbd_leds (BOOLEAN bCaps, BOOLEAN bNum, BOOLEAN bScroll)
     diag_message (DIAG_KBD_HW, "win_kbd_leds (%d, %d, %d) - done", bCaps, bNum, bScroll);
     }
 
+void win_show (WIN *win_pub)
+    {
+	WIN_PRIV *win = (WIN_PRIV *) win_pub;
+    XRaiseWindow (win->dpy->disp, win->w);
+    // XSetInputFocus (win->dpy->disp, win->w, RevertToPointerRoot, CurrentTime);
+    active_win = win_pub;
+    }
+
 void win_term (void)
+    {
+    }
+
+extern void kbd_chk_leds (int *mods)
     {
     }
