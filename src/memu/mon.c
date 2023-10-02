@@ -151,7 +151,7 @@ static BOOLEAN mon_kbd_pressed;
 #ifdef __Pico__
 #define DRAW_GLYPH(...)
 #else
-#define DRAW_GLYPH(...) twin_draw_glyph (__VA_ARGS__)
+#define DRAW_GLYPH(...) if ( mon_win != NULL ) twin_draw_glyph (__VA_ARGS__)
 #endif
 
 /*...smon_out30 \45\ set address low\44\ and copy to screen:0:*/
@@ -1552,19 +1552,20 @@ void mon_init(int emu, int width_scale, int height_scale)
             mon_emu & MONEMU_WIN_MONO
 			);
         mon_tbuf = mon_win->tbuf;
+
+        mon_write_clr();
+        mon_win_changed = TRUE;
+#ifndef __Pico__
+        win_refresh(mon_win);
+#endif
+        win_show (mon_win);
 		}
     else
         {
         mon_win = NULL;
         mon_tbuf = tbuf_create (mon_emu & MONEMU_WIN_MONO);
+        mon_write_clr();
         }
-
-	mon_write_clr();
-    mon_win_changed = TRUE;
-#ifndef __Pico__
-    win_refresh(mon_win);
-#endif
-    win_show (mon_win);
         
 #ifdef HAVE_TH
 	if ( mon_emu & MONEMU_TH )
