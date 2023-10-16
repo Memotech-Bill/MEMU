@@ -234,6 +234,11 @@ void win_delete(WIN *win_pub)
 	}
 /*...e*/
 
+BOOLEAN win_active (WIN *win)
+    {
+    return ( win == active_win );
+    }
+
 /*...swin_map_key:0:*/
 typedef struct
 	{

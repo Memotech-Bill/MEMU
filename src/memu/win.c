@@ -53,11 +53,6 @@ void win_free (WIN *win)
         }
     }
 
-BOOLEAN win_active (WIN *win)
-    {
-    return ( win == active_win );
-    }
-
 WIN * win_current (void)
     {
     return active_win;

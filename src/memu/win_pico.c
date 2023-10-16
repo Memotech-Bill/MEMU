@@ -126,6 +126,11 @@ void win_delete (WIN *win)
     win_free (win);
     }
 
+BOOLEAN win_active (WIN *win)
+    {
+    return ( win == active_win );
+    }
+
 void display_vdp (void)
         {
         PRINTF ("Display VDP screen\n");

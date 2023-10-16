@@ -454,6 +454,11 @@ case PseudoColor:
 	}
 /*...e*/
 
+BOOLEAN win_active (WIN *win)
+    {
+    return TRUE;
+    }
+
 /*...swin_refresh:0:*/
 void win_refresh(WIN *win_pub)
 	{

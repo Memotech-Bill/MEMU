@@ -762,6 +762,11 @@ void win_delete(WIN *win_pub)
     }
 /*...e*/
 
+BOOLEAN win_active (WIN *win)
+    {
+    return TRUE;
+    }
+
 void win_term (void)
     {
     }
