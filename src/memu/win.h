@@ -19,8 +19,8 @@ win.h - Platform independant interface to Windowing code
 /*...vtypes\46\h:0:*/
 /*...e*/
 
-#define	N_COLS_MAX 64
-#define   MAX_WINS 10
+#define	N_COLS_MAX  256
+#define   MAX_WINS  10
 
 #define TW_ROWS     24
 #define TW_COLS     80
@@ -90,6 +90,7 @@ extern WIN *twin_create(
 extern WIN *win_alloc (size_t size_win, size_t size_data);
 extern void win_free (WIN *win);
 extern void win_delete (WIN *win);
+extern void win_colour (WIN *win, int idx, COL *clr);
 extern void win_refresh (WIN *win);
 extern int win_shifted_wk (int wk);
 extern void win_show (WIN *win);

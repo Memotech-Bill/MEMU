@@ -20,6 +20,7 @@ extern "C"
     void vga_out61 (byte chr);
     byte vga_in61 (void);
     void vga_refresh (void);
+    void vga_show (void);
 
 #ifdef __cplusplus
     }

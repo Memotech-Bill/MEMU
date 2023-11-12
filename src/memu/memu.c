@@ -79,7 +79,9 @@ memu.c - Memotech Emulator
 #include "cfx2.h"
 #endif
 #include "sdcard.h"
+#ifdef HAVE_MFX
 #include "mfx.h"
+#endif
 #ifdef HAVE_VGA
 #include "vga.h"
 #endif
@@ -170,6 +172,9 @@ void usage(const char *psErr, ...)
 	fprintf(stderr, "       -mon-win-display     set display to use for 80 column window\n");
 #ifdef HAVE_VGA
     fprintf(stderr, "       -vga                 emulate Propeller VGA display\n");
+#endif
+#ifdef HAVE_MFX
+    fprintf(stderr, "       -mfx                 emulate MFX video\n");
 #endif
 	fprintf(stderr, "       -kbd-remap           remaps MTX keyboard (despite shift state)\n");
 	fprintf(stderr, "       -kbd-country n       sets the country code switches to n (default 0)\n");
@@ -1571,6 +1576,9 @@ word LoopZ80(Z80 *r)
 	if ( ms_now - ms_last_mon_refresh_blink > 50 )
 		{
 		mon_refresh_blink();
+#ifdef HAVE_MFX
+        if ( cfg.mfx_emu ) mfx_blink ();
+#endif
 		ms_last_mon_refresh_blink = ms_now;
 		}
 
@@ -1628,6 +1636,9 @@ word LoopZ80(Z80 *r)
 #endif
 #ifdef HAVE_VGA
         if ( cfg.bVGA ) vga_refresh ();
+#endif
+#ifdef HAVE_MFX
+        if ( cfg.mfx_emu ) mfx_refresh ();
 #endif
 		}
 	else if ( elapsed_now - elapsed_last_vid_refresh > clock_speed / 300 )
@@ -1861,17 +1872,26 @@ void OutZ80(word port, byte value)
 		{
 		case 0x00:
 			mem_out0(value);
+#ifdef HAVE_MFX
+            mfx_out (port, value);
+#endif
 			break;
 		case 0x01:
 			vid_out1(value, z80.IElapsed);
 #ifdef HAVE_VGA
             vga_out1(value);
 #endif
+#ifdef HAVE_MFX
+            mfx_out (port, value);
+#endif
 			break;
 		case 0x02:
 			vid_out2(value);
 #ifdef HAVE_VGA
             vga_out2(value);
+#endif
+#ifdef HAVE_MFX
+            mfx_out (port, value);
 #endif
 			break;
 		case 0x03:
@@ -1964,35 +1984,70 @@ void OutZ80(word port, byte value)
 			spec_out1F(value);
 #endif
 			break;
+#ifdef HAVE_MFX
+        case 0x28:
+        case 0x29:
+        case 0x2A:
+        case 0x2B:
+        case 0x2C:
+        case 0x2D:
+        case 0x2E:
+        case 0x2F:
+            mfx_out (port, value);
+            break;
+#endif
 		case 0x30:
 			mon_out30(value);
+#ifdef HAVE_MFX
+            mfx_out (port, value);
+#endif
 			break;
 		case 0x31:
 			mon_out31(value);
+#ifdef HAVE_MFX
+            mfx_out (port, value);
+#endif
 			break;
 		case 0x32:
 			mon_out32(value);
+#ifdef HAVE_MFX
+            mfx_out (port, value);
+#endif
 			break;
 		case 0x33:
 			mon_out33(value);
+#ifdef HAVE_MFX
+            mfx_out (port, value);
+#endif
 			break;
 #ifdef HAVE_MFX
         case 0x34:
-            mon_out34 (value);
-            break;
         case 0x35:
-            mfx_out35 (value);
+        case 0x36:
+        case 0x37:
+            mfx_out (port, value);
             break;
 #endif
 		case 0x38:
 			mon_out38(value);
+#ifdef HAVE_MFX
+            mfx_out (port, value);
+#endif
 			break;
 		case 0x39:
 			mon_out39(value);
+#ifdef HAVE_MFX
+            mfx_out (port, value);
+#endif
 			break;
 #ifdef HAVE_MFX
         case 0x3A:
-            mfx_out3A (value);
+        case 0x3B:
+        case 0x3C:
+        case 0x3D:
+        case 0x3E:
+        case 0x3F:
+            mfx_out (port, value);
             break;
 #endif
 		case 0x40:
@@ -2202,27 +2257,61 @@ byte InZ80(word port)
 		case 0x1f:
 			return spec_in1F();
 #endif
+#ifdef HAVE_MFX
+        case 0x28:
+        case 0x29:
+        case 0x2A:
+        case 0x2B:
+        case 0x2C:
+        case 0x2D:
+        case 0x2E:
+        case 0x2F:
+            return mfx_in (port);
+#endif
 		case 0x30:
+#ifdef HAVE_MFX
+            if ( cfg.mfx_emu )
+                return mfx_in (port);
+            else
+#endif
 			return mon_in30();
 		case 0x32:
+#ifdef HAVE_MFX
+            if ( cfg.mfx_emu )
+                return mfx_in (port);
+            else
+#endif
 			return mon_in32();
 		case 0x33:
+#ifdef HAVE_MFX
+            if ( cfg.mfx_emu )
+                return mfx_in (port);
+            else
+#endif
 			return mon_in33();
 #ifdef HAVE_MFX
         case 0x34:
-            return mon_in34 ();
         case 0x35:
-            return mfx_in35 ();
+        case 0x36:
+        case 0x37:
+            return mfx_in (port);
 #endif
 		case 0x38:
+#ifdef HAVE_MFX
+            if ( cfg.mfx_emu )
+                return mfx_in (port);
+            else
+#endif
 			return mon_in38();
 		case 0x39:
 			return mon_in39();
 #ifdef HAVE_MFX
         case 0x3A:
-            return mfx_in3A ();
         case 0x3B:
-            return mem_get_iobyte ();
+        case 0x3D:
+        case 0x3E:
+        case 0x3F:
+            return mfx_in (port);
 #endif
 		case 0x40:
 		case 0x41:
@@ -2317,11 +2406,7 @@ byte InZ80(word port)
 			return InZ80_bad("REMEMOTECH/REMEMOrizer SD Card", port, TRUE);
 #endif
 		case 0xd8:
-#ifdef HAVE_SD_CARD
-            return mfx_inD8 ();
-#else
 			return InZ80_bad("REMEMOTECH/REMEMOrizer clock divider", port, TRUE);
-#endif
 		case 0xd9:
 			return InZ80_bad("REMEMOrizer flags", port, TRUE);
 #ifdef HAVE_SPEC
@@ -2346,8 +2431,17 @@ void memu_reset(void)
     vid_reset ();
 	mem_set_iobyte(0x00);
 	mem_set_rom_subpage(0x00);
-    if (( mem_get_rom_enable () & 0x10 ) && ( mon_getwin () != NULL )) mon_show ();
+    if (mem_get_rom_enable () & 0x10 )
+        {
+        mon_show ();
+        }
     else vid_show ();
+#ifdef HAVE_VGA
+    vga_show ();
+#endif
+#ifdef HAVE_MFX
+    mfx_show ();
+#endif
 	ResetZ80(&z80);
 	}
 /*...e*/
@@ -2689,6 +2783,9 @@ int memu (int argc, const char *argv[])
 		else if ( !strcmp(argv[i], "-mon-win") )
             {
 			cfg.mon_emu |= MONEMU_WIN;
+#ifdef HAVE_MFX
+            cfg.mfx_emu = 0;
+#endif
             }
 		else if ( !strcmp(argv[i], "-mon-win-big") ||
 			  !strcmp(argv[i], "-mw")          )
@@ -2696,21 +2793,33 @@ int memu (int argc, const char *argv[])
 			cfg.mon_emu |= MONEMU_WIN;
 			++cfg.mon_height_scale;
 			cfg.mon_width_scale = cfg.mon_height_scale/2;
+#ifdef HAVE_MFX
+            cfg.mfx_emu = 0;
+#endif
 			}
 		else if ( !strcmp(argv[i], "-mon-win-max") )
             {
 			cfg.mon_emu |= MONEMU_WIN_MAX;
             mon_max_scale (&cfg.mon_width_scale, &cfg.mon_height_scale);
+#ifdef HAVE_MFX
+            cfg.mfx_emu = 0;
+#endif
             }
 		else if ( !strcmp(argv[i], "-mon-win-mono") )
             {
 			cfg.mon_emu |= MONEMU_WIN_MONO;
+#ifdef HAVE_MFX
+            cfg.mfx_emu = 0;
+#endif
             }
 		else if ( !strcmp(argv[i], "-mon-th") ||
 			  !strcmp(argv[i], "-mt")     )
             {
 #ifdef HAVE_TH
 			cfg.mon_emu |= MONEMU_TH;
+#ifdef HAVE_MFX
+            cfg.mfx_emu = 0;
+#endif
 #else
             unimplemented (argv[i]);
 #endif
@@ -2720,6 +2829,9 @@ int memu (int argc, const char *argv[])
             {
 #ifdef HAVE_CONSOLE
 			cfg.mon_emu |= MONEMU_CONSOLE;
+#ifdef HAVE_MFX
+            cfg.mfx_emu = 0;
+#endif
 #else
             unimplemented (argv[i]);
 #endif
@@ -2729,6 +2841,9 @@ int memu (int argc, const char *argv[])
             {
 #ifdef HAVE_CONSOLE
 			cfg.mon_emu |= (MONEMU_CONSOLE|MONEMU_CONSOLE_NOKEY);
+#ifdef HAVE_MFX
+            cfg.mfx_emu = 0;
+#endif
 #else
             unimplemented (argv[i]);
 #endif
@@ -2736,7 +2851,25 @@ int memu (int argc, const char *argv[])
 		else if ( !strcmp(argv[i], "-mon-no-ignore-init") )
             {
 			cfg.mon_emu &= ~MONEMU_IGNORE_INIT;
+#ifdef HAVE_MFX
+            cfg.mfx_emu = 0;
+#endif
             }
+#ifdef HAVE_MFX
+		else if ( !strcmp(argv[i], "-mfx") )
+            {
+            ++cfg.mfx_emu;
+			cfg.mon_emu = 0;
+            }
+		else if ( !strcmp(argv[i], "-mfx-max") )
+            {
+            cfg.mfx_emu = MFXEMU_MAX;
+			cfg.mon_emu = 0;
+			// cfg.mon_emu = MONEMU_WIN | MONEMU_IGNORE_INIT;
+			// cfg.mon_height_scale = 2;
+			// cfg.mon_width_scale = 1;
+            }
+#endif
 		else if ( !strcmp(argv[i], "-sdx-tracks") )
 			{
 			if ( ++i == argc )
@@ -3426,6 +3559,9 @@ int memu (int argc, const char *argv[])
 #ifdef HAVE_VGA
         && ( ! cfg.bVGA )
 #endif
+#ifdef HAVE_MFX
+        && ( cfg.mfx_emu == 0 )
+#endif
         )
         fatal ("No display specified");
 
@@ -3467,6 +3603,9 @@ int memu (int argc, const char *argv[])
 	snd_init(cfg.snd_emu, cfg.latency);
     diag_message (DIAG_INIT, "mon_init (0x%02X)", cfg.mon_emu);
 	mon_init(cfg.mon_emu, cfg.mon_width_scale, cfg.mon_height_scale);
+#ifdef HAVE_MFX
+    mfx_init (cfg.mfx_emu);
+#endif
 #ifdef HAVE_DART
     diag_message (DIAG_INIT, "dart_init");
 	dart_init();

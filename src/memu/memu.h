@@ -37,6 +37,9 @@ typedef struct s_cfg
 	int sid_emu;
 	int ui_opts;
 #endif
+#ifdef HAVE_MFX
+    int mfx_emu;
+#endif
 	int iperiod;
 	int tracks_sdxfdc[2];
 	int joy_central;

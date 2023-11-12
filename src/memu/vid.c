@@ -1009,8 +1009,10 @@ void vid_init(int emu, int width_scale, int height_scale)
 void vid_term(void)
 	{
 	if ( vid_emu & VIDEMU_WIN )
-		if ( vid_win != NULL )
-			win_delete(vid_win);
+        {
+		if ( vid_win != NULL ) win_delete(vid_win);
+        vid_win = NULL;
+        }
 	vid_emu = 0;
 	}
 /*...e*/
@@ -1129,5 +1131,5 @@ BOOLEAN vid_dump (void)
 
 extern void vid_show (void)
     {
-    win_show (vid_win);
+    if (vid_win != NULL) win_show (vid_win);
     }

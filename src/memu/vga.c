@@ -3,13 +3,15 @@
 #include "vga.h"
 #include "monprom.h"
 #include "win.h"
-#include "vid.h"
+#include "vdp.h"
 #include "kbd.h"
 #include "common.h"
 #include "diag.h"
 
 #define WIDTH       640
 #define HEIGHT      480
+#define VDP_XORG    ( WIDTH / 2 - VDP_WIDTH )
+#define VDP_YORG    ( HEIGHT / 2 - VDP_HEIGHT )
 #define TWIDTH      8
 #define THEIGHT     20
 #define ROWS        ( HEIGHT / THEIGHT )
@@ -183,29 +185,9 @@ static byte bit_reverse[256] =
 /* Variables used for VDP Shadow emulation */
 
 /*...svars:0:*/
-#define	VBORDER 8
-#define	HBORDER256 8
-#define	HBORDER240 16
-#define	VDP_WIDTH  (HBORDER256+256+HBORDER256)
-#define	VDP_HEIGHT (VBORDER   +192+   VBORDER)
-#define VDP_XORG    ( WIDTH / 2 - VDP_WIDTH )
-#define VDP_YORG    ( HEIGHT / 2 - VDP_HEIGHT )
 
-static byte vgavdp_pix[VDP_WIDTH*VDP_HEIGHT];
-static byte vgavdp_regs[8];
-static byte vgavdp_regs_zeros[8] = { 0xfc,0x04,0xf0,0x00,0xf8,0x80,0xf8,0x00 };
-#define	VGAVDP_MEMORY_SIZE 0x4000
-static byte vgavdp_spr_lines[192];
-static word vgavdp_addr;
-static BOOLEAN vgavdp_read_mode;
-static int vgavdp_last_mode;
-
-static BOOLEAN vgavdp_latched = FALSE;
-static byte vgavdp_latch = 0;
-
-/* Forward definition of functions used for VDP mode emulation */
-static void vgavdp_init (void);
-static void vgavdp_refresh (void);
+static VDP vgavdp;
+static byte *vgavdp_pix = NULL;
 
 void vga_reset (void)
     {
@@ -888,7 +870,10 @@ static void vga_set_mode (int md)
         raddr = 0;
         bout = 0x61;
         nwait = NRESET;
-        vgavdp_init ();
+        if ( vgavdp_pix == NULL ) (byte *) emalloc (VDP_WIDTH * VDP_HEIGHT);
+        vgavdp.ram = (byte *) buffer;
+        vgavdp.pix = vgavdp_pix;
+        vdp_init (&vgavdp);
         vga_out2 (0x08);
         vga_out2 (0x87);
         }
@@ -1669,7 +1654,7 @@ byte vga_next61 (void)
             break;
         case rbVDPReg:
             if ( raddr < 8 ) b = vgavdp_vern[raddr];
-            else b = vgavdp_regs[raddr-8];
+            else b = vgavdp.regs[raddr-8];
             raddr = ( raddr + 1 ) & 0x0F;
             break;
         }
@@ -1776,7 +1761,7 @@ void vga_refresh (void)
         unsigned int i, j;
         byte *vdp_data = vgavdp_pix;
         diag_message(DIAG_VGA_REFRESH, "VGA echo VDP");
-        vgavdp_refresh ();
+        vdp_refresh (&vgavdp);
         for ( i = 0; i < VDP_HEIGHT; ++i )
             {
             byte *vga_data = vga_win->data + WIDTH * ( 2 * i + VDP_YORG ) + VDP_XORG;
@@ -1814,463 +1799,22 @@ void vga_refresh (void)
     win_refresh (vga_win);
     diag_message(DIAG_VGA_REFRESH, "VGA refresh completed");
     }
-/*
-
-The Propeller emulation needs it own copy of the VDP emulation, as it
-will not be updated when the Propeller is in Native mode.
-
-What follows is a cut-down version of vid.c with sprite coincidence
-checks and timing checks removed.
-
-*/
-
-/*...sincludes:0:*/
-#include <stdio.h>
-#include <string.h>
-#include <time.h>
-
-#include "types.h"
-#include "diag.h"
-#include "common.h"
-
-/*...vZ80\46\h:0:*/
-/*...vtypes\46\h:0:*/
-/*...vdiag\46\h:0:*/
-/*...vcommon\46\h:0:*/
-/*...vwin\46\h:0:*/
-/*...vvid\46\h:0:*/
-/*...vkbd\46\h:0:*/
-/*...vmon\46\h:0:*/
-/*...e*/
-
-/*...svgavdp_reset:0:*/
-void vgavdp_reset(void)
-	{
-	vgavdp_latched = FALSE;
-	vgavdp_addr = 0x000;
-	}
-/*...e*/
 
 /*...svga_out1 \45\ data write:0:*/
 void vga_out1(byte val)
 	{
     if ( mode != mdVDP ) return;
-
-	vgavdp_read_mode = FALSE; /* Prevent lots of warnings */
-	((byte *)buffer)[vgavdp_addr] = val;
-    // diag_message (DIAG_ALWAYS, "VGA VDP Write: addr = 0x%04X, val = 0x%02X", vgavdp_addr, val);
-	vgavdp_addr = ( (vgavdp_addr+1) & (VGAVDP_MEMORY_SIZE-1) );
-	vgavdp_latched = FALSE;
+    vdp_out1 (&vgavdp, val);
 	}
 /*...e*/
 /*...svga_out2 \45\ latch value\44\ then act:0:*/
 void vga_out2(byte val)
 	{
     if ( mode != mdVDP ) return;
-
-	if ( !vgavdp_latched )
-		/* First write to port 2, record the value */
-		{
-		vgavdp_latch = val;
-		vgavdp_addr = ( (vgavdp_addr&0xff00)|val );
-			/* Son Of Pete relies on the low part of the
-			   address being updated during the first write.
-			   HexTrain also does partial address updates. */
-		vgavdp_latched = TRUE;
-		}
-	else
-		/* Second write to port 2, act */
-		{
-		switch ( val & 0xc0 )
-			{
-			case 0x00:
-				/* Set up for reading from VRAM */
-				vgavdp_addr = ( ((val&0x3f)<<8)|vgavdp_latch );
-				vgavdp_read_mode = TRUE;
-				break;
-			case 0x40:
-				/* Set up for writing to VRAM */
-				vgavdp_addr = ( ((val&0x3f)<<8)|vgavdp_latch );
-				vgavdp_read_mode = FALSE;
-				break;
-			case 0x80:
-				/* Write VDP register.
-				   Various bits must be zero. */
-				val &= 7;
-				vgavdp_latch &= ~vgavdp_regs_zeros[val];
-				vgavdp_regs[val] = vgavdp_latch;
-				break;
-			case 0xc0:
-				break;
-			}
-		vgavdp_latched = FALSE;
-		}
+    vdp_out1 (&vgavdp, val);
 	}
 /*...e*/
-
-/*...svgavdp_refresh_blank:0:*/
-static void vgavdp_refresh_blank(void)
-	{
-	memset(vgavdp_pix, (vgavdp_regs[7]&0x0f), VDP_WIDTH*VDP_HEIGHT);
-	}
-/*...e*/
-/*...svgavdp_refresh_sprites:0:*/
-/*...svgavdp_refresh_sprites_line_check:0:*/
-static BOOLEAN vgavdp_refresh_sprites_line_check(int scn_y, int sprite)
-	{
-	if ( scn_y < 0 || scn_y >= 192 )
-		return FALSE;
-	if ( ++vgavdp_spr_lines[scn_y] <= 4 )
-		return TRUE;
-	return FALSE;
-	}
-/*...e*/
-/*...svgavdp_refresh_sprites_plot:0:*/
-static void vgavdp_refresh_sprites_plot(int scn_x, int scn_y, int spr_col)
-	{
-	if ( scn_x >= 0 && scn_x < 256 )
-		{
-		if ( spr_col != 0 )
-			vgavdp_pix[(VBORDER+scn_y)*VDP_WIDTH+(HBORDER256+scn_x)] = spr_col;
-		}
-	}
-/*...e*/
-
-static void vgavdp_refresh_sprites(void)
-	{
-	byte size = ( (vgavdp_regs[1]&0x02) != 0 );
-	byte mag  = ( (vgavdp_regs[1]&0x01) != 0 );
-	word sprgen = ((word)(vgavdp_regs[6]&0x07)<<11);
-	word spratt = ((word)(vgavdp_regs[5]&0x7f)<<7);
-	int sprite, x, y, scn_x;
-	byte spr_pat_mask = size ? 0xfc : 0xff;
-	for ( sprite = 0; sprite < 32; sprite++ )
-		{
-		int spr_y     = (int) (unsigned) ((byte *)buffer)[spratt++]; /* 0-255, partially signed */
-		int spr_x     = (int) (unsigned) ((byte *)buffer)[spratt++]; /* 0-255 */
-		byte spr_pat  = ((byte *)buffer)[spratt++] & spr_pat_mask;
-		word spr_addr = sprgen+((word)spr_pat<<3);
-		byte spr_flag = ((byte *)buffer)[spratt++];
-		byte spr_col  = (spr_flag & 0x0f);
-		if ( spr_y == 0xd0 )
-			break;
-		if ( spr_y <= 192 )
-			++spr_y;
-		else
-			spr_y -= 255;
-		if ( spr_flag & 0x80 )
-			spr_x -= 32;
-		if ( size )
-			for ( y = 0; y < 16; y++ )
-				{
-				word bits = ((word)((byte *)buffer)[spr_addr]<<8)|((word)((byte *)buffer)[spr_addr+16]);
-				spr_addr++;
-				if ( mag )
-/*...sMAG\61\1\44\ SIZE\61\1:40:*/
-{
-int scn_y = spr_y+y*2;
-if ( vgavdp_refresh_sprites_line_check(scn_y, sprite) )
-	for ( x = 0, scn_x = spr_x; x < 16; x++, scn_x+=2 )
-		if ( bits & (0x8000>>x) )
-			{
-			vgavdp_refresh_sprites_plot(scn_x  , scn_y, spr_col);
-			vgavdp_refresh_sprites_plot(scn_x+1, scn_y, spr_col);
-			}
-++scn_y;
-if ( vgavdp_refresh_sprites_line_check(scn_y, sprite) )
-	for ( x = 0, scn_x = spr_x; x < 16; x++, scn_x+=2 )
-		if ( bits & (0x8000>>x) )
-			{
-			vgavdp_refresh_sprites_plot(scn_x  , scn_y, spr_col);
-			vgavdp_refresh_sprites_plot(scn_x+1, scn_y, spr_col);
-			}
-}
-/*...e*/
-				else
-/*...sMAG\61\0\44\ SIZE\61\1:40:*/
-{
-int scn_y = spr_y+y;
-if ( vgavdp_refresh_sprites_line_check(scn_y, sprite) )
-	for ( x = 0, scn_x = spr_x; x < 16; x++, scn_x++ )
-		if ( bits & (0x8000>>x) )
-			vgavdp_refresh_sprites_plot(scn_x, scn_y, spr_col);
-}
-/*...e*/
-				}
-		else
-			for ( y = 0; y < 8; y++ )
-				{
-				byte bits = ((byte *)buffer)[spr_addr++];
-				if ( mag )
-/*...sMAG\61\1\44\ SIZE\61\0:40:*/
-{
-int scn_y = spr_y+y*2;
-if ( vgavdp_refresh_sprites_line_check(scn_y, sprite) )
-	for ( x = 0, scn_x = spr_x; x < 8; x++, scn_x+=2 )
-		if ( bits & (0x80>>x) )
-			{
-			vgavdp_refresh_sprites_plot(scn_x  , scn_y, spr_col);
-			vgavdp_refresh_sprites_plot(scn_x+1, scn_y, spr_col);
-			}
-++scn_y;
-if ( vgavdp_refresh_sprites_line_check(scn_y, sprite) )
-	for ( x = 0, scn_x = spr_x; x < 8; x++, scn_x+=2 )
-		if ( bits & (0x80>>x) )
-			{
-			vgavdp_refresh_sprites_plot(scn_x  , scn_y, spr_col);
-			vgavdp_refresh_sprites_plot(scn_x+1, scn_y, spr_col);
-			}
-}
-/*...e*/
-				else
-/*...sMAG\61\0\44\ SIZE\61\0:40:*/
-{
-int scn_y = spr_y+y;
-if ( vgavdp_refresh_sprites_line_check(scn_y, sprite) )
-	for ( x = 0, scn_x = spr_x; x < 8; x++, scn_x++ )
-		if ( bits & (0x80>>x) )
-			vgavdp_refresh_sprites_plot(scn_x, scn_y, spr_col);
-}
-/*...e*/
-				}
-		}
-	}
-/*...e*/
-/*...svgavdp_refresh_graphics1:0:*/
-static void vgavdp_refresh_graphics1_pat(
-	byte pat,
-	word patgen,
-	word patcol,
-	byte *d
-	)
-	{
-	word genptr = patgen + pat*8;
-	word colptr = patcol + pat/8;
-	byte col = ((byte *)buffer)[colptr];
-	byte fg = (col>>4);
-	byte bg = (col&15);
-	int x, y;
-	if ( fg == 0 ) fg = (vgavdp_regs[7]&0x0f);
-	if ( bg == 0 ) bg = (vgavdp_regs[7]&0x0f);
-	for ( y = 0; y < 8; y++ )
-		{
-		byte gen = ((byte *)buffer)[genptr++];
-		for ( x = 0; x < 8; x++ )
-			*d++ = ( gen & (0x80>>x) ) ? fg : bg;
-		d += ( -8 + VDP_WIDTH ); 
-		}
-	}
-
-static void vgavdp_refresh_graphics1_third(
-	word patnam,
-	word patgen,
-	word patcol,
-	byte *d
-	)
-	{
-	int x, y;
-	for ( y = 0; y < 8; y++ )
-		{
-		for ( x = 0; x < 32; x++ )
-			{
-			byte pat = ((byte *)buffer)[patnam++];
-			vgavdp_refresh_graphics1_pat(pat, patgen, patcol, d);
-			d += 8;
-			}
-		d += ( -32*8 + VDP_WIDTH*8 );
-		}
-	}
-
-static void vgavdp_refresh_graphics1(void)
-	{
-	word patnam = ( ((word)(vgavdp_regs[2]&0x0f)) << 10 );
-	word patgen = ( ((word)(vgavdp_regs[4]&0x07)) << 11 );
-	word patcol = ( ((word)(vgavdp_regs[3]&0xff)) <<  6 );
-	byte *d = vgavdp_pix + VDP_WIDTH*VBORDER + HBORDER256;
-
-	vgavdp_refresh_graphics1_third(patnam       , patgen, patcol, d           );
-	vgavdp_refresh_graphics1_third(patnam+0x0100, patgen, patcol, d+VDP_WIDTH* 8*8);
-	vgavdp_refresh_graphics1_third(patnam+0x0200, patgen, patcol, d+VDP_WIDTH*16*8);
-
-	vgavdp_refresh_sprites();
-	}
-/*...e*/
-/*...svgavdp_refresh_graphics2:0:*/
-static void vgavdp_refresh_graphics2_pat(
-	byte pat,
-	word patgen,
-	word patcol,
-	byte *d
-	)
-	{
-	word genptr = patgen + pat*8;
-	word colptr = patcol + pat*8;
-	int x, y;
-	for ( y = 0; y < 8; y++ )
-		{
-		byte gen = ((byte *)buffer)[genptr++];
-		byte col = ((byte *)buffer)[colptr++];
-		byte fg = (col>>4);
-		byte bg = (col&15);
-		if ( fg == 0 ) fg = (vgavdp_regs[7]&0x0f);
-		if ( bg == 0 ) bg = (vgavdp_regs[7]&0x0f);
-		for ( x = 0; x < 8; x++ )
-			*d++ = ( gen & (0x80>>x) ) ? fg : bg;
-		d += ( -8 + VDP_WIDTH ); 
-		}
-	}
-
-static void vgavdp_refresh_graphics2_third(
-	word patnam,
-	word patgen,
-	word patcol,
-	byte *d
-	)
-	{
-	int x, y;
-	for ( y = 0; y < 8; y++ )
-		{
-		for ( x = 0; x < 32; x++ )
-			{
-			byte pat = ((byte *)buffer)[patnam++];
-			vgavdp_refresh_graphics2_pat(pat, patgen, patcol, d);
-			d += 8;
-			}
-		d += ( -32*8 + VDP_WIDTH*8 );
-		}
-	}
-
-/* According to spec, bits 1 and 0 of register 4 (patgen) should be set.
-   According to spec, bits 6 and 5 of register 3 (patcol) should be set.
-   Experimentally, we discovered undocumented features:
-   If bit 0 of register 4 is clear, 2nd third uses patgen from 1st third.
-   If bit 1 of register 4 is clear, 3rd third uses patgen from 1st third.
-   If bit 5 of register 3 is clear, 2nd third uses patcol from 1st third.
-   If bit 6 of register 3 is clear, 3rd third uses patcol from 1st third.
-   Maybe this is an attempt at saving VRAM.
-   Anyway, we support it in our emulation. */
-
-static void vgavdp_refresh_graphics2(void)
-	{
-	word patnam  = ( ((word)(vgavdp_regs[2]&0x0f)) << 10 );
-	word patgen1 = ( ((word)(vgavdp_regs[4]&0x04)) << 11 );
-	word patcol1 = ( ((word)(vgavdp_regs[3]&0x80)) <<  6 );
-	word patgen2 = (vgavdp_regs[4]&0x01) ? patgen1+0x0800 : patgen1;
-	word patcol2 = (vgavdp_regs[3]&0x20) ? patcol1+0x0800 : patcol1;
-	word patgen3 = (vgavdp_regs[4]&0x02) ? patgen1+0x1000 : patgen1;
-	word patcol3 = (vgavdp_regs[3]&0x40) ? patcol1+0x1000 : patcol1;
-	byte *d = vgavdp_pix + VDP_WIDTH*VBORDER + HBORDER256;
-
-	vgavdp_refresh_graphics2_third(patnam        , patgen1, patcol1, d           );
-	vgavdp_refresh_graphics2_third(patnam+0x0100 , patgen2, patcol2, d+VDP_WIDTH* 8*8);
-	vgavdp_refresh_graphics2_third(patnam+0x0200 , patgen3, patcol3, d+VDP_WIDTH*16*8);
-
-	vgavdp_refresh_sprites();
-	}
-/*...e*/
-/*...svgavdp_refresh_text:0:*/
-static void vgavdp_refresh_text_pat(
-	byte pat,
-	word patgen,
-	byte *d
-	)
-	{
-	word genptr = patgen + pat*8;
-	byte col = vgavdp_regs[7];
-	byte fg = (col>>4);
-	byte bg = (col&15);
-	int x, y;
-	for ( y = 0; y < 8; y++ )
-		{
-		byte gen = ((byte *)buffer)[genptr++];
-		for ( x = 0; x < 6; x++ )
-			*d++ = ( gen & (0x80>>x) ) ? fg : bg;
-		d += ( -6 + VDP_WIDTH ); 
-		}
-	}
-
-static void vgavdp_refresh_text_third(
-	word patnam,
-	word patgen,
-	byte *d
-	)
-	{
-	int x, y;
-	for ( y = 0; y < 8; y++ )
-		{
-		for ( x = 0; x < 40; x++ )
-			{
-			byte pat = ((byte *)buffer)[patnam++];
-			vgavdp_refresh_text_pat(pat, patgen, d);
-			d += 6;
-			}
-		d += ( -40*6 + VDP_WIDTH*8 );
-		}
-	}
-
-static void vgavdp_refresh_text(void)
-	{
-	word patnam = ( ((word)(vgavdp_regs[2]&0x0f)) << 10 );
-	word patgen = ( ((word)(vgavdp_regs[4]&0x07)) << 11 );
-	byte *d = vgavdp_pix + VDP_WIDTH*VBORDER + HBORDER240;
-
-	vgavdp_refresh_text_third(patnam      , patgen, d           );
-	vgavdp_refresh_text_third(patnam+ 8*40, patgen, d+VDP_WIDTH* 8*8);
-	vgavdp_refresh_text_third(patnam+16*40, patgen, d+VDP_WIDTH*16*8);
-	}
-/*...e*/
-/*...svgavdp_refresh:0:*/
-#define	MODE(m1,m2,m3) ( ((m1)<<2) | ((m2)<<1) | (m3) )
-
-static void vgavdp_refresh(void)
-	{
-	if ( (vgavdp_regs[1]&0x40) == 0 )
-		vgavdp_refresh_blank();
-	else
-		{
-		BOOLEAN m1 = ( (vgavdp_regs[1]&0x10) != 0 );
-		BOOLEAN m2 = ( (vgavdp_regs[1]&0x08) != 0 );
-		BOOLEAN m3 = ( (vgavdp_regs[0]&0x02) != 0 );
-		int mode = MODE(m1,m2,m3);
-		if ( vgavdp_pix[0] != (vgavdp_regs[7]&0x0f) ||
-		     mode != vgavdp_last_mode )
-			/* Ensure the border is redrawn.
-			   Perhaps could do this more efficiently.
-			   But it isn't going to happen very often. */
-			vgavdp_refresh_blank();
-		switch ( mode )
-			{
-			case MODE(0,0,0):
-				vgavdp_refresh_graphics1();
-				break;
-			case MODE(0,0,1):
-				vgavdp_refresh_graphics2();
-				break;
-			case MODE(0,1,0):
-                /* Should really be Multicolour mode */
-				vgavdp_refresh_blank();
-				break;
-			case MODE(1,0,0):
-				vgavdp_refresh_text();
-				break;
-			default:
-				vgavdp_refresh_blank();
-				break;
-			}
-		vgavdp_last_mode = mode;
-		}
-	}
-
-/*...e*/
-
-void vgavdp_init(void)
-	{
-    memset (vga_win->data, 0, WIDTH * HEIGHT);
-    memset (buffer, 0, MSIZE * sizeof (unsigned int));
-    memset (vgavdp_regs, 0, sizeof (vgavdp_regs));
-	vgavdp_addr    = 0x0000;
-	vgavdp_read_mode = FALSE;
-	vgavdp_last_mode = -1; /* None of the valid modes */
-
-	memset(vgavdp_spr_lines, FALSE, sizeof(vgavdp_spr_lines));
-	}
+void vga_show (void)
+    {
+    if (vga_win != NULL) win_show (vga_win);
+    }

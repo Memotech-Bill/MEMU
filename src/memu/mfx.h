@@ -4,11 +4,14 @@
 #define MFX_H
 
 #ifdef HAVE_MFX
-void mfx_out35 (byte value);
-byte mfx_in35 (void);
-void mfx_out3A (byte value);
-byte mfx_in3A (void);
-byte mfx_inD8 (void);
+
+#define MFXEMU_MAX  0x8000
+void mfx_init (int mfx_emu);
+byte mfx_in (word port);
+void mfx_out (word port, byte value);
+void mfx_refresh (void);
+void mfx_blink (void);
+void mfx_show (void);
 #endif
 
 #endif

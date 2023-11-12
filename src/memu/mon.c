@@ -159,6 +159,7 @@ static BOOLEAN mon_kbd_pressed;
    Latches the data onto the screen. */
 void mon_out30(byte value)
 	{
+    if ( mon_emu == 0 ) return;
 	diag_message(DIAG_MON_HW, "write address low 0x%02x", value);
 	mon_adr_lo = value;
 	if ( mon_adr_hi & 0x80 )
@@ -178,6 +179,7 @@ void mon_out30(byte value)
 /* Address high */
 void mon_out31(byte value)
 	{
+    if ( mon_emu == 0 ) return;
 	diag_message(DIAG_MON_HW, "write address high 0x%02x", value);
 	mon_adr_hi = value;
 	}
@@ -186,6 +188,7 @@ void mon_out31(byte value)
 /* ASCII data */
 void mon_out32(byte value)
 	{
+    if ( mon_emu == 0 ) return;
 	diag_message(DIAG_MON_HW, "write ASCII data 0x%02x", value);
 	mon_ascd = value;
 	}
@@ -194,35 +197,16 @@ void mon_out32(byte value)
 /* Attribute data */
 void mon_out33(byte value)
 	{
+    if ( mon_emu == 0 ) return;
 	diag_message(DIAG_MON_HW, "write attribute data 0x%02x", value);
 	mon_atrd = value;
 	}
-/* MFX Repeat Write */
-void mon_out34 (byte count)
-    {
-	diag_message(DIAG_MON_HW, "write repeat count 0x%02x", count);
-	if ( mon_adr_hi & 0x80 )
-		/* Its a write */
-		{
-		word adr = ( (((word)(mon_adr_hi&0x07))<<8) | mon_adr_lo );
-        for ( int i = 0; i < count; ++i )
-            {
-            if ( mon_adr_hi & 0x40 )
-                mon_tbuf->ram[adr].ch = mon_ascd;
-            if ( mon_adr_hi & 0x20 )
-                mon_tbuf->ram[adr].at = mon_atrd;
-            if ( mon_adr_hi & 0x60 ) DRAW_GLYPH (mon_win, adr);
-            ++adr;
-            adr &= 0x07FF;
-            }
-		mon_refresh();
-		}
-    }
 /*...e*/
 /*...smon_out38 \45\ select a CRTC register:0:*/
 /* CRTC address */
 void mon_out38(byte value)
 	{
+    if ( mon_emu == 0 ) return;
 	diag_message(DIAG_MON_HW, "select CRTC register %d", value);
 	value &= 0x1f; /* Only low 5 bits are significant */
 	if ( value >= NREG80C )
@@ -239,6 +223,7 @@ void mon_out38(byte value)
 /* CRTC data */
 void mon_out39(byte value)
 	{
+    if ( mon_emu == 0 ) return;
 	diag_message(DIAG_MON_HW, "write CRTC register %d,0x%02x", mon_crtc_address, value);
 	mon_tbuf->reg[mon_crtc_address] = value;
 	switch ( mon_crtc_address )
@@ -321,11 +306,6 @@ byte mon_in33(void)
 	diag_message(DIAG_MON_HW, "read attribute data returns 0xff (offscreen)");
 	return 0xff;
 	}
-/* Read repeat counter - Assume it has always conted down to zero */
-byte mon_in34 (void)
-    {
-    return 0;
-    }
 /*...e*/
 /*...smon_in38 \45\ query selected CRTC register:0:*/
 /* CRTC address.
@@ -936,6 +916,7 @@ static void mon_write_char(char c)
 void mon_refresh_win(void)
 	{
 	int x, y;
+    if ( mon_emu == 0 ) return;
 	word adr = ((((word)(mon_tbuf->reg[12] & 0x07))<<8) | (word)mon_tbuf->reg[13]);
 	for ( y = 0; y < ROWS; y++ )
 		{
@@ -1073,6 +1054,7 @@ static void mon_refresh_th(void)
 /*...smon_refresh:0:*/
 void mon_refresh(void)
 	{
+    if ( mon_emu == 0 ) return;
 	if ( mon_emu & MONEMU_WIN )
 		mon_win_changed = TRUE; /* Cause a repaint soon */
 #ifdef HAVE_TH
@@ -1087,6 +1069,7 @@ void mon_refresh(void)
 
 void mon_refresh_blink(void)
 	{
+    if ( mon_emu == 0 ) return;
 #ifndef __Pico__
 	BOOLEAN new_blink_blank = ( (get_millis()%1000) > 500 );
 	if ( new_blink_blank != mon_blink_blank || mon_win_changed )
@@ -1112,6 +1095,7 @@ void mon_refresh_blink(void)
 
 void mon_refresh_vdeb (void)
     {
+    if ( mon_emu == 0 ) return;
 #ifndef __Pico__
 	if ( mon_emu & MONEMU_WIN ) mon_refresh_win ();
 #endif
@@ -1647,5 +1631,5 @@ WIN * mon_getwin (void)
 
 void mon_show (void)
     {
-    win_show (mon_win);
+    if (mon_win != NULL) win_show (mon_win);
     }

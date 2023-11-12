@@ -459,6 +459,14 @@ BOOLEAN win_active (WIN *win)
     return TRUE;
     }
 
+void win_colour (WIN *win_pub, int idx, COL *clr)
+    {
+    WIN_PRIV *win = (WIN_PRIV *) win_pub;
+    win->cols[idx].r = clr->r;
+    win->cols[idx].g = clr->g;
+    win->cols[idx].b = clr->b;
+    }
+
 /*...swin_refresh:0:*/
 void win_refresh(WIN *win_pub)
 	{

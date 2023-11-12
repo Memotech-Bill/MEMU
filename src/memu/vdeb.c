@@ -8,6 +8,9 @@
 #include "monprom.h"
 #include "vid.h"
 #include "mon.h"
+#ifdef HAVE_MFX
+#include "mfx.h"
+#endif
 #include "ui.h"
 #include "vga.h"
 #include "kbd.h"
@@ -400,7 +403,7 @@ void vdeb_init (void)
         memset (&wpt_pg, 0, sizeof (wpt_pg));
         bWPt = TRUE;
         }
-    vdeb_win  =  twin_create (cfg.mon_width_scale, cfg.mon_height_scale,
+    vdeb_win  =  twin_create (cfg.mon_width_scale, 2 * cfg.mon_width_scale,
         "Visual Debugger", NULL, NULL, twin_keypress, twin_keyrelease, 0);
     twin_csr_style (vdeb_win, 0x20, 9);
     vmode = vm_stp;
@@ -798,6 +801,9 @@ void vdeb (Z80 *R)
 #endif
 #ifdef HAVE_VGA
     if ( cfg.bVGA ) vga_refresh ();
+#endif
+#ifdef HAVE_MFX
+    if ( cfg.mfx_emu ) mfx_refresh ();
 #endif
     word adnext = R->PC.W;
     vdeb_ins (ROW_INS, COL_R, WINVDEB_WTH - COL_R, STY_NORMAL, &adnext);
