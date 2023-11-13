@@ -489,6 +489,8 @@ void mfx_out (word port, byte value)
             break;
         case 0x28:
             ccntr = (ccntr & 0x7F00) | value;
+            diag_message (DIAG_ALWAYS, "Copy %d bytes from 0x%04X to 0x%04X with increment 0x%02X",
+                ccntr, caddr, vaddr, vincr);
             while ( ccntr > 0 )
                 {
                 vram[vaddr] = vram[caddr];
@@ -499,28 +501,36 @@ void mfx_out (word port, byte value)
             break;
         case 0x29:
             ccntr = (((word)(value & 0x7F)) << 8) | (ccntr & 0x00FF);
+            diag_message (DIAG_ALWAYS, "Set VRAM copy counter high bits. Counter = %d", ccntr);
             break;
         case 0x2A:
             caddr = (caddr & 0x7F00) | value;
+            diag_message (DIAG_ALWAYS, "Set VRAM copy address low bits. Address = 0x%04X", caddr);
             break;
         case 0x2B:
             caddr = (((word)(value & 0x7F)) << 8) | (caddr & 0x00FF);
+            diag_message (DIAG_ALWAYS, "Set VRAM copy address high bits. Address = 0x%04X", caddr);
             break;
         case 0x2C:
             vaddr = (vaddr & 0x7F00) | value;
+            diag_message (DIAG_ALWAYS, "Set VRAM destination address low bits. Address = 0x%04X", vaddr);
             vincr = 1;
             break;
         case 0x2D:
             vaddr = (((word)(value & 0x7F)) << 8) | (vaddr & 0x00FF);
+            diag_message (DIAG_ALWAYS, "Set VRAM destination address high bits. Address = 0x%04X", vaddr);
             vincr = 1;
             break;
         case 0x2E:
             vram[vaddr] = value;
+            diag_message (DIAG_ALWAYS, "Write vram[0x%04X] = 0x%02X. Address incremented by 0x%02X",
+                vaddr, value, vincr);
             changed = TRUE;
             vaddr = (vaddr + vincr) & 0x7FFF;
             break;
         case 0x2F:
             vincr = value;
+            diag_message (DIAG_ALWAYS, "Set vram addrress increment = 0x%02X", vincr);
             break;
         case 0x30:
             // diag_message (DIAG_ALWAYS, "80 column low address = 0x%02X", value);
@@ -586,14 +596,14 @@ void mfx_out (word port, byte value)
             mfx_pal[palidx].g = 0x11 * green;
             changed = TRUE;
             win_colour (mfx_win, palidx, &mfx_pal[palidx]);
-            diag_message (DIAG_ALWAYS, "Palette entry %d: Red = 0x%X, Green = 0x%X", red, green);
+            diag_message (DIAG_ALWAYS, "Palette entry %d: Red = 0x%X, Green = 0x%X", palidx, red, green);
             break;
             }
         case 0x3E:
             mfx_pal[palidx].b = 0x11 * (value & 0x0F);
             changed = TRUE;
             win_colour (mfx_win, palidx, &mfx_pal[palidx]);
-            diag_message (DIAG_ALWAYS, "Palette entry %d: Blue = 0x%X", value & 0x0F);
+            diag_message (DIAG_ALWAYS, "Palette entry %d: Blue = 0x%X", palidx, value & 0x0F);
             break;
         case 0x3F:
             atr2 = value;
@@ -908,25 +918,34 @@ static void s4_refresh (void)
 
 static void s8_refresh (void)
     {
+    // printf ("s8_refresh\n");
     byte pal[8];
-    word addr = (treg[0x0d] & 0x7F);
+    word addr = (treg[0x0d] & 0x7F) << 8;
     byte *data = mfx_win->data;
-    for (int i = 0; i < HEIGHT / 2; ++i)
+    for  (int i = 0; i < HEIGHT / 2; ++i)
         {
+        // printf ("Row %3d addr = 0x%04X\n", i, addr);
         memcpy (pal, &vram[addr + 120], 8);
+        // printf ("Palette: 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X\n",
+        //     pal[0], pal[1], pal[2], pal[3], pal[4], pal[5], pal[6], pal[7]);
         for (int j = 0; j < WIDTH / 16; ++j)
             {
-            int pix = (vram[addr] << 16) | (vram[addr+1] << 8) | vram[addr+2];
+            int blk = (vram[addr] << 16) | (vram[addr+1] << 8) | vram[addr+2];
+            // printf ("Block %3d: addr = 0x%04X, blk = 0x%06X, data = %ld, pixels =", j, addr, blk, data - mfx_win->data);
             for (int k = 0; k < 8; ++k)
                 {
-                byte pix = pal[(pix >> 21) & 0x07];
+                byte pix = pal[(blk >> 21) & 0x07];
+                // printf (" 0x%02X", pix);
                 *data = pix;
                 ++data;
                 *data = pix;
                 ++data;
+                blk <<= 3;
                 }
+            // printf ("\n");
             addr += 3;
             }
+        // printf ("Copy from %ld to %ld\n", data - mfx_win->data - WIDTH, data - mfx_win->data);
         memcpy (data, data - WIDTH, WIDTH);
         data += WIDTH;
         addr += 8;
