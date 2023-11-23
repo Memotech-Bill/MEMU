@@ -360,12 +360,12 @@ static void vdp_refresh_graphics2 (VDP *vdp)
 /*...svgavdp_refresh_text:0:*/
 static void vdp_refresh_text_pat (VDP *vdp, 
 	byte pat,
-	word patgen,
+	byte col,
 	byte *d
 	)
 	{
+	word patgen = ( ((word)(vdp->regs[4]&0x07)) << 11 );
 	word genptr = patgen + pat*8;
-	byte col = vdp->regs[7];
 	byte fg = (col>>4);
 	byte bg = (col&15);
 	int x, y;
@@ -378,34 +378,24 @@ static void vdp_refresh_text_pat (VDP *vdp,
 		}
 	}
 
-static void vdp_refresh_text_third (VDP *vdp, 
-	word patnam,
-	word patgen,
-	byte *d
-	)
+static void vdp_refresh_text (VDP *vdp)
 	{
+    word colptr = ((word)(vdp->regs[3] & 0xF0)) << 6;
+	byte col = vdp->regs[7];
+	word patnam = ( ((word)(vdp->regs[2]&0x0f)) << 10 );
+	byte *d = vdp->pix + VDP_WIDTH*VBORDER + HBORDER240;
 	int x, y;
-	for ( y = 0; y < 8; y++ )
+	for ( y = 0; y < 24; y++ )
 		{
 		for ( x = 0; x < 40; x++ )
 			{
+            if (vdp->regs[1] & 0x08) col = vdp->ram[colptr++];
 			byte pat = ((byte *)vdp->ram)[patnam++];
-			vdp_refresh_text_pat (vdp, pat, patgen, d);
+			vdp_refresh_text_pat (vdp, pat, col, d);
 			d += 6;
 			}
 		d += ( -40*6 + VDP_WIDTH*8 );
 		}
-	}
-
-static void vdp_refresh_text (VDP *vdp)
-	{
-	word patnam = ( ((word)(vdp->regs[2]&0x0f)) << 10 );
-	word patgen = ( ((word)(vdp->regs[4]&0x07)) << 11 );
-	byte *d = vdp->pix + VDP_WIDTH*VBORDER + HBORDER240;
-
-	vdp_refresh_text_third (vdp, patnam      , patgen, d           );
-	vdp_refresh_text_third (vdp, patnam+ 8*40, patgen, d+VDP_WIDTH* 8*8);
-	vdp_refresh_text_third (vdp, patnam+16*40, patgen, d+VDP_WIDTH*16*8);
 	}
 /*...e*/
 /*...svgavdp_refresh:0:*/
@@ -440,6 +430,7 @@ void vdp_refresh (VDP *vdp)
 				vdp_refresh_blank (vdp);
 				break;
 			case MODE(1,0,0):
+            case MODE(1,1,0):
 				vdp_refresh_text (vdp);
 				break;
 			default:

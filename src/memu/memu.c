@@ -175,6 +175,7 @@ void usage(const char *psErr, ...)
 #endif
 #ifdef HAVE_MFX
     fprintf(stderr, "       -mfx                 emulate MFX video\n");
+    fprintf(stderr, "       -mfx-max             emulate MFX video with maximum window size\n");
 #endif
 	fprintf(stderr, "       -kbd-remap           remaps MTX keyboard (despite shift state)\n");
 	fprintf(stderr, "       -kbd-country n       sets the country code switches to n (default 0)\n");
@@ -2304,6 +2305,11 @@ byte InZ80(word port)
 #endif
 			return mon_in38();
 		case 0x39:
+#ifdef HAVE_MFX
+            if ( cfg.mfx_emu )
+                return mfx_in (port);
+            else
+#endif
 			return mon_in39();
 #ifdef HAVE_MFX
         case 0x3A:
