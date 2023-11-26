@@ -46,7 +46,7 @@ typedef struct
     HANDLE heventDeleted; /* Signalled when window destroyed */
     HWND hwnd;
     BITMAPINFOHEADER bmih;
-    RGBQUAD rgbqPalette[N_COLS_MAX];
+    RGBQUAD rgbqPalette[N_COLS_MAX];    // Forms part of the bitmap header info
     HBITMAP hbitmap;
     HPALETTE hpalette;
     char title[200+1];
@@ -636,6 +636,7 @@ static void win_init()
         fPalettised = TRUE;
     else
         fPalettised = FALSE;
+    // printf ("fPalettised = %s\n", fPalettised ? "True" : "False");
     /* Mutex to ensure only one window at a time adds key events to the buffer */
     hKBmutex = CreateMutex(NULL, FALSE, NULL);
     }
@@ -761,6 +762,17 @@ void win_delete(WIN *win_pub)
     win_free(win);
     }
 /*...e*/
+
+void win_colour (WIN *win_pub, int idx, COL *clr)
+    {
+    WIN_PRIV *win = (WIN_PRIV *) win_pub;
+    win->cols[idx].r = clr->r;
+    win->cols[idx].g = clr->g;
+    win->cols[idx].b = clr->b;
+    win->rgbqPalette[idx].rgbRed      = (BYTE) win->cols[idx].r;
+    win->rgbqPalette[idx].rgbGreen    = (BYTE) win->cols[idx].g;
+    win->rgbqPalette[idx].rgbBlue     = (BYTE) win->cols[idx].b;
+    }
 
 BOOLEAN win_active (WIN *win)
     {

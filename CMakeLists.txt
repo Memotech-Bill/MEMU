@@ -239,6 +239,7 @@ elseif("${TARGET}" STREQUAL "Win")
     -DHAVE_CONSOLE
     -DHAVE_DISASS
     -DHAVE_JOY
+    -DHAVE_MFX
     -DMAP_PATH
     -DHAVE_OSFS
     -DHAVE_SID

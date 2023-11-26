@@ -14,6 +14,10 @@
 #include "common.h"
 #include "diag.h"
 
+#ifdef WIN32
+#define strcasecmp stricmp
+#endif
+
 #define NSDPART         8                   // Maximum number of SD Card partitions
 #define SD_PART_SIZE   ( 8 * 1024 * 1024 )  // Size of CPM partitions on SD card
 #define LEN_CMD         6                   // Length of commands
@@ -75,7 +79,7 @@ static FILE * sd_seek (int iPos)
     FILE *pf = pfImage[nFile];
     if ( pf == NULL )
         {
-        pf = fopen (psImage[nFile], "r+");
+        pf = fopen (psImage[nFile], "r+b");
         pfImage[nFile] = pf;
         if ( pf != NULL ) diag_message (DIAG_SDXFDC_HW, "Opened image file %d: %s", nFile, psImage[nFile]);
         else diag_message (DIAG_SDXFDC_HW, "Error opening image file %d: %s", nFile, psImage[nFile]);

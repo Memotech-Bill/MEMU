@@ -315,7 +315,7 @@ static byte *vdppix = NULL;
 void mfx_init (int emu)
     {
     mfx_emu = emu;
-    diag_message (DIAG_ALWAYS, "mfx_init (%d)", mfx_emu);
+    diag_message (DIAG_MFX_CFG, "mfx_init (%d)", mfx_emu);
     if ( mfx_emu == 0 ) return;
     if ( mfx_emu >= MFXEMU_MAX )
         {
@@ -359,10 +359,8 @@ static void mfx_tupdate (void)
         if ( taddr & 0x4000 ) vram[maddr] = chr;
         if ( taddr & 0x2000 ) vram[maddr+1] = atr1;
         if ( taddr & 0x1000 ) vram[maddr+2] = atr2;
-        diag_message (DIAG_ALWAYS, "Write at %d:%4d: chr = '%c' (0x%02X), atr1 = 0x%02X, atr2 = 0x%02X, Flags = 0x%X,"
-            // "maddr = 0x%04X, taddr = 0x%04X, mask = 0x%04X, treg[31] = 0x%02X"
+        diag_message (DIAG_MFX_TEXT, "Write at %d:%4d: chr = '%c' (0x%02X), atr1 = 0x%02X, atr2 = 0x%02X, Flags = 0x%X,"
             , maddr >> 13, taddr & mask, ((chr >= 0x20) && ( chr < 0x7F)) ? chr : '.', chr, atr1, atr2, taddr >> 12
-            // , maddr, taddr, mask, treg[31]
             );
         changed = TRUE;
         }
@@ -428,12 +426,12 @@ byte mfx_in (word port)
             value = value;
             break;
         case 0x36:
-            diag_message (DIAG_ALWAYS, "Read font index = 0x%02X", fontidx);
+            diag_message (DIAG_MFX_FONT, "Read font index = 0x%02X", fontidx);
             value = fontidx;
             break;
         case 0x37:
             value = (*font)[fontidx][fontrow];
-            diag_message (DIAG_ALWAYS, "Read font character 0X%02X row %d = 0x%02X", fontidx, fontrow, value);
+            diag_message (DIAG_MFX_FONT, "Read font character 0X%02X row %d = 0x%02X", fontidx, fontrow, value);
             if ( ++fontrow >= THEIGHT )
                 {
                 fontrow = 0;
@@ -467,7 +465,7 @@ byte mfx_in (word port)
         default:
             value = port;
         }
-    // diag_message (DIAG_ALWAYS, "mfx_in (0x%02X) = 0x%02X", port, value);
+    diag_message (DIAG_MFX_PORT, "mfx_in (0x%02X) = 0x%02X", port, value);
     return value;
     }
 
@@ -475,7 +473,7 @@ void mfx_out (word port, byte value)
     {
     if ( mfx_emu == 0 ) return;
     port &= 0xFF;
-    // diag_message (DIAG_ALWAYS, "mfx_out (0x%02X, 0x%02X)", port, value);
+    diag_message (DIAG_MFX_PORT, "mfx_out (0x%02X, 0x%02X)", port, value);
     switch (port)
         {
         case 0x00:
@@ -489,7 +487,7 @@ void mfx_out (word port, byte value)
             break;
         case 0x28:
             ccntr = (ccntr & 0x7F00) | value;
-            diag_message (DIAG_ALWAYS, "Copy %d bytes from 0x%04X to 0x%04X with increment 0x%02X",
+            diag_message (DIAG_MFX_MEM, "Copy %d bytes from 0x%04X to 0x%04X with increment 0x%02X",
                 ccntr, caddr, vaddr, vincr);
             while ( ccntr > 0 )
                 {
@@ -501,44 +499,44 @@ void mfx_out (word port, byte value)
             break;
         case 0x29:
             ccntr = (((word)(value & 0x7F)) << 8) | (ccntr & 0x00FF);
-            diag_message (DIAG_ALWAYS, "Set VRAM copy counter high bits. Counter = %d", ccntr);
+            diag_message (DIAG_MFX_MEM, "Set VRAM copy counter high bits. Counter = %d", ccntr);
             break;
         case 0x2A:
             caddr = (caddr & 0x7F00) | value;
-            diag_message (DIAG_ALWAYS, "Set VRAM copy address low bits. Address = 0x%04X", caddr);
+            diag_message (DIAG_MFX_MEM, "Set VRAM copy address low bits. Address = 0x%04X", caddr);
             break;
         case 0x2B:
             caddr = (((word)(value & 0x7F)) << 8) | (caddr & 0x00FF);
-            diag_message (DIAG_ALWAYS, "Set VRAM copy address high bits. Address = 0x%04X", caddr);
+            diag_message (DIAG_MFX_MEM, "Set VRAM copy address high bits. Address = 0x%04X", caddr);
             break;
         case 0x2C:
             vaddr = (vaddr & 0x7F00) | value;
-            diag_message (DIAG_ALWAYS, "Set VRAM destination address low bits. Address = 0x%04X", vaddr);
+            diag_message (DIAG_MFX_MEM, "Set VRAM destination address low bits. Address = 0x%04X", vaddr);
             vincr = 1;
             break;
         case 0x2D:
             vaddr = (((word)(value & 0x7F)) << 8) | (vaddr & 0x00FF);
-            diag_message (DIAG_ALWAYS, "Set VRAM destination address high bits. Address = 0x%04X", vaddr);
+            diag_message (DIAG_MFX_MEM, "Set VRAM destination address high bits. Address = 0x%04X", vaddr);
             vincr = 1;
             break;
         case 0x2E:
             vram[vaddr] = value;
-            diag_message (DIAG_ALWAYS, "Write vram[0x%04X] = 0x%02X. Address incremented by 0x%02X",
+            diag_message (DIAG_MFX_MEM, "Write vram[0x%04X] = 0x%02X. Address incremented by 0x%02X",
                 vaddr, value, vincr);
             changed = TRUE;
             vaddr = (vaddr + vincr) & 0x7FFF;
             break;
         case 0x2F:
             vincr = value;
-            diag_message (DIAG_ALWAYS, "Set vram addrress increment = 0x%02X", vincr);
+            diag_message (DIAG_MFX_MEM, "Set vram address increment = 0x%02X", vincr);
             break;
         case 0x30:
-            // diag_message (DIAG_ALWAYS, "80 column low address = 0x%02X", value);
+            diag_message (DIAG_MFX_TEXT, "80 column low address = 0x%02X", value);
             taddr = (taddr & 0xFF00) | value;
             mfx_tupdate ();
             break;
         case 0x31:
-            // diag_message (DIAG_ALWAYS, "80 column high address = 0x%02X", value);
+            diag_message (DIAG_MFX_TEXT, "80 column high address = 0x%02X", value);
             taddr = (((word) value) << 8 ) | (taddr & 0xFF);
             break;
         case 0x32:
@@ -548,7 +546,7 @@ void mfx_out (word port, byte value)
             atr1 = value;
             break;
         case 0x34:
-            diag_message (DIAG_ALWAYS, "Character repeat = 0x%02X", value);
+            diag_message (DIAG_MFX_TEXT, "Character repeat = 0x%02X", value);
             for (int i = 0; i < value; ++i)
                 {
                 mfx_tupdate ();
@@ -561,12 +559,12 @@ void mfx_out (word port, byte value)
         case 0x36:
             fontidx = value;
             fontrow = 0;
-            diag_message (DIAG_ALWAYS, "Set font index = 0x%02X", value);
+            diag_message (DIAG_MFX_FONT, "Set font index = 0x%02X", value);
             break;
         case 0x37:
             (*font)[fontidx][fontrow] = value;
             changed = TRUE;
-            diag_message (DIAG_ALWAYS, "Set font character 0x%02X row %d = 0x%02X", fontidx, fontrow, value);
+            diag_message (DIAG_MFX_FONT, "Set font character 0x%02X row %d = 0x%02X", fontidx, fontrow, value);
             if ( ++fontrow >= THEIGHT )
                 {
                 fontrow = 0;
@@ -578,12 +576,12 @@ void mfx_out (word port, byte value)
             break;
         case 0x39:
             treg[raddr] = value;
-            diag_message (DIAG_ALWAYS, "MFX register %d = 0x%02X", raddr, value);
+            diag_message (DIAG_MFX_CFG, "MFX register %d = 0x%02X", raddr, value);
             changed = TRUE;
             break;
         case 0x3A:
             byFPGA = value;
-            diag_message (DIAG_ALWAYS, "FPGA configuration = 0x%02X", byFPGA);
+            diag_message (DIAG_MFX_CFG, "FPGA configuration = 0x%02X", byFPGA);
             break;
         case 0x3C:
             palidx = value;
@@ -596,14 +594,14 @@ void mfx_out (word port, byte value)
             mfx_pal[palidx].g = 0x11 * green;
             changed = TRUE;
             win_colour (mfx_win, palidx, &mfx_pal[palidx]);
-            diag_message (DIAG_ALWAYS, "Palette entry %d: Red = 0x%X, Green = 0x%X", palidx, red, green);
+            diag_message (DIAG_MFX_PAL, "Palette entry %d: Red = 0x%X, Green = 0x%X", palidx, red, green);
             break;
             }
         case 0x3E:
             mfx_pal[palidx].b = 0x11 * (value & 0x0F);
             changed = TRUE;
             win_colour (mfx_win, palidx, &mfx_pal[palidx]);
-            diag_message (DIAG_ALWAYS, "Palette entry %d: Blue = 0x%X", palidx, value & 0x0F);
+            diag_message (DIAG_MFX_PAL, "Palette entry %d: Blue = 0x%X", palidx, value & 0x0F);
             break;
         case 0x3F:
             atr2 = value;
@@ -959,7 +957,7 @@ void mfx_refresh (void)
         {
         if ( mfxvdp.changed )
             {
-            // diag_message (DIAG_ALWAYS, "MFX refresh in VDP mode");
+            // diag_message (DIAG_MFX, "MFX refresh in VDP mode");
             vdp_refresh (&mfxvdp);
             byte pal = 0xC0 | (byFPGA & 0x20);
             byte *vdp_data = vdppix;
@@ -990,7 +988,7 @@ void mfx_refresh (void)
         }
     else if (changed)
         {
-        // diag_message (DIAG_ALWAYS, "MFX refresh in mode 0x%02X", treg[0x1F]);
+        // diag_message (DIAG_MFX, "MFX refresh in mode 0x%02X", treg[0x1F]);
         switch (treg[0x1F] & 0x0F)
             {
             case 0x00:

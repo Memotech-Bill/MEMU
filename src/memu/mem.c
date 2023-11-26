@@ -627,7 +627,7 @@ void load_rompair (int rom, const char *fname)
 
 void load_largerom (const char *psFlags, const char *psFile)
     {
-    FILE *pf = efopen (psFile, "r");
+    FILE *pf = efopen (psFile, "rb");
     while ( *psFlags )
         {
         int rom = *psFlags;

@@ -106,6 +106,12 @@ enum DIAGS {
     DIAG_NFX_REG,
     DIAG_NFX_EVENT,
     DIAG_NFX_DATA,
+    DIAG_MFX_CFG,
+    DIAG_MFX_FONT,
+    DIAG_MFX_MEM,
+    DIAG_MFX_PAL,
+    DIAG_MFX_PORT,
+    DIAG_MFX_TEXT,
     DIAG_ALL_COUNT,
 // The below are actions, and should not be activated by -diag-all
     DIAG_ACT_VID_REGS = DIAG_ALL_COUNT,

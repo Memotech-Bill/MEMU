@@ -168,7 +168,13 @@ static FLAGVAL flagvals[] =
         {"nfx-reg", DIAG_NFX_REG},
         {"nfx-event", DIAG_NFX_EVENT},
         {"nfx-data", DIAG_NFX_DATA},
-        {"chip-log", DIAG_CHIP_LOG}
+        {"chip-log", DIAG_CHIP_LOG},
+        {"mfx-cfg", DIAG_MFX_CFG},
+        {"mfx-font", DIAG_MFX_FONT},
+        {"mfx-mem", DIAG_MFX_MEM},
+        {"mfx-pal", DIAG_MFX_PAL},
+        {"mfx-port", DIAG_MFX_PORT},
+        {"mfx-text", DIAG_MFX_TEXT}
 	};
 /*...e*/
 /*...sdiag_flag_of:0:*/
