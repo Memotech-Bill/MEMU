@@ -870,9 +870,10 @@ static void vga_set_mode (int md)
         raddr = 0;
         bout = 0x61;
         nwait = NRESET;
-        if ( vgavdp_pix == NULL ) (byte *) emalloc (VDP_WIDTH * VDP_HEIGHT);
+        if ( vgavdp_pix == NULL ) vgavdp_pix = (byte *) emalloc (VDP_WIDTH * VDP_HEIGHT);
         vgavdp.ram = (byte *) buffer;
         vgavdp.pix = vgavdp_pix;
+        // diag_message (DIAG_VGA_MODE, "vgavdp = %p, vgavdp.ram = %p, vgavdp.pix = %p", &vgavdp, vgavdp.ram, vgavdp.pix);
         vdp_init (&vgavdp);
         vga_out2 (0x08);
         vga_out2 (0x87);
@@ -1811,7 +1812,7 @@ void vga_out1(byte val)
 void vga_out2(byte val)
 	{
     if ( mode != mdVDP ) return;
-    vdp_out1 (&vgavdp, val);
+    vdp_out2 (&vgavdp, val);
 	}
 /*...e*/
 void vga_show (void)

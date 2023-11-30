@@ -359,7 +359,7 @@ static void mfx_tupdate (void)
         if ( taddr & 0x4000 ) vram[maddr] = chr;
         if ( taddr & 0x2000 ) vram[maddr+1] = atr1;
         if ( taddr & 0x1000 ) vram[maddr+2] = atr2;
-        diag_message (DIAG_MFX_TEXT, "Write at %d:%4d: chr = '%c' (0x%02X), atr1 = 0x%02X, atr2 = 0x%02X, Flags = 0x%X,"
+        diag_message (DIAG_MFX_TEXT, "Write at %d:%4d: chr = '%c' (0x%02X), atr1 = 0x%02X, atr2 = 0x%02X, Flags = 0x%X"
             , maddr >> 13, taddr & mask, ((chr >= 0x20) && ( chr < 0x7F)) ? chr : '.', chr, atr1, atr2, taddr >> 12
             );
         changed = TRUE;
@@ -369,6 +369,9 @@ static void mfx_tupdate (void)
         chr  = vram[maddr];
         atr1 = vram[maddr+1];
         atr2 = vram[maddr+2];
+        diag_message (DIAG_MFX_TEXT, "Read at %d:%4d: chr = '%c' (0x%02X), atr1 = 0x%02X, atr2 = 0x%02X, Flags = 0x%X"
+            , maddr >> 13, taddr & mask, ((chr >= 0x20) && ( chr < 0x7F)) ? chr : '.', chr, atr1, atr2, taddr >> 12
+            );
         }
     }
 
