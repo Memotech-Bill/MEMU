@@ -1874,25 +1874,25 @@ void OutZ80(word port, byte value)
 		case 0x00:
 			mem_out0(value);
 #ifdef HAVE_MFX
-            mfx_out (port, value);
+            if ( cfg.mfx_emu ) mfx_out (port, value);
 #endif
 			break;
 		case 0x01:
 			vid_out1(value, z80.IElapsed);
 #ifdef HAVE_VGA
-            vga_out1(value);
+            if ( cfg.bVGA ) vga_out1(value);
 #endif
 #ifdef HAVE_MFX
-            mfx_out (port, value);
+            if ( cfg.mfx_emu ) mfx_out (port, value);
 #endif
 			break;
 		case 0x02:
 			vid_out2(value);
 #ifdef HAVE_VGA
-            vga_out2(value);
+            if ( cfg.bVGA ) vga_out2(value);
 #endif
 #ifdef HAVE_MFX
-            mfx_out (port, value);
+            if ( cfg.mfx_emu ) mfx_out (port, value);
 #endif
 			break;
 		case 0x03:
@@ -1994,61 +1994,75 @@ void OutZ80(word port, byte value)
         case 0x2D:
         case 0x2E:
         case 0x2F:
-            mfx_out (port, value);
+            if ( cfg.mfx_emu ) mfx_out (port, value);
+            else OutZ80_bad("MFX VRAM memory port", port, value, TRUE);
             break;
 #endif
 		case 0x30:
 			mon_out30(value);
 #ifdef HAVE_MFX
-            mfx_out (port, value);
+            if ( cfg.mfx_emu ) mfx_out (port, value);
 #endif
 			break;
 		case 0x31:
 			mon_out31(value);
 #ifdef HAVE_MFX
-            mfx_out (port, value);
+            if ( cfg.mfx_emu ) mfx_out (port, value);
 #endif
 			break;
 		case 0x32:
 			mon_out32(value);
 #ifdef HAVE_MFX
-            mfx_out (port, value);
+            if ( cfg.mfx_emu ) mfx_out (port, value);
 #endif
 			break;
 		case 0x33:
 			mon_out33(value);
 #ifdef HAVE_MFX
-            mfx_out (port, value);
+            if ( cfg.mfx_emu ) mfx_out (port, value);
 #endif
 			break;
 #ifdef HAVE_MFX
         case 0x34:
+            if ( cfg.mfx_emu ) mfx_out (port, value);
+            else OutZ80_bad("MFX charater repeat", port, value, TRUE);
+            break;
         case 0x35:
+            if ( cfg.mfx_emu ) mfx_out (port, value);
+            else OutZ80_bad("MFX serial number", port, value, TRUE);
+            break;
         case 0x36:
         case 0x37:
-            mfx_out (port, value);
+            if ( cfg.mfx_emu ) mfx_out (port, value);
+            else OutZ80_bad("MFX font definition", port, value, TRUE);
             break;
 #endif
 		case 0x38:
 			mon_out38(value);
 #ifdef HAVE_MFX
-            mfx_out (port, value);
+            if ( cfg.mfx_emu ) mfx_out (port, value);
 #endif
 			break;
 		case 0x39:
 			mon_out39(value);
 #ifdef HAVE_MFX
-            mfx_out (port, value);
+            if ( cfg.mfx_emu ) mfx_out (port, value);
 #endif
 			break;
 #ifdef HAVE_MFX
         case 0x3A:
-        case 0x3B:
+            if ( cfg.mfx_emu ) mfx_out (port, value);
+            else OutZ80_bad("MFX FPGA control", port, value, TRUE);
+            break;
         case 0x3C:
         case 0x3D:
         case 0x3E:
+            if ( cfg.mfx_emu ) mfx_out (port, value);
+            else OutZ80_bad("MFX colour palette", port, value, TRUE);
+            break;
         case 0x3F:
-            mfx_out (port, value);
+            if ( cfg.mfx_emu ) mfx_out (port, value);
+            else OutZ80_bad("MFX second character attribute", port, value, TRUE);
             break;
 #endif
 		case 0x40:
@@ -2086,11 +2100,11 @@ void OutZ80(word port, byte value)
 #ifdef HAVE_VGA
         case 0x60:
             if ( ! cfg.bVGA ) OutZ80_bad("MTXplus+/CFX-II VGA", port, value, TRUE);
-            vga_out60 (value);
+            else vga_out60 (value);
             break;
         case 0x61:
             if ( ! cfg.bVGA ) OutZ80_bad("MTXplus+/CFX-II VGA", port, value, TRUE);
-            vga_out61 (value);
+            else vga_out61 (value);
             break;
 #endif
 		case 0x6c:
@@ -2267,7 +2281,8 @@ byte InZ80(word port)
         case 0x2D:
         case 0x2E:
         case 0x2F:
-            return mfx_in (port);
+            if ( cfg.mfx_emu ) return mfx_in (port);
+            else return InZ80_bad("MFX VRAM access", port, TRUE);
 #endif
 		case 0x30:
 #ifdef HAVE_MFX
@@ -2292,10 +2307,15 @@ byte InZ80(word port)
 			return mon_in33();
 #ifdef HAVE_MFX
         case 0x34:
+            if ( cfg.mfx_emu ) return mfx_in (port);
+            else return InZ80_bad("MFX character repeat", port, TRUE);
         case 0x35:
+            if ( cfg.mfx_emu ) return mfx_in (port);
+            else return InZ80_bad("MFX serial number", port, TRUE);
         case 0x36:
         case 0x37:
-            return mfx_in (port);
+            if ( cfg.mfx_emu ) return mfx_in (port);
+            else return InZ80_bad("MFX font definition", port, TRUE);
 #endif
 		case 0x38:
 #ifdef HAVE_MFX
@@ -2313,11 +2333,19 @@ byte InZ80(word port)
 			return mon_in39();
 #ifdef HAVE_MFX
         case 0x3A:
+            if ( cfg.mfx_emu ) return mfx_in (port);
+            else return InZ80_bad("MFX FPGA configuration", port, TRUE);
         case 0x3B:
+            if ( cfg.mfx_emu ) return mfx_in (port);
+            else return InZ80_bad("MFX shadow page port", port, TRUE);
+        case 0x3C:
         case 0x3D:
         case 0x3E:
+            if ( cfg.mfx_emu ) return mfx_in (port);
+            else return InZ80_bad("MFX colour palette", port, TRUE);
         case 0x3F:
-            return mfx_in (port);
+            if ( cfg.mfx_emu ) return mfx_in (port);
+            else return InZ80_bad("MFX second character attribute", port, TRUE);
 #endif
 		case 0x40:
 		case 0x41:
@@ -2353,10 +2381,10 @@ byte InZ80(word port)
 #ifdef HAVE_VGA
         case 0x60:
             if ( ! cfg.bVGA ) InZ80_bad("MTXplus+/CFX-II VGA", port, TRUE);
-            return vga_in60 ();
+            else return vga_in60 ();
         case 0x61:
             if ( ! cfg.bVGA ) InZ80_bad("MTXplus+/CFX-II VGA", port, TRUE);
-            return vga_in61 ();
+            else return vga_in61 ();
 #endif
 		case 0x6c:
 		case 0x6d:

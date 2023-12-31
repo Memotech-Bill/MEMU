@@ -922,9 +922,23 @@ static void s8_refresh (void)
     // printf ("s8_refresh\n");
     byte pal[8];
     word addr = (treg[0x0d] & 0x7F) << 8;
+    word csr =  (((word) treg[0x0E]) << 8) | treg[0x0F];
     byte *data = mfx_win->data;
+    word posn = 0;
+    word save = 0;
+    byte scan = 0;
+    BOOLEAN csron;
+    switch (treg[0x0A] & 0x60)
+        {
+        case 0x00: csron = TRUE; break;
+        case 0x20: csron = FALSE; break;
+        case 0x40: csron = blink; break;
+        case 0x60: csron = blink; break;
+        }
     for  (int i = 0; i < HEIGHT / 2; ++i)
         {
+        if ( scan == 0 )    save = posn;
+        else                posn = save;
         // printf ("Row %3d addr = 0x%04X\n", i, addr);
         memcpy (pal, &vram[addr + 120], 8);
         // printf ("Palette: 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X\n",
@@ -932,6 +946,10 @@ static void s8_refresh (void)
         for (int j = 0; j < WIDTH / 16; ++j)
             {
             int blk = (vram[addr] << 16) | (vram[addr+1] << 8) | vram[addr+2];
+            if (csron && (posn == csr) && (scan >= (treg[0x0A] * 0x1F)) && (scan <= (treg[0x0B] & 0x1F)))
+                {
+                blk ^= 0xFFFFFF;
+                }
             // printf ("Block %3d: addr = 0x%04X, blk = 0x%06X, data = %ld, pixels =", j, addr, blk, data - mfx_win->data);
             for (int k = 0; k < 8; ++k)
                 {
@@ -950,6 +968,7 @@ static void s8_refresh (void)
         memcpy (data, data - WIDTH, WIDTH);
         data += WIDTH;
         addr += 8;
+        if ( ++scan == 10 ) scan = 0;
         }
     }
 

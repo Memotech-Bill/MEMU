@@ -172,7 +172,8 @@ void WrZ80(word addr, byte value)
         diag_message(DIAG_MEM_SUBPAGE, "ROM sub-page set 0x%02x - NOT SUPPORTED, PC = 0x%04X", value, z80->PC.W);
 #else
         Z80 *z80 = get_Z80_regs ();
-        diag_message(DIAG_MEM_SUBPAGE, "ROM sub-page set to 0x%02x, PC = 0x%04X", value, z80->PC.W);
+        diag_message(DIAG_MEM_SUBPAGE, "ROM sub-page set to 0x%02x, iobyte = 0x%02X, addr = 0x%04X, PC = 0x%04X",
+            value, mem_iobyte, addr, z80->PC.W);
         mem_set_rom_subpage(value);
 #endif
         }
