@@ -101,7 +101,7 @@ int vld_brk (int wk)
 int vld_cond (int wk)
     {
     if ( ( wk >='a' ) && ( wk <= 'z' ) ) wk -= 32;
-    if ( strchr ("0123456789ABCDEFHLN'=", wk) != NULL ) return wk;
+    if ( strchr ("0123456789ABCDEFHILNXY'=", wk) != NULL ) return wk;
     return -1;
     }
 

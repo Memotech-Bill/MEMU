@@ -33,9 +33,10 @@ static byte cmdbuf[LEN_CMD];
 static byte crc = 0;
 static bool bAppCmd = false;
 static byte respbuf[LEN_RESP];
+static byte sd_stat[2] = {0, 0};
 static int nrbt = 0;
 static enum {ctSDv1, ctSDv2, ctSDHC} cdtyp = ctSDHC;
-static enum {st_idle, st_r1, st_r3, st_r7, st_rd_ack, st_rm_ack, st_wr_ack,
+static enum {st_idle, st_r1, st_r2, st_r3, st_r7, st_rd_ack, st_rm_ack, st_wr_ack,
     st_read, st_rmrd, st_rmnxt, st_wr_wait, st_write} sd_state = st_idle;
 static bool bSDHC = false;
 static byte databuf[LEN_BLK];
@@ -124,8 +125,10 @@ static void sd_data_out (byte b)
                 {
                 diag_message (DIAG_SDXFDC_HW, "Failed to save sector");
                 respbuf[0] = 0x0D;
+                sd_stat[0] = 0;
+                sd_stat[1] = 0x04;
                 }
-            nrbt = -2;
+            nrbt = -1;
             sd_state = st_r1;
             ncbt = 0;
             }
@@ -180,6 +183,14 @@ static void sd_data_out (byte b)
             sd_state = st_idle;
             break;
 
+        case 13:        // Get status
+            diag_message (DIAG_SDXFDC_HW, "SD CMD13 - Get status");
+            sd_state = st_r2;
+            nrbt = -2;
+            respbuf[0] = sd_stat[0];
+            respbuf[1] = sd_stat[1];
+            break;
+
         case 17:        // Read single block
         case 18:        // Read multiple blocks
             if ( cmdbuf[0] == 17 )
@@ -212,6 +223,8 @@ static void sd_data_out (byte b)
             iPos = ( cmdbuf[1] << 24 ) | ( cmdbuf[2] << 16 ) | ( cmdbuf[3] << 8 ) | cmdbuf[4];
             if ( bSDHC ) iPos <<= 9;
             pf = sd_seek (iPos);
+            sd_stat[0] = 0;
+            sd_stat[1] = 0;
             if ( pf != NULL )
                 {
                 respbuf[0] = 0x00;
@@ -263,6 +276,7 @@ static byte sd_data_in (void)
     switch (sd_state)
         {
         case st_r1:
+        case st_r2:
         case st_r3:
         case st_r7:
         case st_rd_ack:
@@ -294,6 +308,9 @@ static void sd_data_adv (void)
             break;
         case st_r1:
             if ( nrbt == 1 ) sd_state = st_idle;
+            break;
+        case st_r2:
+            if ( nrbt == 2 ) sd_state = st_idle;
             break;
         case st_r3:
             if ( nrbt == 5 ) sd_state = st_idle;

@@ -543,14 +543,16 @@ void mfx_out (word port, byte value)
             taddr = (((word) value) << 8 ) | (taddr & 0xFF);
             break;
         case 0x32:
+            diag_message (DIAG_MFX_TEXT, "Character = '%c' (0x%02X)", ((value >= 0x20) && (value < 0x7F)) ? value : '.', value);
             chr = value;
             break;
         case 0x33:
+            diag_message (DIAG_MFX_TEXT, "Character attribute = 0x%02X", value);
             atr1 = value;
             break;
         case 0x34:
             diag_message (DIAG_MFX_TEXT, "Character repeat = 0x%02X", value);
-            for (int i = 0; i < value; ++i)
+            for (int i = 0; i <= value; ++i)
                 {
                 mfx_tupdate ();
                 ++taddr;
@@ -607,6 +609,7 @@ void mfx_out (word port, byte value)
             diag_message (DIAG_MFX_PAL, "Palette entry %d: Blue = 0x%X", palidx, value & 0x0F);
             break;
         case 0x3F:
+            diag_message (DIAG_MFX_TEXT, "Character attribute 2 = 0x%02X", value);
             atr2 = value;
             break;
         }
