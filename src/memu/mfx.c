@@ -970,7 +970,7 @@ static void s8_refresh (void)
         // printf ("Copy from %ld to %ld\n", data - mfx_win->data - WIDTH, data - mfx_win->data);
         memcpy (data, data - WIDTH, WIDTH);
         data += WIDTH;
-        addr += 8;
+        addr = (addr + 8) & 0x7FFF;
         if ( ++scan == 10 ) scan = 0;
         }
     }
