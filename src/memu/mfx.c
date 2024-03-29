@@ -10,6 +10,8 @@
 #include "diag.h"
 #include <stdio.h>
 
+#define VSIZE   0x8000
+#define VADDR(x)    (x) & (VSIZE - 1)
 #define WIDTH   640
 #define HEIGHT  480
 #define VDP_XORG    ( WIDTH / 2 - VDP_WIDTH )
@@ -328,12 +330,12 @@ void mfx_init (int emu)
         else if ( ix < iy )                 mfx_emu = ix;
         else                                mfx_emu = iy;
         }
-    if ( vram == NULL ) vram = (byte *) emalloc (0x8000);
-    memset (vram, 0, 0x8000);
+    if ( vram == NULL ) vram = (byte *) emalloc (VSIZE);
+    memset (vram, 0, VSIZE);
     if ( font == NULL ) font = (FONT *) emalloc (sizeof (FONT));
     memcpy (font, mon_alpha_prom, sizeof (FONT));
     if ( vdppix == NULL ) vdppix = (byte *) emalloc (VDP_WIDTH * VDP_HEIGHT);
-    mfxvdp.ram = &vram[0x4000];
+    mfxvdp.ram = &vram[VADDR(0x4000)];
     mfxvdp.pix = vdppix;
     mfx_win = win_create(
         WIDTH, HEIGHT,
@@ -356,9 +358,9 @@ static void mfx_tupdate (void)
     maddr |= (treg[31] & 0x60) << 8;
     if ( taddr & 0x8000 )
         {
-        if ( taddr & 0x4000 ) vram[maddr] = chr;
-        if ( taddr & 0x2000 ) vram[maddr+1] = atr1;
-        if ( taddr & 0x1000 ) vram[maddr+2] = atr2;
+        if ( taddr & 0x4000 ) vram[VADDR(maddr)] = chr;
+        if ( taddr & 0x2000 ) vram[VADDR(maddr+1)] = atr1;
+        if ( taddr & 0x1000 ) vram[VADDR(maddr+2)] = atr2;
         diag_message (DIAG_MFX_TEXT, "Write at %d:%4d: chr = '%c' (0x%02X), atr1 = 0x%02X, atr2 = 0x%02X, Flags = 0x%X"
             , maddr >> 13, taddr & mask, ((chr >= 0x20) && ( chr < 0x7F)) ? chr : '.', chr, atr1, atr2, taddr >> 12
             );
@@ -366,9 +368,9 @@ static void mfx_tupdate (void)
         }
     else
         {
-        chr  = vram[maddr];
-        atr1 = vram[maddr+1];
-        atr2 = vram[maddr+2];
+        chr  = vram[VADDR(maddr)];
+        atr1 = vram[VADDR(maddr+1)];
+        atr2 = vram[VADDR(maddr+2)];
         diag_message (DIAG_MFX_TEXT, "Read at %d:%4d: chr = '%c' (0x%02X), atr1 = 0x%02X, atr2 = 0x%02X, Flags = 0x%X"
             , maddr >> 13, taddr & mask, ((chr >= 0x20) && ( chr < 0x7F)) ? chr : '.', chr, atr1, atr2, taddr >> 12
             );
@@ -400,12 +402,12 @@ byte mfx_in (word port)
             value = vaddr >> 8;
             break;
         case 0x2E:
-            value = vram[vaddr];
+            value = vram[VADDR(vaddr)];
             vaddr = (vaddr + vincr) & 0x7FFF;
             value = value;
             break;
         case 0x2F:
-            value = vram[vaddr];
+            value = vram[VADDR(vaddr)];
             break;
         case 0x30:
             value = taddr & 0xFF;
@@ -494,7 +496,7 @@ void mfx_out (word port, byte value)
                 ccntr, caddr, vaddr, vincr);
             while ( ccntr > 0 )
                 {
-                vram[vaddr] = vram[caddr];
+                vram[VADDR(vaddr)] = vram[VADDR(caddr)];
                 vaddr = (vaddr + vincr) & 0x7FFF;
                 caddr = (caddr + vincr) & 0x7FFF;
                 --ccntr;
@@ -523,7 +525,7 @@ void mfx_out (word port, byte value)
             vincr = 1;
             break;
         case 0x2E:
-            vram[vaddr] = value;
+            vram[VADDR(vaddr)] = value;
             diag_message (DIAG_MFX_MEM, "Write vram[0x%04X] = 0x%02X. Address incremented by 0x%02X",
                 vaddr, value, vincr);
             changed = TRUE;
@@ -680,9 +682,9 @@ static void s0_refresh (BOOLEAN b48)
             {
             // printf ("Column %d: data2 = %ld\n", j, data2 - mfx_win->data);
             byte *data3 = data2;
-            byte ch = vram[addr];
-            byte a1 = vram[addr+1];
-            byte a2 = vram[addr+2];
+            byte ch = vram[VADDR(addr)];
+            byte a1 = vram[VADDR(addr+1)];
+            byte a2 = vram[VADDR(addr+2)];
             byte bgnd;
             byte fgnd;
             if ( treg[0x1E] & 0x02 )
@@ -773,8 +775,8 @@ static void s2_refresh (void)
             {
             // printf ("Column %d: data2 = %ld\n", j, data2 - mfx_win->data);
             byte *data3 = data2;
-            byte bgnd = vram[addr+10];
-            byte fgnd = vram[addr+11];
+            byte bgnd = vram[VADDR(addr+10)];
+            byte fgnd = vram[VADDR(addr+11)];
             for (int k = 0; k < THEIGHT; ++k)
                 {
                 // printf ("Scan %d: data3 = %ld\n", k, data3 - mfx_win->data);
@@ -785,30 +787,30 @@ static void s2_refresh (void)
                         {
                         if ( k >= 6 )
                             {
-                            bgnd = vram[addr+14];
-                            fgnd = vram[addr+15];
+                            bgnd = vram[VADDR(addr+14)];
+                            fgnd = vram[VADDR(addr+15)];
                             }
                         else if ( k >= 2 )
                             {
-                            bgnd = vram[addr+12];
-                            fgnd = vram[addr+13];
+                            bgnd = vram[VADDR(addr+12)];
+                            fgnd = vram[VADDR(addr+13)];
                             }
                         }
                     else
                         {
                         if ( k >= 8 )
                             {
-                            bgnd = vram[addr+14];
-                            fgnd = vram[addr+15];
+                            bgnd = vram[VADDR(addr+14)];
+                            fgnd = vram[VADDR(addr+15)];
                             }
                         else if ( k >= 4 )
                             {
-                            bgnd = vram[addr+12];
-                            fgnd = vram[addr+13];
+                            bgnd = vram[VADDR(addr+12)];
+                            fgnd = vram[VADDR(addr+13)];
                             }
                         }
                     }
-                byte pix = vram[addr + k];
+                byte pix = vram[VADDR(addr + k)];
                 if (csron && (addr == csr) && (k >= (treg[0x0A] * 0x1F)) && (k <= (treg[0x0B] & 0x1F)))
                     {
                     pix ^= 0xFF;
@@ -866,7 +868,7 @@ static void s4_refresh (void)
         for (int j = 0; j < GCOLS; ++j)
             {
             byte *data3 = data2;
-            memcpy (pal, &vram[addr+20], 4);
+            memcpy (pal, &vram[VADDR(addr+20)], 4);
             for (int k = 0; k < THEIGHT; ++k)
                 {
                 if ( treg[0x1E] & 0x01 )
@@ -875,26 +877,26 @@ static void s4_refresh (void)
                         {
                         if ( k >= 6 )
                             {
-                            memcpy (pal, &vram[addr+28], 4);
+                            memcpy (pal, &vram[VADDR(addr+28)], 4);
                             }
                         else if ( k >= 2 )
                             {
-                            memcpy (pal, &vram[addr+24], 4);
+                            memcpy (pal, &vram[VADDR(addr+24)], 4);
                             }
                         }
                     else
                         {
                         if ( k >= 8 )
                             {
-                            memcpy (pal, &vram[addr+28], 4);
+                            memcpy (pal, &vram[VADDR(addr+28)], 4);
                             }
                         else if ( k >= 4 )
                             {
-                            memcpy (pal, &vram[addr+24], 4);
+                            memcpy (pal, &vram[VADDR(addr+24)], 4);
                             }
                         }
                     byte *data4 = data3;
-                    word pix = (((word) vram[addr + 2 * k]) << 8) | vram[addr + 2 * k + 1];
+                    word pix = (((word) vram[VADDR(addr + 2 * k)]) << 8) | vram[VADDR(addr + 2 * k + 1)];
                     if (csron && (addr == csr) && (k >= (treg[0x0A] * 0x1F)) && (k <= (treg[0x0B] & 0x1F)))
                         {
                         pix ^= 0xFFFF;
@@ -943,12 +945,12 @@ static void s8_refresh (void)
         if ( scan == 0 )    save = posn;
         else                posn = save;
         // printf ("Row %3d addr = 0x%04X\n", i, addr);
-        memcpy (pal, &vram[addr + 120], 8);
+        memcpy (pal, &vram[VADDR(addr + 120)], 8);
         // printf ("Palette: 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X\n",
         //     pal[0], pal[1], pal[2], pal[3], pal[4], pal[5], pal[6], pal[7]);
         for (int j = 0; j < WIDTH / 16; ++j)
             {
-            int blk = (vram[addr] << 16) | (vram[addr+1] << 8) | vram[addr+2];
+            int blk = (vram[VADDR(addr)] << 16) | (vram[VADDR(addr+1)] << 8) | vram[VADDR(addr+2)];
             if (csron && (posn == csr) && (scan >= (treg[0x0A] * 0x1F)) && (scan <= (treg[0x0B] & 0x1F)))
                 {
                 blk ^= 0xFFFFFF;
