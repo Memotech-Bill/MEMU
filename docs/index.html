@@ -89,7 +89,7 @@
     </ul>
     <p>There are also features to assist Z80 software development and debugging:</p>
     <ul>
-      <li>Visual monitor and debugger - trace and singe step code</li>
+      <li>Visual monitor and debugger - trace and single step code</li>
       <li>CPU and video RAM displays</li>
       <li>Extensive and configurable diagnostic reporting</li>
     </ul>
@@ -105,7 +105,7 @@
       <li>VGA Monitor</li>
       <li>VGA Cable</li>
       <li>USB keyboard - Not all keyboards work with tinyusb. A cheap one may be best</li>
-      <li>USB to Micro-USB adaptor to connect the keybord to the Pico</li>
+      <li>USB to Micro-USB adaptor to connect the keyboard to the Pico</li>
       <li>5V Power Supply with Micro-USB connector</li>
       <li>Micro-SD Card</li>
       <li>Optional: Headphones or Amplified Speakers</li>
@@ -372,7 +372,7 @@
         to restart the program.</dd>
       <p>In order to be used by MEMU, <a href="#Usage-DiskImages">disk images</a> should be
         placed in the "disks" sub-folder below the folder containing MEMU and the configuration
-        files. Similarly, tapes should be placed in the "tapes" sub-folder. This repositry
+        files. Similarly, tapes should be placed in the "tapes" sub-folder. This repository
         only contains a few example tape and disk image files. Many more can be obtained from:</p>
       <ul>
         <li>Tape images
@@ -398,7 +398,7 @@
       for loading with the command <b>LOAD ""</b>, and a disk of games available for
       <b>USER LOAD "game"</b>. Any user programs can be saved with <b>USER SAVE "name"</b></p>
     <img class="Centre" src="MEMU_SDX_Configuration.png"
-         alt="SDX Selected, Keyboard: Remapped, Sound: Yes, Audio tapes: No, Overwite tapes: No, Tape file selected, Floppy drive B file selected">
+         alt="SDX Selected, Keyboard: Remapped, Sound: Yes, Audio tapes: No, Overwrite tapes: No, Tape file selected, Floppy drive B file selected">
     <h4>Typical configuration for CP/M emulation</h4>
     <p>A typical configuration for CP/M emulation, with two floppy disks, is shown below.</p>
     <img class="Centre" src="MEMU_CPM_Configuration.png"
@@ -478,7 +478,7 @@
       <dt>-mem-blocks n</dt>
       <dd>Number of 16KB memory blocks emulated (default 4)</dd>
       <dt>-mem-mtx500</dt>
-      <dd>equivelent to -mem-blocks 2</dd>
+      <dd>equivalent to -mem-blocks 2</dd>
       <dt>-vid-win</dt>
       <dd>Enable emulating VDP and TV using a graphical window</dd>
       <dt>-mon-win</dt>
@@ -496,9 +496,9 @@
       <dt>-snd-latency value</dt>
       <dd>Instruct portaudio to use a given latency</dd>
       <dt>-disk-dir dir</dt>
-      <dd>Specify the directory containg disk images</dd>
+      <dd>Specify the directory containing disk images</dd>
       <dt>-tape-dir dir</dt>
-      <dd>Specify the directory containg tape files</dd>
+      <dd>Specify the directory containing tape files</dd>
       <dt>-tape-overwrite</dt>
       <dd>SAVE can overwrite an existing file</dd>
       <dt>-tape-disable</dt>
@@ -653,7 +653,7 @@
       is used to enable this:</p>
     <dl>
       <dt>-hw-config filename</dt>
-      <dd>Specifies a seperate filename describing the hardware configuration. The format
+      <dd>Specifies a separate filename describing the hardware configuration. The format
         of this file differs from the other configuration options and is described
         <a href="Hardware_config.pdf">here</a>.</dd>
     </dl>
@@ -775,7 +775,7 @@
       letter of the command.</p>
     <h3>Break</h3>
     <p>Sets an address at which program execution will halt. Enter the required address
-      as a hex number, and type &ltReturn&gt;. It is now possibe to specify a specific ROM
+      as a hex number, and type &ltReturn&gt;. It is now possible to specify a specific ROM
       number or RAM page for the break. To do this type the two hex digit PAGE port selector
       (e.g. 40 for ROM 4, or 01 for RAM page 1), followed by a colon and then the address
       within that page. For example, to set a break at the start of the CRSPR routine enter
@@ -883,10 +883,10 @@ DE64 - DE67	       227
       <dt>-diag-ring=filename </dt>
       <dd>As above, but to file of your choice.</dd>
       <dt>-diag-time</dt>
-      <dd>Preceed all diagnostic messages by a timestamp.</dd>
+      <dd>Precede all diagnostic messages by a timestamp.</dd>
       <dt>-diag-win-unknown-key </dt>
       <dd>Displays host operating system specific keycodes typed in the windows which are not
-        recognised by MEMUs window handling code. These will be XWindows KeySym values or Windows
+        recognised by MEMUs window handling code. These will be X Window KeySym values or Windows
         virtual keycodes. Recognised values are passed on to the emulation of the MTX
         keyboard.</dd>
       <dt>-diag-win-hw</dt>
@@ -1193,7 +1193,7 @@ DE64 - DE67	       227
           <li>Tab - move focus</li>
           <li>j - jump to indicated address</li>
           <li>k or Right - push current listing, list from indicated address</li>
-          <li>l - toggle display of illegal instruction infomation</li>
+          <li>l - toggle display of illegal instruction information</li>
           <li>m - toggle MTX specific disassembly</li>
           <li>Escape or Left - pop to previous listing</li>
           <li>Up,Down,PageUp,PageDown - move the highlighted address</li>
