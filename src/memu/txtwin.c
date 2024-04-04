@@ -67,7 +67,7 @@ static BOOLEAN  tw_blink = FALSE;
 TXTBUF *tbuf_create (BOOLEAN bMono)
     {
     TXTBUF *tbuf = (TXTBUF *) malloc (sizeof (TXTBUF));
-    // printf ("tbuf_create: tbuf = %p\n", tbuf);
+    // diag_message (DIAG_INIT, "tbuf_create: tbuf = %p", tbuf);
     if ( tbuf == NULL ) fatal ("Unable to allocate text buffer");
     for (int i = 0; i < NRAM80C; ++i)
         {

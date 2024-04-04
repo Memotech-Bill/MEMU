@@ -98,7 +98,7 @@ const char *PMapMapped (const char *psPath)
             {
             char *psMap = PMapAlloc (strlen (psPath) - nLen + 3);
             psMap[0] = '~';
-            psMap[1] = "WCEH"[pmap];
+            psMap[1] = "CEHW"[pmap];
             strcpy (&psMap[2], &psPath[nLen]);
             return psMap;
             }

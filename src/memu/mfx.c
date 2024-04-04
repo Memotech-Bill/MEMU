@@ -317,7 +317,7 @@ static byte *vdppix = NULL;
 void mfx_init (int emu)
     {
     mfx_emu = emu;
-    diag_message (DIAG_MFX_CFG, "mfx_init (%d)", mfx_emu);
+    diag_message (DIAG_INIT, "mfx_init (%d)", mfx_emu);
     if ( mfx_emu == 0 ) return;
     if ( mfx_emu >= MFXEMU_MAX )
         {
@@ -347,6 +347,32 @@ void mfx_init (int emu)
         kbd_win_keypress,
         kbd_win_keyrelease
         );
+    }
+
+void mfx_term (void)
+    {
+    diag_message (DIAG_INIT, "mfx_term");
+    if (mfx_win != NULL)
+        {
+        win_delete (mfx_win);
+        mfx_win = NULL;
+        }
+    if (vdppix != NULL)
+        {
+        free (vdppix);
+        vdppix = NULL;
+        }
+    if (font != NULL)
+        {
+        free (font);
+        font = NULL;
+        }
+    if (vram != NULL)
+        {
+        free (vram);
+        vram = NULL;
+        }
+    mfx_emu = 0;
     }
 
 static void mfx_tupdate (void)

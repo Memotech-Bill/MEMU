@@ -1578,7 +1578,7 @@ word LoopZ80(Z80 *r)
 		{
 		mon_refresh_blink();
 #ifdef HAVE_MFX
-        if ( cfg.mfx_emu ) mfx_blink ();
+        if ( cfg.mfx_emu > 0 ) mfx_blink ();
 #endif
 		ms_last_mon_refresh_blink = ms_now;
 		}
@@ -1639,7 +1639,7 @@ word LoopZ80(Z80 *r)
         if ( cfg.bVGA ) vga_refresh ();
 #endif
 #ifdef HAVE_MFX
-        if ( cfg.mfx_emu ) mfx_refresh ();
+        if ( cfg.mfx_emu > 0 ) mfx_refresh ();
 #endif
 		}
 	else if ( elapsed_now - elapsed_last_vid_refresh > clock_speed / 300 )
@@ -1874,7 +1874,7 @@ void OutZ80(word port, byte value)
 		case 0x00:
 			mem_out0(value);
 #ifdef HAVE_MFX
-            if ( cfg.mfx_emu ) mfx_out (port, value);
+            if ( cfg.mfx_emu > 0 ) mfx_out (port, value);
 #endif
 			break;
 		case 0x01:
@@ -1883,7 +1883,7 @@ void OutZ80(word port, byte value)
             if ( cfg.bVGA ) vga_out1(value);
 #endif
 #ifdef HAVE_MFX
-            if ( cfg.mfx_emu ) mfx_out (port, value);
+            if ( cfg.mfx_emu > 0 ) mfx_out (port, value);
 #endif
 			break;
 		case 0x02:
@@ -1892,7 +1892,7 @@ void OutZ80(word port, byte value)
             if ( cfg.bVGA ) vga_out2(value);
 #endif
 #ifdef HAVE_MFX
-            if ( cfg.mfx_emu ) mfx_out (port, value);
+            if ( cfg.mfx_emu > 0 ) mfx_out (port, value);
 #endif
 			break;
 		case 0x03:
@@ -1994,74 +1994,74 @@ void OutZ80(word port, byte value)
         case 0x2D:
         case 0x2E:
         case 0x2F:
-            if ( cfg.mfx_emu ) mfx_out (port, value);
+            if ( cfg.mfx_emu > 0 ) mfx_out (port, value);
             else OutZ80_bad("MFX VRAM memory port", port, value, TRUE);
             break;
 #endif
 		case 0x30:
 			mon_out30(value);
 #ifdef HAVE_MFX
-            if ( cfg.mfx_emu ) mfx_out (port, value);
+            if ( cfg.mfx_emu > 0 ) mfx_out (port, value);
 #endif
 			break;
 		case 0x31:
 			mon_out31(value);
 #ifdef HAVE_MFX
-            if ( cfg.mfx_emu ) mfx_out (port, value);
+            if ( cfg.mfx_emu > 0 ) mfx_out (port, value);
 #endif
 			break;
 		case 0x32:
 			mon_out32(value);
 #ifdef HAVE_MFX
-            if ( cfg.mfx_emu ) mfx_out (port, value);
+            if ( cfg.mfx_emu > 0 ) mfx_out (port, value);
 #endif
 			break;
 		case 0x33:
 			mon_out33(value);
 #ifdef HAVE_MFX
-            if ( cfg.mfx_emu ) mfx_out (port, value);
+            if ( cfg.mfx_emu > 0 ) mfx_out (port, value);
 #endif
 			break;
 #ifdef HAVE_MFX
         case 0x34:
-            if ( cfg.mfx_emu ) mfx_out (port, value);
+            if ( cfg.mfx_emu > 0 ) mfx_out (port, value);
             else OutZ80_bad("MFX charater repeat", port, value, TRUE);
             break;
         case 0x35:
-            if ( cfg.mfx_emu ) mfx_out (port, value);
+            if ( cfg.mfx_emu > 0 ) mfx_out (port, value);
             else OutZ80_bad("MFX serial number", port, value, TRUE);
             break;
         case 0x36:
         case 0x37:
-            if ( cfg.mfx_emu ) mfx_out (port, value);
+            if ( cfg.mfx_emu > 0 ) mfx_out (port, value);
             else OutZ80_bad("MFX font definition", port, value, TRUE);
             break;
 #endif
 		case 0x38:
 			mon_out38(value);
 #ifdef HAVE_MFX
-            if ( cfg.mfx_emu ) mfx_out (port, value);
+            if ( cfg.mfx_emu > 0 ) mfx_out (port, value);
 #endif
 			break;
 		case 0x39:
 			mon_out39(value);
 #ifdef HAVE_MFX
-            if ( cfg.mfx_emu ) mfx_out (port, value);
+            if ( cfg.mfx_emu > 0 ) mfx_out (port, value);
 #endif
 			break;
 #ifdef HAVE_MFX
         case 0x3A:
-            if ( cfg.mfx_emu ) mfx_out (port, value);
+            if ( cfg.mfx_emu > 0 ) mfx_out (port, value);
             else OutZ80_bad("MFX FPGA control", port, value, TRUE);
             break;
         case 0x3C:
         case 0x3D:
         case 0x3E:
-            if ( cfg.mfx_emu ) mfx_out (port, value);
+            if ( cfg.mfx_emu > 0 ) mfx_out (port, value);
             else OutZ80_bad("MFX colour palette", port, value, TRUE);
             break;
         case 0x3F:
-            if ( cfg.mfx_emu ) mfx_out (port, value);
+            if ( cfg.mfx_emu > 0 ) mfx_out (port, value);
             else OutZ80_bad("MFX second character attribute", port, value, TRUE);
             break;
 #endif
@@ -2281,70 +2281,70 @@ byte InZ80(word port)
         case 0x2D:
         case 0x2E:
         case 0x2F:
-            if ( cfg.mfx_emu ) return mfx_in (port);
+            if ( cfg.mfx_emu > 0 ) return mfx_in (port);
             else return InZ80_bad("MFX VRAM access", port, TRUE);
 #endif
 		case 0x30:
 #ifdef HAVE_MFX
-            if ( cfg.mfx_emu )
+            if ( cfg.mfx_emu > 0 )
                 return mfx_in (port);
             else
 #endif
 			return mon_in30();
 		case 0x32:
 #ifdef HAVE_MFX
-            if ( cfg.mfx_emu )
+            if ( cfg.mfx_emu > 0 )
                 return mfx_in (port);
             else
 #endif
 			return mon_in32();
 		case 0x33:
 #ifdef HAVE_MFX
-            if ( cfg.mfx_emu )
+            if ( cfg.mfx_emu > 0 )
                 return mfx_in (port);
             else
 #endif
 			return mon_in33();
 #ifdef HAVE_MFX
         case 0x34:
-            if ( cfg.mfx_emu ) return mfx_in (port);
+            if ( cfg.mfx_emu > 0 ) return mfx_in (port);
             else return InZ80_bad("MFX character repeat", port, TRUE);
         case 0x35:
-            if ( cfg.mfx_emu ) return mfx_in (port);
+            if ( cfg.mfx_emu > 0 ) return mfx_in (port);
             else return InZ80_bad("MFX serial number", port, TRUE);
         case 0x36:
         case 0x37:
-            if ( cfg.mfx_emu ) return mfx_in (port);
+            if ( cfg.mfx_emu > 0 ) return mfx_in (port);
             else return InZ80_bad("MFX font definition", port, TRUE);
 #endif
 		case 0x38:
 #ifdef HAVE_MFX
-            if ( cfg.mfx_emu )
+            if ( cfg.mfx_emu > 0 )
                 return mfx_in (port);
             else
 #endif
 			return mon_in38();
 		case 0x39:
 #ifdef HAVE_MFX
-            if ( cfg.mfx_emu )
+            if ( cfg.mfx_emu > 0 )
                 return mfx_in (port);
             else
 #endif
 			return mon_in39();
 #ifdef HAVE_MFX
         case 0x3A:
-            if ( cfg.mfx_emu ) return mfx_in (port);
+            if ( cfg.mfx_emu > 0 ) return mfx_in (port);
             else return InZ80_bad("MFX FPGA configuration", port, TRUE);
         case 0x3B:
-            if ( cfg.mfx_emu ) return mfx_in (port);
+            if ( cfg.mfx_emu > 0 ) return mfx_in (port);
             else return InZ80_bad("MFX shadow page port", port, TRUE);
         case 0x3C:
         case 0x3D:
         case 0x3E:
-            if ( cfg.mfx_emu ) return mfx_in (port);
+            if ( cfg.mfx_emu > 0 ) return mfx_in (port);
             else return InZ80_bad("MFX colour palette", port, TRUE);
         case 0x3F:
-            if ( cfg.mfx_emu ) return mfx_in (port);
+            if ( cfg.mfx_emu > 0 ) return mfx_in (port);
             else return InZ80_bad("MFX second character attribute", port, TRUE);
 #endif
 		case 0x40:
@@ -2678,6 +2678,8 @@ int memu (int argc, const char *argv[])
 #ifndef SMALL_MEM
 			if ( i + 2 >= argc )
 				opterror (argv[i]);
+            cfg.large_cfg = argv[i+1];
+            cfg.large_rom = argv[i+2];
             load_largerom (argv[i+1], argv[i+2]);
             i += 2;
 #else
@@ -3594,7 +3596,7 @@ int memu (int argc, const char *argv[])
         && ( ! cfg.bVGA )
 #endif
 #ifdef HAVE_MFX
-        && ( cfg.mfx_emu == 0 )
+        && ( cfg.mfx_emu <= 0 )
 #endif
         )
         fatal ("No display specified");
@@ -3638,6 +3640,7 @@ int memu (int argc, const char *argv[])
     diag_message (DIAG_INIT, "mon_init (0x%02X)", cfg.mon_emu);
 	mon_init(cfg.mon_emu, cfg.mon_width_scale, cfg.mon_height_scale);
 #ifdef HAVE_MFX
+    diag_message (DIAG_INIT, "mfx_init (0x%02X)", cfg.mfx_emu);
     mfx_init (cfg.mfx_emu);
 #endif
 #ifdef HAVE_DART

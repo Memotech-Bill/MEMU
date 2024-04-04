@@ -53,6 +53,9 @@ http://www.tinyvga.com/6845 describes the chip used.
 #include "kbd.h"
 #include "monprom.h"
 #include "mon.h"
+#ifdef HAVE_CONFIG
+#include "config.h"
+#endif
 
 /*...vtypes\46\h:0:*/
 /*...vdiag\46\h:0:*/
@@ -1493,6 +1496,9 @@ BOOLEAN mon_kbd_status(void)
 /*...skeypress:0:*/
 static void keypress (WIN *win, int wk)
 	{
+#if HAVE_CONFIG
+    if ( test_cfg_key (wk) ) return;
+#endif
 	kbd_win_keypress (win, wk);
 	twin_keypress (win, wk);
 	}
@@ -1507,6 +1513,7 @@ static void keyrelease (WIN *win, int wk)
 
 void mon_init(int emu, int width_scale, int height_scale)
 	{
+    diag_message (DIAG_INIT, "mon_init (0x%02X, %d, %d)", emu, width_scale, height_scale);
 	mon_emu = emu;
 
 	mon_crtc_address    = 0;
@@ -1563,6 +1570,7 @@ void mon_init(int emu, int width_scale, int height_scale)
 /*...smon_term:0:*/
 void mon_term(void)
 	{
+    diag_message (DIAG_INIT, "mon_term");
 	if ( mon_emu & MONEMU_WIN )
 		{
         win_delete(mon_win);

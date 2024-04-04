@@ -31,17 +31,21 @@ extern int  mem_get_n_subpages(int rom);
 
 #define ROM_BASIC    0
 #define ROM_ASSEM    1
+#define ROM_ROM2     2
 #define ROM_SDX1     3
 #define ROM_CPM      4
 #define ROM_SDX2     5
+#define ROM_ROM6     6
 #define ROM_NODE     6	/* According to at least one piece of documentation - WJB */
 #define ROM_GAME     7
 
 #define ROMEN_BASIC  ( 1 << ROM_BASIC )
 #define ROMEN_ASSEM  ( 1 << ROM_ASSEM )
+#define ROMEN_ROM2   ( 1 << ROM_ROM2 )
 #define ROMEN_SDX1   ( 1 << ROM_SDX1 )
 #define ROMEN_CPM    ( 1 << ROM_CPM )
 #define ROMEN_SDX2   ( 1 << ROM_SDX2 )
+#define ROMEN_ROM6   ( 1 << ROM_ROM6 )
 #define ROMEN_NODE   ( 1 << ROM_NODE )
 #define ROMEN_GAME   ( 1 << ROM_GAME )
 

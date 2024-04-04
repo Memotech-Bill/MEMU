@@ -13,12 +13,12 @@
 #include "crc7.h"
 #include "common.h"
 #include "diag.h"
+#include "dirmap.h"
 
 #ifdef WIN32
 #define strcasecmp stricmp
 #endif
 
-#define NSDPART         8                   // Maximum number of SD Card partitions
 #define SD_PART_SIZE   ( 8 * 1024 * 1024 )  // Size of CPM partitions on SD card
 #define LEN_CMD         6                   // Length of commands
 #define LEN_RESP        6                   // Length of responses
@@ -80,7 +80,7 @@ static FILE * sd_seek (int iPos)
     FILE *pf = pfImage[nFile];
     if ( pf == NULL )
         {
-        pf = fopen (psImage[nFile], "r+b");
+        pf = fopen (PMapPath (psImage[nFile]), "r+b");
         pfImage[nFile] = pf;
         if ( pf != NULL ) diag_message (DIAG_SDXFDC_HW, "Opened image file %d: %s", nFile, psImage[nFile]);
         else diag_message (DIAG_SDXFDC_HW, "Error opening image file %d: %s", nFile, psImage[nFile]);
@@ -355,12 +355,14 @@ static void sd_data_adv (void)
                 if ( fread (databuf, 1, LEN_BLK, pf) == LEN_BLK )
                     {
                     diag_message (DIAG_SDXFDC_HW, "Read next sector");
+                    nrbt = 1;
                     sd_state = st_rm_ack;
                     }
                 else
                     {
                     diag_message (DIAG_SDXFDC_HW, "Error reading next sector");
                     respbuf[0] = 0x09;
+                    nrbt = 0;
                     sd_state = st_r1;
                     }
                 }
@@ -449,4 +451,14 @@ void sdcard_set_image (int iImage, const char *psFile)
         {
         if ( nImage == iImage + 1 ) --nImage;
         }
+    }
+
+const char * sdcard_get_image (int iImage)
+    {
+    if (( iImage < 0 ) || ( iImage >= NSDPART ))
+        {
+        if ( ! diag_flags[DIAG_BAD_PORT_IGNORE] ) fatal ("Invalid SD partition number");
+        }
+    if ( iImage >= nImage ) return NULL;
+    return psImage[iImage];
     }

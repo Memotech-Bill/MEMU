@@ -90,6 +90,7 @@ int mem_get_rom_enable (void)
 void mem_set_rom_enable (int ienable)
     {
     // printf ("mem_set_rom_enable (0x%02X)\n", ienable);
+    diag_message (DIAG_INIT, "mem_set_rom_enable (0x%02X)", ienable);
     rom_enable  =  ienable;
     }
 /*...e*/
@@ -628,6 +629,7 @@ void load_rompair (int rom, const char *fname)
 
 void load_largerom (const char *psFlags, const char *psFile)
     {
+    psFile = PMapPath (psFile);
     FILE *pf = efopen (psFile, "rb");
     while ( *psFlags )
         {
@@ -636,12 +638,14 @@ void load_largerom (const char *psFlags, const char *psFile)
             {
             fseek (pf, 0, SEEK_SET);
             if ( fread (mem_rom_os, 1, ROM_SIZE, pf) != ROM_SIZE ) fatal ("Error loading system ROM");
+            diag_message (DIAG_INIT, "load_largerom: Loaded system ROM from %s", psFile);
             }
         else if (( rom >= '0' ) && ( rom <= '7' ))
             {
             rom -= '0';
             fseek (pf, ROM_SIZE * ( 2 * rom + 1 ), SEEK_SET);
             if ( fread (mem_subpages[rom][0], 1, ROM_SIZE, pf) != ROM_SIZE ) fatal ("Error loading ROM");
+            diag_message (DIAG_INIT, "load_largerom: Loaded ROM %d from %s", rom, psFile);
             }
         else
             {

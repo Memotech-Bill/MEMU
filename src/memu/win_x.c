@@ -769,9 +769,13 @@ static int win_map_key(KeySym ks)
 static WIN_PRIV *find_win_w(Window w)
 	{
 	int i;
+    // printf ("find_win_w (0x%lX): n_wins = %d\n", w, n_wins);
 	for ( i = 0; i < n_wins; i++ )
 		if ( ((WIN_PRIV *) wins[i])->w == w )
+            {
+            // printf ("find_win_w: wins[%d] = %p\n", i, wins[i]);
 			return (WIN_PRIV *) wins[i];
+            }
 	return NULL;
 	}
 /*...e*/
@@ -836,6 +840,7 @@ case KeyPress:
 	if ( (win = find_win_w(event.xkey.window)) != NULL )
 		{
 		KeySym ks;
+        // printf ("KeyPress: win = %p\n", win);
 #if 0
 		char buf[128];
 		XComposeStatus cs;
@@ -846,7 +851,10 @@ case KeyPress:
 		int wk;
 		XkbLookupKeySym(win->dpy->disp, event.xkey.keycode, modifiers, &modifiers, &ks);
 		if ( (wk = win_map_key(ks)) != -1 )
+            {
+            // printf ("keypress (%p, %d)\n", win, wk);
 			(*win->keypress)((WIN *) win, wk);
+            }
 		}
 	break;
 /*...e*/

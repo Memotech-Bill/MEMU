@@ -33,6 +33,10 @@
 #ifndef SMALL_MEM
 #include "cpm.h"
 #endif
+#ifdef HAVE_MFX
+#include "mfx.h"
+#include "sdcard.h"
+#endif
 #ifdef HAVE_CFX2
 #include "cfx2.h"
 #endif
@@ -61,7 +65,10 @@
 #define CFG_SDX             2
 #define CFG_CPM_MONO        3
 #define CFG_CPM_COLOUR      4
-#ifdef HAVE_CFX2
+#if defined(HAVE_MFX)
+#define CFG_MFX             5
+#define CFG_COUNT           6
+#elif defined(HAVE_CFX2)
 #define CFG_CFX2            5
 #define CFG_COUNT           6
 #else
@@ -87,8 +94,12 @@
 #define STATE_DISABLED      0
 
 #define NUM_FLOPPY          2
-#ifdef HAVE_CFX2
+#if defined(HAVE_MFX)
+#define NUM_DRIVES          ( NUM_FLOPPY + N_SIDISC + NSDPART )
+#define NUM_PART            NSDPART
+#elif defined(HAVE_CFX2)
 #define NUM_DRIVES          ( NUM_FLOPPY + N_SIDISC + NCF_CARD * NCF_PART )
+#define NUM_PART            NCF_PART
 #else
 #define NUM_DRIVES          ( NUM_FLOPPY + N_SIDISC )
 #endif
@@ -119,7 +130,7 @@ static int     iCfgOld      =   0;
 static int     iCfgCur      =   0;
 static int     iCfgSel      =   0;
 static BOOLEAN bCfgRemap    =   FALSE;
-static BOOLEAN bCfgNode     =   FALSE;
+// static BOOLEAN bCfgNode     =   FALSE;
 static BOOLEAN bCfgSound    =   FALSE;
 static int     iSelKbdN     =   0;
 static int     iSelTopt     =   0;
@@ -195,13 +206,26 @@ static void row_cfg_draw (int info, int iState)
         "<Space> to select: Memotech with 512k bytes of RAM and two type 07 disk drives",
         "<Space> to select: 576k bytes of RAM, two type 07 drives, CP/M, mono monitor",
         "<Space> to select: 576k bytes of RAM, two type 07 drives, CP/M, colour monitor",
-#ifdef HAVE_CFX2
+#if defined(HAVE_MFX)
+        "<Space> to select: 576k bytes of RAM, SDHC card, MFX VGA display",
+#elif defined(HAVE_CFX2)
         "<Space> to select: 576k bytes of RAM, two CF cards, Propeller VGA display",
 #endif
         };
+#if defined(HAVE_MFX)
 /*                                     1         2         3         4         5         6         7
-                                       01234567890123456789012345678901234567890123456789012345678901234567890123456789 */
-#ifdef HAVE_CFX2
+                             01234567890123456789012345678901234567890123456789012345678901234567890123456789 */
+    static char sCfg[]   =  " [ ] MTX500   [ ] MTX512   [ ] SDX      [ ] CPM MONO [ ] CPM COLR [ ] MFX    ";
+    int nSelWth = 13;
+    sCfg[ 2] =  ( iCfgCur == CFG_MTX500     ) ? '*' : ' ';
+    sCfg[15] =  ( iCfgCur == CFG_MTX512     ) ? '*' : ' ';
+    sCfg[28] =  ( iCfgCur == CFG_SDX        ) ? '*' : ' ';
+    sCfg[41] =  ( iCfgCur == CFG_CPM_MONO   ) ? '*' : ' ';
+    sCfg[54] =  ( iCfgCur == CFG_CPM_COLOUR ) ? '*' : ' ';
+    sCfg[67] =  ( iCfgCur == CFG_MFX        ) ? '*' : ' ';
+#elif defined(HAVE_CFX2)
+/*                                     1         2         3         4         5         6         7
+                             01234567890123456789012345678901234567890123456789012345678901234567890123456789 */
     static char sCfg[]   =  " [ ] MTX500   [ ] MTX512   [ ] SDX      [ ] CPM MONO [ ] CPM COLR [ ] CFX-II ";
     int nSelWth = 13;
     sCfg[ 2] =  ( iCfgCur == CFG_MTX500     ) ? '*' : ' ';
@@ -857,10 +881,10 @@ static BOOLEAN row_dropt_key (int info, int wk)
 
 // Display a row from a CF Card configuration
 #ifdef HAVE_CFX2
-static void cfg_cf_card_row (const char *psPart[NCF_PART], int iRow, int iState)
+static void cfg_cf_card_row (const char *psPart[NUM_PART], int iRow, int iState)
     {
     char sPart[4];
-    if ( iRow < NCF_PART )
+    if ( iRow < NUM_PART )
         {
         sprintf (sPart, "%d: ", iRow);
         file_draw (iRow + 1, sPart, psPart[iRow], iState);
@@ -872,7 +896,7 @@ static void cfg_cf_card_row (const char *psPart[NCF_PART], int iRow, int iState)
     }
 
 // Edit the list of partitions making up a CF card
-static BOOLEAN cfg_cf_card (int iCard, const char *psDir, const char *psPart[NCF_PART])
+static BOOLEAN cfg_cf_card (int iCard, const char *psDir, const char *psPart[NUM_PART])
     {
     char sLine[WINCFG_WTH+1];
     const char *psFile;
@@ -881,10 +905,14 @@ static BOOLEAN cfg_cf_card (int iCard, const char *psDir, const char *psPart[NCF
     int wk;
     int i;
     twin_clear_rows (cfg_win, 0, WINCFG_HGT);
-    iRowHelp = NCF_PART + 2;
+    iRowHelp = NUM_PART + 2;
+#ifdef HAVE_MFX
+    strcpy (sLine, "Partitions for SD Card");
+#else
     sprintf (sLine, "Partitions for Compact Flash Card %d", iCard);
+#endif
     twin_print (cfg_win, 0, 0, STY_HELP, sLine, 0);
-    for ( i = 0; i <= NCF_PART; ++i )
+    for ( i = 0; i <= NUM_PART; ++i )
         {
         cfg_cf_card_row (psPart, i, STATE_NORMAL);
         }
@@ -896,20 +924,20 @@ static BOOLEAN cfg_cf_card (int iCard, const char *psDir, const char *psPart[NCF
         switch (wk)
             {
             case WK_Down:
-                if ( ++iSel > NCF_PART ) iSel = 0;
+                if ( ++iSel > NUM_PART ) iSel = 0;
                 break;
             case WK_Up:
-                if ( --iSel < 0 ) iSel = NCF_PART;
+                if ( --iSel < 0 ) iSel = NUM_PART;
                 break;
             case WK_Return:
             case ' ':
-                if ( iSel == NCF_PART )
+                if ( iSel == NUM_PART )
                     {
                     twin_clear_rows (cfg_win, 0, WINCFG_HGT);
                     return bChg;
                     }
-                psFile = cfg_choose_file (NCF_PART + 3, psDir, ( iSel == 0 ? 3 : 2),
-                    ".img\0.sid\0.drive", TRUE);
+                psFile = cfg_choose_file (NUM_PART + 3, psDir, ( iSel == 0 ? 4 : 3),
+                    ".img\0.bin\0.sid\0.drive", TRUE);
                 if ( psFile != NULL )
                     {
                     bChg = TRUE;
@@ -931,7 +959,33 @@ static void row_drive_draw (int iDrive, int iState)
     {
     char sName[] = "Drive X:";
     char chDrive[] = { 'B', 'C', 'F', 'G', 'H', 'I'};
-#ifdef HAVE_CFX2
+#if defined(HAVE_MFX)
+    if ( ( iDrive < NUM_FLOPPY ) && ( iCfgCur == CFG_MFX ) )
+        {
+        if ( iDrive == 0 )
+            {
+            char sLine[42];
+            int nPart = 0;
+            int i;
+            for ( i = 0; i < NSDPART; ++i )
+                {
+                const char *psPart = psCfgDrive[NUM_FLOPPY + N_SIDISC + i];
+                if ( ( psPart != NULL ) && ( psPart[0] != '\0' )
+                    && ( strcmp (psPart, "<None>") != 0 ) ) ++nPart;
+                }
+            sprintf (sLine, "SD Card: %d Active Partitions", nPart);
+            twin_print (cfg_win, ROW_DRIVE + iDrive, 0, ( iState == STATE_FOCUS ) ? STY_HIGHLIGHT : STY_NORMAL,
+                sLine, 0);
+            cfg_help ("<Space> to edit SD partitions");
+            return;
+            }
+        else
+            {
+            twin_clear_rows (cfg_win, ROW_DRIVE + iDrive, ROW_DRIVE + iDrive + 1);
+            return;
+            }
+        }
+#elif defined(HAVE_CFX2)
     if ( ( iDrive < NCF_CARD ) && ( iCfgCur == CFG_CFX2 ) )
         {
         char sLine[42];
@@ -950,7 +1004,10 @@ static void row_drive_draw (int iDrive, int iState)
         return;
         }
 #endif
-    sName[6] = chDrive[iDrive];
+    else
+        {
+        sName[6] = chDrive[iDrive];
+        }
     file_draw (ROW_DRIVE + iDrive, sName, psCfgDrive[iDrive], iState);
     }
 
@@ -960,7 +1017,20 @@ static BOOLEAN row_drive_key (int iDrive, int wk)
     int nExt = 2;
     const char *psExt = ".mfloppy\0.mfloppy-07";
     BOOLEAN bChg = FALSE;
-#ifdef HAVE_CFX2
+#if defined(HAVE_MFX)
+    if ( ( iDrive < NUM_FLOPPY ) && ( iCfgCur == CFG_MFX ) )
+        {
+        if ( ( wk == WK_Return ) || ( wk == ' ' ) )
+            {
+            int iPart = NUM_FLOPPY + N_SIDISC;
+            bChg = cfg_cf_card (iDrive, psCfgDir[iPart], &psCfgDrive[iPart]);
+            if ( bChg ) bNoApply = TRUE;
+            iRowHelp = ROW_HELP;
+            bCfgRedraw = TRUE;
+            }
+        return bChg;
+        }
+#elif defined (HAVE_CFX2)
     if ( ( iDrive < NCF_CARD ) && ( iCfgCur == CFG_CFX2 ) )
         {
         if ( ( wk == WK_Return ) || ( wk == ' ' ) )
@@ -1014,12 +1084,18 @@ void cfg_set_disk_dir (const char *psDir)
 static void cfg_get_drive (int iDrive, const char **ppsDir, const char **ppsFile)
     {
     const char *ps1;
+#if defined(HAVE_MFX)
     if ( iDrive < NUM_FLOPPY ) ps1 = cfg.fn_sdxfdc[iDrive];
-#ifdef HAVE_CFX2
+    else if ( iDrive >= NUM_FLOPPY + N_SIDISC )
+        ps1 = cfg.fn_sdcard[iDrive - (NUM_FLOPPY + N_SIDISC)];
+#elif defined(HAVE_CFX2)
+    if ( iDrive < NUM_FLOPPY ) ps1 = cfg.fn_sdxfdc[iDrive];
     else if ( iDrive >= NUM_FLOPPY + N_SIDISC + NCF_PART )
         ps1 = cfg.fn_cfx2[1][iDrive - (NUM_FLOPPY + N_SIDISC + NCF_PART)];
     else if ( iDrive >= NUM_FLOPPY + N_SIDISC )
         ps1 = cfg.fn_cfx2[0][iDrive - (NUM_FLOPPY + N_SIDISC)];
+#else
+    if ( iDrive < NUM_FLOPPY ) ps1 = cfg.fn_sdxfdc[iDrive];
 #endif
 #ifdef HAVE_SID
     else ps1 = cfg.sid_fn[iDrive - NUM_FLOPPY];
@@ -1053,149 +1129,150 @@ static void cfg_get_drive (int iDrive, const char **ppsDir, const char **ppsFile
         }
     }
 
-//  Save emulated disk drive
-static void cfg_save_drive (int iDrive, const char *psDir, const char *psFile)
+//  Reset emulated disk drives
+static void cfg_clear_drives (void)
     {
-#ifdef HAVE_CFX2
-    int iCard;
-    int iPart;
-#endif
-    int nMaxDrv = 0;
-    int nMinDrv = 0;
-    const char *psPath = cfg_def_path (psDir, psFile);
-    if ( iCfgOld == CFG_SDX ) nMaxDrv = NUM_FLOPPY;
-#ifdef HAVE_CFX2
-    else if ( iCfgOld == CFG_CFX2 )
+    const char *psOld;
+    const char *psPath;
+#if defined(HAVE_MFX)
+    if ( iCfgOld == CFG_MFX )
         {
-        nMinDrv = NUM_FLOPPY;
-        nMaxDrv = NUM_FLOPPY + N_SIDISC + NCF_CARD * NCF_PART;
+        for (int iPart = 0; iPart < NSDPART; ++iPart)
+            {
+            int iDrive = NUM_FLOPPY + N_SIDISC + iPart;
+            psOld = sdcard_get_image (iPart);
+            psPath = cfg_def_path (psCfgDir[iDrive], psCfgDrive[iDrive]);
+            if ( ( psOld != NULL ) && ( ( psPath == NULL ) || ( strcmp (psPath, psOld) != 0 ) ) )
+                {
+                sdcard_set_image (iPart, NULL);
+                cfg.fn_sdcard[iPart] = NULL;
+                }
+            }
+        }
+#elif defined(HAVE_CFX2)
+    if ( iCfgOld == CFG_CFX2 )
+        {
+        for (int iCard = 0; iCard < NCF_CARD; ++iCard)
+            {
+            for (int iPart = 0; iPart < NCF_PART; ++iPart)
+                {
+                int iDrive = NUM_FLOPPY + N_SIDISC + NCF_PART * iCard + iPart;
+                psOld = cfx2_get_image (iCard, iPart);
+                psPath = cfg_def_path (psCfgDir[iDrive], psCfgDrive[iDrive]);
+                if ( ( psOld != NULL ) && ( ( psPath == NULL ) || ( strcmp (psPath, psOld) != 0 ) ) )
+                    {
+                    diag_message (DIAG_INIT, "cfx2_set_image (%d, %d, NULL)", iCard, iPart);
+                    cfx2_set_image (iCard, iPart, NULL);
+                    cfg.fn_cfx2[iCard][iPart] = NULL;
+                    }
+                }
+            }
         }
 #endif
-    else if ( iCfgOld > CFG_SDX ) nMaxDrv = NUM_FLOPPY + N_SIDISC;
-    if ( ( iDrive >= nMinDrv ) && ( iDrive < nMaxDrv ) )
+    if (( iCfgOld >= CFG_SDX ) && ( iCfgOld <= CFG_CPM_COLOUR ))
         {
-        const char *psOld;
-        if ( iDrive < NUM_FLOPPY )
+        for (int iDrive = 0; iDrive < NUM_FLOPPY; ++iDrive)
             {
             psOld = cfg.fn_sdxfdc[iDrive];
-            }
-#ifdef HAVE_CFX2
-        else if ( iDrive >= NUM_FLOPPY + N_SIDISC )
-            {
-            iCard = ( iDrive - NUM_FLOPPY - N_SIDISC ) / NCF_PART;
-            iPart = iDrive - NUM_FLOPPY - N_SIDISC - NCF_PART * iCard;
-            psOld = cfx2_get_image (iCard, iPart);
-            }
-#endif
-#ifdef HAVE_SID
-        else
-            {
-            psOld = sid_get_file (iDrive - NUM_FLOPPY);
-            }
-#endif
-        diag_message (DIAG_INIT, "cfg_save_drive: drive = %d psOld = %s psPath = %s",
-            iDrive, psOld, psPath);
-        if ( ( psOld != NULL ) && ( ( psPath == NULL ) || ( strcmp (psPath, psOld) != 0 ) ) )
-            {
-            if ( iDrive < NUM_FLOPPY )
+            psPath = cfg_def_path (psCfgDir[iDrive], psCfgDrive[iDrive]);
+            if ( ( psOld != NULL ) && ( ( psPath == NULL ) || ( strcmp (psPath, psOld) != 0 ) ) )
                 {
                 diag_message (DIAG_INIT, "sdxfdc_init (%d, NULL)", iDrive);
                 sdxfdc_init (iDrive, NULL);
                 cfg.fn_sdxfdc[iDrive] = NULL;
                 }
-#ifdef HAVE_CFX2
-            else if ( iDrive >= NUM_FLOPPY + N_SIDISC )
-                {
-                diag_message (DIAG_INIT, "cfx2_set_image (%d, %d, NULL)", iCard, iPart);
-                cfx2_set_image (iCard, iPart, NULL);
-                cfg.fn_cfx2[iCard][iPart] = NULL;
-                }
-#endif
-#ifdef HAVE_SID
-            else
-                {
-                diag_message (DIAG_INIT, "sid_set_file (%d, NULL)", iDrive - NUM_FLOPPY);
-                if ( ! ( cfg.sid_emu & SIDEMU_NO_SAVE ) ) sid_save (iDrive - NUM_FLOPPY, TRUE);
-                sid_set_file (iDrive - NUM_FLOPPY, NULL);
-                cfg.sid_fn[iDrive - NUM_FLOPPY] = NULL;
-                }
-#endif
             }
-        if ( psPath != NULL ) free ((void *) psPath);
         }
+#ifdef HAVE_SID
+    if ( iCfgOld >= CFG_CPM_MONO )
+        {
+        for (int iDrive = 0; iDrive < N_SIDISC; ++iDrive)
+            {
+            psOld = sid_get_file (iDrive);
+            psPath = cfg_def_path (psCfgDir[iDrive+NUM_FLOPPY], psCfgDrive[iDrive+NUM_FLOPPY]);
+            if ( ( psOld != NULL ) && ( ( psPath == NULL ) || ( strcmp (psPath, psOld) != 0 ) ) )
+                {
+                diag_message (DIAG_INIT, "sid_set_file (%d, NULL)", iDrive);
+                if ( ! ( cfg.sid_emu & SIDEMU_NO_SAVE ) ) sid_save (iDrive, TRUE);
+                sid_set_file (iDrive, NULL);
+                cfg.sid_fn[iDrive] = NULL;
+                }
+            }
+        }
+#endif
     }
 
-//  Set directory and file for emulated disk drive
-static void cfg_set_drive (int iDrive, const char *psDir, const char *psFile)
+//  Set directory and file for emulated disk drives
+static void cfg_set_drives (void)
     {
-#ifdef HAVE_CFX2
-    int iCard = 0;
-    int iPart = 0;
-#endif
-    int nMaxDrv = 0;
-    int nMinDrv = 0;
-    const char *psPath = cfg_def_path (psDir, psFile);
-    if ( iCfgCur == CFG_SDX ) nMaxDrv = NUM_FLOPPY;
-#ifdef HAVE_CFX2
-    else if ( iCfgCur == CFG_CFX2 )
+    const char *psOld;
+    const char *psPath;
+#if defined(HAVE_MFX)
+    if ( iCfgCur == CFG_MFX )
         {
-        nMinDrv = NUM_FLOPPY;
-        nMaxDrv = NUM_FLOPPY + N_SIDISC + NCF_CARD * NCF_PART;
+        for (int iPart = 0; iPart < NSDPART; ++iPart)
+            {
+            int iDrive = NUM_FLOPPY + N_SIDISC + iPart;
+            psOld = sdcard_get_image (iPart);
+            psPath = cfg_def_path (psCfgDir[iDrive], psCfgDrive[iDrive]);
+            if ( ( psPath != NULL ) && ( ( psOld == NULL ) || ( strcmp (psPath, psOld) != 0 ) ) )
+                {
+                sdcard_set_image (iPart, psPath);
+                cfg.fn_sdcard[iPart] = psPath;
+                }
+            }
+        }
+#elif defined(HAVE_CFX2)
+    if ( iCfgCur == CFG_CFX2 )
+        {
+        for (int iCard = 0; iCard < NCF_CARD; ++iCard)
+            {
+            for (int iPart = 0; iPart < NCF_PART; ++iPart)
+                {
+                int iDrive = NUM_FLOPPY + N_SIDISC + NCF_PART * iCard + iPart;
+                psOld = cfx2_get_image (iCard, iPart);
+                psPath = cfg_def_path (psCfgDir[iDrive], psCfgDrive[iDrive]);
+                if ( ( psPath != NULL ) && ( ( psOld == NULL ) || ( strcmp (psPath, psOld) != 0 ) ) )
+                    {
+                    diag_message (DIAG_INIT, "cfx2_set_image (%d, %d, %s)", iCard, iPart, psPath);
+                    cfx2_set_image (iCard, iPart, psPath);
+                    cfg.fn_cfx2[iCard][iPart] = psPath;
+                    }
+                }
+            }
         }
 #endif
-    else if ( iCfgCur > CFG_SDX ) nMaxDrv = NUM_FLOPPY + N_SIDISC;
-    if ( ( iDrive >= nMinDrv ) && ( iDrive < nMaxDrv ) )
+    if (( iCfgCur >= CFG_SDX ) && ( iCfgCur <= CFG_CPM_COLOUR ))
         {
-        const char *psOld;
-        if ( iDrive < NUM_FLOPPY )
+        for (int iDrive = 0; iDrive < NUM_FLOPPY; ++iDrive)
             {
             psOld = cfg.fn_sdxfdc[iDrive];
-            }
-#ifdef HAVE_CFX2
-        else if ( iDrive >= NUM_FLOPPY + N_SIDISC )
-            {
-            iCard = ( iDrive - NUM_FLOPPY - N_SIDISC ) / NCF_PART;
-            iPart = iDrive - NUM_FLOPPY - N_SIDISC - NCF_PART * iCard;
-            psOld = cfx2_get_image (iCard, iPart);
-            }
-#endif
-#ifdef HAVE_SID
-        else
-            {
-            psOld = sid_get_file (iDrive - NUM_FLOPPY);
-            }
-#endif
-        diag_message (DIAG_INIT, "cfg_set_drive: drive = %d psOld = %s psPath = %s",
-            iDrive, psOld, psPath);
-        if ( ( psPath != NULL ) && ( ( psOld == NULL ) || ( strcmp (psPath, psOld) != 0 ) ) )
-            {
-            if ( iDrive < NUM_FLOPPY )
+            psPath = cfg_def_path (psCfgDir[iDrive], psCfgDrive[iDrive]);
+            if ( ( psPath != NULL ) && ( ( psOld == NULL ) || ( strcmp (psPath, psOld) != 0 ) ) )
                 {
                 diag_message (DIAG_INIT, "sdxfdc_init (%d, %s)", iDrive, psPath);
                 sdxfdc_init (iDrive, psPath);
                 cfg.fn_sdxfdc[iDrive] = psPath;
                 }
-#ifdef HAVE_CFX2
-            else if ( iDrive >= NUM_FLOPPY + N_SIDISC )
-                {
-                diag_message (DIAG_INIT, "cfx2_set_image (%d, %d, %s)", iCard, iPart, psPath);
-                cfx2_set_image (iCard, iPart, psPath);
-                cfg.fn_cfx2[iCard][iPart] = psPath;
-                }
-#endif
-#ifdef HAVE_SID
-            else
-                {
-                diag_message (DIAG_INIT, "sid_set_file (%d, %s)", iDrive - NUM_FLOPPY, psPath);
-                sid_set_file (iDrive - NUM_FLOPPY, psPath);
-                cfg.sid_fn[iDrive - NUM_FLOPPY] = psPath;
-                sid_load (iDrive - NUM_FLOPPY);
-                }
-#endif
-            if ( psCurDrive[iDrive] != NULL ) free ((void *) psCurDrive[iDrive]);
-            psCurDrive[iDrive] = psPath;
             }
         }
+#ifdef HAVE_SID
+    if ( iCfgCur >= CFG_CPM_MONO )
+        {
+        for (int iDrive = 0; iDrive < N_SIDISC; ++iDrive)
+            {
+            psOld = sid_get_file (iDrive);
+            psPath = cfg_def_path (psCfgDir[iDrive+NUM_FLOPPY], psCfgDrive[iDrive+NUM_FLOPPY]);
+            if ( ( psPath != NULL ) && ( ( psOld == NULL ) || ( strcmp (psPath, psOld) != 0 ) ) )
+                {
+                diag_message (DIAG_INIT, "sid_set_file (%d, %s)", iDrive, psPath);
+                sid_set_file (iDrive, psPath);
+                cfg.sid_fn[iDrive] = psPath;
+                sid_load (iDrive);
+                }
+            }
+        }
+#endif
     }
 
 //  Set tape emulation file
@@ -1251,14 +1328,16 @@ static void cfg_init (void)
         {
         iCfgOld  =  CFG_MTX500;
         }
-#ifdef HAVE_CFX2
+#if defined(HAVE_MFX)
+    if ( cfg.mfx_emu > 0 ) iCfgOld = CFG_MFX;
+#elif defined(HAVE_CFX2)
     if ( cfg.bCFX2 ) iCfgOld = CFG_CFX2;
 #endif
     iCfgCur  =  iCfgOld;
     iCfgSel  =  0;
 
     bCfgRemap = cfg.kbd_emu & KBDEMU_REMAP;
-    bCfgNode = ( ( rom_enable & ROMEN_NODE ) && ( cfg.rom_fn[ROM_NODE] != NULL ) );
+    // bCfgNode = ( ( rom_enable & ROMEN_NODE ) && ( cfg.rom_fn[ROM_NODE] != NULL ) );
     bCfgSound = cfg.snd_emu & SNDEMU_PORTAUDIO;
     iSelKbdN = 0;
 
@@ -1327,9 +1406,23 @@ static void cfg_save (const char *psConfig)
             {
             if ( cfg.rom_fn[rom] != NULL ) fprintf (pfil, "-rom%d \"%s\"\n", rom, PMapMapped (cfg.rom_fn[rom]));
             }
+#ifndef SMALL_MEM
+        if ( cfg.large_rom != NULL )
+            fprintf (pfil, "%s-largerom %s \"%s\"\n", ( cfg.mfx_emu > 0 ? "" : "-no" ), cfg.large_cfg, PMapMapped (cfg.large_rom));
+#endif
 #ifdef HAVE_CFX2
         if ( cfg.rom_cfx2 != NULL )
             fprintf (pfil, "%s \"%s\"\n", ( cfg.bCFX2 ? "-cfx2" : "-no-cfx2" ), PMapMapped (cfg.rom_cfx2));
+#endif
+#ifdef HAVE_MFX
+        if ( cfg.mfx_emu >= MFXEMU_MAX )
+            {
+            fprintf (pfil, "-mfx-max\n");
+            }
+        else if (( cfg.mfx_emu > -MFXEMU_MAX ) && ( cfg.mfx_emu != 0 ))
+            {
+            fprintf (pfil, "-mfx-size %d", cfg.mfx_emu);
+            }
 #endif
         if ( cfg.kbd_emu & KBDEMU_REMAP ) fprintf (pfil, "-kbd-remap\n");
         fprintf (pfil, "-kbd-country %d\n", ( cfg.kbd_emu & KBDEMU_COUNTRY ) >> 2);
@@ -1403,6 +1496,13 @@ static void cfg_save (const char *psConfig)
                 }
             }
 #endif
+#ifdef HAVE_MFX
+        for ( iDisk = 0; iDisk < NSDPART; ++iDisk )
+            {
+            if ( cfg.fn_sdcard[iDisk] != NULL )
+                fprintf (pfil, "-sd-type sdhc -sd-image %d \"%s\"\n", iDisk, PMapMapped (cfg.fn_sdcard[iDisk]));
+            }
+#endif
         if ( cfg.tape_name_prefix != NULL ) fprintf (pfil, "-tape-dir \"%s\"\n", cfg.tape_name_prefix);
         if ( cfg.tape_overwrite ) fprintf (pfil, "-tape-overwrite\n");
         if ( cfg.tape_disable )
@@ -1465,8 +1565,12 @@ static void cfg_restart (void)
     diag_message (DIAG_INIT, "cfg_restart: iCfgCur = %d, iCfgOld = %d", iCfgCur, iCfgOld);
     if ( iCfgCur != iCfgOld )
         {
-#ifdef HAVE_CFX2
+#if defined(HAVE_MFX) || defined(HAVE_CFX2)
+#if defined(HAVE_MFX)
+        if ( iCfgOld == CFG_MFX )
+#elif defined(HAVE_CFX2)
         if ( iCfgOld == CFG_CFX2 )
+#endif
             {
             if ( cfg.rom_fn[4] != NULL )
                 {
@@ -1478,8 +1582,13 @@ static void cfg_restart (void)
                 diag_message (DIAG_INIT, "Installing CP/M ROM");
                 load_rom (5, cfg.rom_fn[5]);
                 }
+#if defined(HAVE_MFX)
+            cfg.mfx_emu = -cfg.mfx_emu;
+            mfx_term ();
+#elif defined(HAVE_CFX2)
             cfg.bCFX2 = FALSE;
             cfx2_term ();
+#endif
 #ifdef HAVE_VGA
             cfg.bVGA = FALSE;
             vga_term ();
@@ -1566,7 +1675,24 @@ static void cfg_restart (void)
                 }
             break;
             }
-#ifdef HAVE_CFX2
+#if defined(HAVE_MFX)
+            case CFG_MFX:
+            {
+            if ( cfg.mon_emu & ( MONEMU_WIN | MONEMU_TH | MONEMU_CONSOLE ) )
+                {
+                mon_term ();
+                cfg.mon_emu &= ~( MONEMU_WIN | MONEMU_TH | MONEMU_CONSOLE );
+                }
+            mem_alloc (CPM_MEM_BLOCKS);
+            if ( cfg.large_rom == NULL ) { config_term (); fatal ("MFX ROM not installed"); }
+            diag_message (DIAG_INIT, "Installing MFX ROM");
+            load_largerom (cfg.large_cfg, cfg.large_rom);
+            rom_enable = ROMEN_ASSEM | ROMEN_BASIC | ROMEN_SDX2 | ROMEN_CPM | ROMEN_ROM6;
+            mem_set_rom_enable (rom_enable);
+            cfg.mfx_emu = -cfg.mfx_emu;
+            if ( cfg.mfx_emu <= 0 ) cfg.mfx_emu = MFXEMU_MAX;
+            }
+#elif defined(HAVE_CFX2)
             case CFG_CFX2:
             {
             if ( cfg.mon_emu & ( MONEMU_WIN | MONEMU_TH | MONEMU_CONSOLE ) )
@@ -1609,9 +1735,9 @@ static void cfg_restart (void)
         snd_term ();
         cfg.snd_emu &= ~SNDEMU_PORTAUDIO;
         }
-    if ( bCfgNode ) rom_enable |= ROMEN_NODE;
-    else            rom_enable &= ~ROMEN_NODE;
-    mem_set_rom_enable (rom_enable);
+    // if ( bCfgNode ) rom_enable |= ROMEN_NODE;
+    // else            rom_enable &= ~ROMEN_NODE;
+    // mem_set_rom_enable (rom_enable);
     memu_reset ();
     }
 
@@ -1683,23 +1809,19 @@ static BOOLEAN row_exit_key (int info, int wk)
                 cfg_set_tape (cfg_def_file (psCfgTape));
                 }
             ALERT_ON();
-            for ( iDrive = 0; iDrive < NUM_DRIVES; ++iDrive )
-                {
-                cfg_save_drive (iDrive, psCfgDir[iDrive], psCfgDrive[iDrive]);
-                }
+            cfg_clear_drives ();
 #ifdef HAVE_SID
             cfg.sid_emu = iSidEmu;
             sid_mode (iSidEmu);
 #endif
-            for ( iDrive = 0; iDrive < NUM_DRIVES; ++iDrive )
-                {
-                cfg_set_drive (iDrive, psCfgDir[iDrive], psCfgDrive[iDrive]);
-                }
+            cfg_set_drives ();
             ALERT_OFF();
-#ifdef HAVE_CFX2
+#if defined(HAVE_MFX)
+            if ( cfg.mfx_emu > 0 ) mfx_init (cfg.mfx_emu);
+#elif defined(HAVE_CFX2)
             if ( cfg.bCFX2 ) cfx2_init ();
-#endif
             diag_message (DIAG_INIT, "After cfx2_init");
+#endif
             if ( bCfgRemap )
                 {
                 cfg.kbd_emu   |= KBDEMU_REMAP;
@@ -1739,7 +1861,9 @@ static BOOLEAN row_focus_true (int info)
 
 static BOOLEAN row_focus_drive (int iDrive)
     {
-//    if ( ( iCfgCur == CFG_CPM_MONO ) || ( iCfgCur == CFG_CPM_COLOUR ) ) return  TRUE;
+#ifdef HAVE_MFX
+    if (( iCfgCur == CFG_MFX ) && ( iDrive == 1 )) return FALSE;
+#endif
     if ( iCfgCur >= CFG_CPM_MONO ) return  TRUE;
     if ( ( iCfgCur == CFG_SDX ) && ( iDrive < NUM_FLOPPY ) )    return  TRUE;
     return  FALSE;
@@ -1990,7 +2114,7 @@ BOOLEAN cfg_options (int *pargc, const char ***pargv, int *pi)
 #endif
         diag_flags[DIAG_BAD_PORT_IGNORE] = TRUE;
         if ( ++(*pi) == (*pargc) )
-            usage((*pargv)[*pi-1]);
+            opterror((*pargv)[*pi-1]);
         config_fn   =  (*pargv)[*pi];
         read_config (config_fn, pargc, pargv, pi);
         }
@@ -2004,7 +2128,7 @@ BOOLEAN cfg_options (int *pargc, const char ***pargv, int *pi)
     else if ( !strcmp((*pargv)[*pi], "-rom-enable") )
         {
         if ( ++(*pi) == (*pargc) )
-            usage((*pargv)[*pi-1]);
+            opterror((*pargv)[*pi-1]);
         sscanf ((*pargv)[*pi], "%i", &rom_enable);
         mem_set_rom_enable (rom_enable);
         }
@@ -2012,8 +2136,32 @@ BOOLEAN cfg_options (int *pargc, const char ***pargv, int *pi)
         {
 #ifdef HAVE_CFX2
         if ( ++(*pi) == (*pargc) )
-            usage((*pargv)[*pi-1]);
+            opterror((*pargv)[*pi-1]);
         cfg.rom_cfx2 = (*pargv)[*pi];
+#else
+        unimplemented ((*pargv)[*pi]);
+        ++(*pi);
+#endif
+        }
+    else if ( !strcmp((*pargv)[*pi], "-no-largerom") )
+        {
+#ifdef HAVE_MFX
+        if ( *pi + 2 >= (*pargc) )
+            opterror ((*pargv)[*pi]);
+        cfg.large_cfg = (*pargv)[*pi+1];
+        cfg.large_rom = (*pargv)[*pi+2];
+        *pi += 2;
+#else
+        unimplemented ((*pargv)[*pi]);
+        *pi += 2;
+#endif
+        }
+    else if ( !strcmp ((*pargv)[*pi], "-mfx-size") )
+        {
+#ifdef HAVE_MFX
+        if ( ++(*pi) == (*pargc) )
+            opterror((*pargv)[*pi-1]);
+        cfg.mfx_emu = atoi ((*pargv)[*pi]);
 #else
         unimplemented ((*pargv)[*pi]);
         ++(*pi);
@@ -2022,14 +2170,14 @@ BOOLEAN cfg_options (int *pargc, const char ***pargv, int *pi)
     else if ( !strcmp((*pargv)[*pi], "-mon-size") )
         {
         if ( ++(*pi) == (*pargc) )
-            usage((*pargv)[*pi-1]);
+            opterror((*pargv)[*pi-1]);
         sscanf((*pargv)[*pi], "%i", &cfg.mon_height_scale);
         cfg.mon_width_scale = cfg.mon_height_scale/2;
         }
     else if ( !strcmp((*pargv)[*pi], "-disk-dir") )
         {
         if ( ++(*pi) == (*pargc) )
-            usage((*pargv)[*pi-1]);
+            opterror((*pargv)[*pi-1]);
         disk_dir =  (*pargv)[*pi];
         }
     else
@@ -2047,6 +2195,10 @@ void cfg_usage (void)
     fprintf(stderr, "       -rom-enable rom_bits bit flags to enable (1) or disable (0) a rom\n");
 #ifdef HAVE_CFX2
     fprintf(stderr, "       -no-cfx2 rom_file    disable CFX-II emulation but specify ROM image file\n");
+#endif
+#ifdef HAVE_MFX
+	fprintf(stderr, "       -no-largerom roms file  specify but do not load MFX ROM image file\n");
+    fprintf(stderr, "       -mfx-size            Sets MFX window size (-ve to save size without enabling)\n");
 #endif
     fprintf(stderr, "       -mon-size            sets 80 col size (but does not enable it)\n");
     fprintf(stderr, "       -disk-dir dir        directory containg disk images\n");

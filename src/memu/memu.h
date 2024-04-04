@@ -15,6 +15,9 @@ memu.h - Structure to hold MEMU configuration
 #ifdef HAVE_CFX2
 #include "cfx2.h"
 #endif
+#ifdef HAVE_MFX
+#include "sdcard.h"
+#endif
 
 /*...vtypes\46\h:0:*/
 /*...vsid\46\h:0:*/
@@ -39,6 +42,7 @@ typedef struct s_cfg
 #endif
 #ifdef HAVE_MFX
     int mfx_emu;
+    const char *fn_sdcard[NSDPART];
 #endif
 	int iperiod;
 	int tracks_sdxfdc[2];
@@ -66,6 +70,10 @@ typedef struct s_cfg
     const char *rom_cfx2;
     const char *fn_cfx2[NCF_CARD][NCF_PART];
 #endif
+#ifndef SMALL_MEM
+    const char *large_cfg;
+    const char *large_rom;
+#endif
 #ifdef HAVE_VGA
     BOOLEAN bVGA;
 #endif
@@ -82,7 +90,8 @@ extern int memu (int argc, const char *argv[]);
 extern void OutZ80_bad(const char *hardware, word port, byte value, BOOLEAN stop);
 extern byte InZ80_bad(const char *hardware, word port, BOOLEAN stop);
 extern void memu_reset(void);
-    extern void usage(const char *psErr, ...);
+extern void usage(const char *psErr, ...);
+extern void opterror (const char *psOpt);
 extern void unimplemented (const char *psErr);
 extern void RaiseInt (const char *psSource);
 extern unsigned long long get_Z80_clocks (void);

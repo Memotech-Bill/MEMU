@@ -6,7 +6,7 @@
 #ifdef MAP_PATH
 #include "types.h"
 
-typedef enum {pmapNone = -1, pmapWork, pmapCfg, pmapExe, pmapHome, pmapCount} PMapMode;
+typedef enum {pmapNone = -1, pmapCfg, pmapExe, pmapHome, pmapWork, pmapCount} PMapMode;
 
 void PMapRootDir (PMapMode pmap, const char *psDir, BOOLEAN bCopy);
 const char *PMapPath (const char *psPath);

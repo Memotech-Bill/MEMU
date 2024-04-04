@@ -13,12 +13,15 @@
 #endif
 
 #ifdef HAVE_SD_CARD
+#define NSDPART         8                   // Maximum number of SD Card partitions
+
 #include "types.h"
 
 int sdcard_set_type (const char *psType);
 void sdcard_out (byte port, byte value);
 byte sdcard_in (byte port);
 void sdcard_set_image (int iImage, const char *psFile);
+const char * sdcard_get_image (int iImage);
 #endif
 
 #endif
