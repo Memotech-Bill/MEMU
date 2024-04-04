@@ -54,14 +54,17 @@
       <li>Raspberry Pi Pico: This has the main features of MEMU, but size constraints
         require omitting some features. Each display is shown full screen.</li>
       <li>Linux X-Window: This uses multiple GUI windows to display Memotech screens and
-        dialogs.</li>
+        dialogs. <span class="todo">(TODO: Produce a version that supports Wayland.)</span></li>
       <li>Linux Framebuffer: This does not require a GUI. Instead each display is shown
         full-screen and it is necessary to toggle between screens.</li>
       <li>Raspberry Pi: Although the Linux versions run perfectly well on Raspberry Pi,
         this version uses the GPU for display updating, and can use the GPIOs to interface
-        to real hardware.</li>
+        to real hardware. <span class="todo">(TODO: The GPU access used is not supported by
+        recent versions of Raspberry Pi OS. Produce an X-Window version with GPIO support.)</span></li>
       <li>Bare Metal Pi: Uses the <a href="https://github.com/rsta2/circle">Circle</a>
-        library to produce versions of MEMU that run bare-metal on a Raspberry Pi.</li>
+        library to produce versions of MEMU that run bare-metal on a Raspberry Pi.
+        <span class="todo">(TODO: This is using an old version of Circle that does not support
+          all Raspberry Pi versions. Update or abandon?)</span></li>
       <li>Microsoft Windows: Does not have DART or Network emulation.</li>
     </ul>
     <p>The full (Linux) version of MEMU provides just about complete emulation of the
@@ -79,11 +82,12 @@
     </ul>
     <p>It provides emulation of some modern hardware add-ons:</p>
     <ul>
-      <li><a href="http://primrosebank.net/computers/mtx/projects/bb80col/bb80col.htm">
-          Enhanced 80-column display</a> using Parallax Propeller chip</li>
+      <li><a href="http://www.primrosebank.net/computers/mtx/projects/mfx/mfx_usage.htm">
+          MFX - Multi-Function eXpansion</a> providing SD card storage, VGA 80-column and
+        VDP display (using an FPGA), ROM BASIC enhancements.</li>
       <li><a href="http://primrosebank.net/computers/mtx/projects/sfx/cfxii.htm">
-          CFX-II</a> providing Compact Flash storage, Propeller 80-column display,
-        ROM BASIC enhancements</li>
+          CFX-II</a> providing Compact Flash storage, Propeller VGA 80-column and VDP display
+        (using Parallax Propeller chip), ROM BASIC enhancements</li>
       <li><a href="http://primrosebank.net/computers/mtx/projects/nfx/nfx.htm">
           NFX</a> network interface based upon a Wiznet W5100 chip</li>
     </ul>
@@ -220,7 +224,7 @@
           <li>If the line &quot;dtoverlay=vc4-kms-v3d&quot; is present, comment it out.</li>
           <li>Insert the line &quot;dtoverlay=vc4-<b>f</b>kms-v3d&quot;
         </ul>
-        <p>TODO - Produce a version which works with the KMS driver.</p>
+        <p class="todo">TODO: Produce a version which works with the KMS driver.</p>
       </li>
       <li><p>The display must be connected to one of the outputs controlled by the VideoCore
           (e.g. HDMI), and the keyboard attached to a USB port. This version will not work
@@ -310,7 +314,7 @@
       <li>The "Applications" or "Menu" key.</li>
       <li>The &lt;F11&gt; key.</li>
     </ul>
-    <img class="centre" src="Config_Screen.png" alt="Configuration Screen">
+    <img class="centre" src="MEMU_Configuration_Dialog.png" alt="Configuration Screen">
     <p>Use the arrow keys to navigate the options and either &lt;space&gt; or &lt;Enter&gt; to
       select an option. The &lt;Esc&gt; key can be used to exit sub-menus.</p>
     <p>The top row of the screen is used to select the basic emulation mode:</p>
@@ -327,9 +331,15 @@
       <dt>CPM COLR</dt>
       <dd>576K RAM, CP/M & ROM BASIC, 40 column VDP display, 80 column colour display,
         Two type07 disk drives, Four Silicon Drives (optional)</dd>
-      <dt>CFX-II (Not Pico)</dt>
+      <dt>MFX</dt>
       <dd>576K RAM, CP/M & ROM BASIC, 40 column VDP display, 80 column VGA display,
-        Two Compact Flash drives (up to 8 partitions each), Four Silicon Drives (optional)</dd>
+        SD Card emulation (up to 8 CPM drive images), Four Silicon Drives (optional).
+        <br/>Note: This does not include emulation of the WizNet network interface on the
+        real MFX card. The windows version of MEMU cannot currently emulate this. While
+        the Linux version can emulate the WizNet, either the program would need to be
+        run as root to be able to open the ports for FTP or HTTP, or the port numbers
+        would need to be re-mapped to high (unprivilaged) values. Command line switches
+        may be ussed to enable this emulation for the Linux version.</dd>
     </dl>
     <p>The body of the screen is used to provide details:</p>
     <dl>
@@ -389,6 +399,8 @@
           <ul>
             <li><a href="http://www.nyangau.org/diskimages/diskimages.htm">Andy Key's
                 disk images</a></li>
+            <li><a href="http://www.primrosebank.net/computers/mtx/projects/mfx/mfx_usage.htm">
+                SD card images for MFX emulation</a> (near bottom of page).</li>
           </ul>
         </li>
       </ul>
@@ -405,8 +417,8 @@
          alt="CP/M Colour Selected, Keyboard: Remapped, Sound: Yes, Files for floppy drives B and C selected">
 
     <h3 id="Usage-DiskImages">Disk Images</h3>
-    <p>MEMU is not able to directly access files stored on the SD card. Instead the files on
-      the SD card are binary copies of the contents of CP/M disks. To access the CP/M files on
+    <p>MEMU is not able to directly access files stored by the operating system. Instead the program reads files
+      that are are binary copies of the contents of CP/M disks. To access the CP/M files on
       a modern PC you need to use a program which understands the CP/M disk format.</p>
     <p>The traditional set of programs for that is <a href="http://www.moria.de/~michael/cpmtools/">cpmtools</a>.
       For most Linux distributions they can be installed using the distribution's package manager.
@@ -420,9 +432,9 @@
       <li><b>memotech-type18</b> - The 8MB format used for silicon disks and modern CF or SD
         storage expansions for the Memotech.</li>
     </ul>
-    <p>Cpmtools are traditional command line utilities. To make the CP/M images more accessible on modern
-      machines, Andy has also developed software whicch enables the CP/M image to be mounted and accessed
-      using standard GUI file managers. These are:</p>
+    <p>Cpmtools are traditional command line utilities. To make the CP/M images more accessible
+      on modern machines, Andy has also developed software whicch enables the CP/M image to be
+      mounted and accessed using standard GUI file managers. These are:</p>
     <ul>
       <li>For Microsoft Windows - <a href="http://www.nyangau.org/cpmcbfs/cpmcbfs.htm">CP/M Callback Filesystem</a>.</li>
       <li>For Linux - <a href="http://www.nyangau.org/cpmfuse/cpmfuse.htm">CP/M Filesystem in userspace</a>.</li>
@@ -430,7 +442,13 @@
     <p>An empty disk image can be preduced by creating an empty file, mounting it as a disk
       in MEMU, then using one of the Memotech utilities to format the drive. Once formatted,
       close MEMU and use one of the above tools to copy files into the image.</p>
-    
+    <p>For the real CFX-II or MFX interfaces, the CF or SD media can store up to eight
+      images of 8MB CP/M disks. With MEMU, eight separate image files may be specified, one
+      for each of the 8MB CP/M disks. Alternately, a single large file containing a complete
+      image of the storage media may be given as the first file name. The media image may
+      optionally include data for HexTrain beyond the CP/M disk images, and / or include an
+      MBR partition table. With Linux it is even possible to specify a media device containing
+      physical media from a Memotech</p>
     <h3 id="Usage-Advanced">Advanced Usage</h3>
     <p>MEMU configuration is controlled by a large number of option flags or switches. These
       may be either in configuration files or specified on the command line.</p>
@@ -522,38 +540,23 @@
       <dd>specify tracks of second drive (default 80)</dd>
       <dt>-prn-file file</dt>
       <dd>specify file to receive printer output</dd>
-      <dt>file.mtx</dt>
-      <dd>subsequent LOAD/SAVE/VERIFY "" will use this file</dd>
-    </dl>
-    <p>The following options only have any effect for resizeable windows (X-Window or
-      Microsoft Windows):</p>
-    <dl>
-      <dt>-vid-win-big,-v</dt>
-      <dd>Increase the size of the VDP window. Repeat to further enlarge.</dd>
-      <dt>-vid-win-max</dt>
-      <dd>VDP window the largest size that will fit on the screen.</dd>
-      <dt>-mon-win-big,-mw</dt>
-      <dd>Increase the size of the 80-column display. Repeat to further enlarge.</dd>
-      <dt>-mon-size</dt>
-      <dd>Sets the size of the 80-column display (but does not enable it).</dd>
-      <dt>-mon-win-max</dt>
-      <dd>Maximises the size of the 80-column display (but does not enable it).</dd>
-      <dt>-vid-win-title</dt>
-      <dd>set title for VDP window</dd>
-      <dt>-vid-win-display</dt>
-      <dd>set display to use for VDP window</dd>
-      <dt>-mon-win-title</dt>
-      <dd>set title for 80 column window</dd>
-      <dt>-mon-win-display</dt>
-      <dd>set display to use for 80 column window</dd>
       <dt>-speed hz</dt>
       <dd>set CPU speed (default is 4000000, ie: 4MHz. Pico default: 4.8MHz)</dd>
+      <dt>file.mtx</dt>
+      <dd>subsequent LOAD/SAVE/VERIFY "" will use this file</dd>
     </dl>
     <p>The following options are supported on the Linux and Microsoft Windows versions:</p>
     <dl>
       <dt>-romX file</dt>
-      <dd>Load banked ROM X image from file</dd>
+      <dd>Load banked ROM X image from an 8MB file</dd>
+      <dt>-rompairX file</dt>
+      <dd>Load banked ROM X and ROM X+1 a 16MB file</dd>
+      <dt>-largerom selector file</dt>
+      <dd>Optionally load the system ROM (0-8K) and / or any of the banked ROMS (8-16K)
+        specified by the characters (S,0-7) in the selector string from a single 32KB file.</dd>
       <dt>-vid-win-hw-palette</dt>
+      <dt>-mfx</dt>
+      <dd>Show the emulated MFX display.</dd>
       <dd>Use an alternate palette for the emulation of the VDP display.</dd>
       <dt>-sidisc-huge</dt>
       <dd>enable Silicon Disk huge mode</dd>
@@ -567,6 +570,10 @@
       <dd>emulate Propeller VGA display (enabled by default for CFX-II)</dd>
       <dt>-cf-image c:p file</dt>
       <dd>specify data image for partition (p) on card (c)</dd>
+      <dt>-sd-type type</dt>
+      <dd>set the type of SD card to emulate (SDv1, SDv2, SDHC)</dd>
+      <dt>-sd-image p file</dt>
+      <dd>specify image for CP/M drive (p) on SD card</dd>
       <dt>-no-cfx2 rom_file</dt>
       <dd>Disable CFX-II emulation but remember the ROM image file name.</dd>
       <dt>-iobyte iobyte</dt>
@@ -628,6 +635,33 @@
       <dd>-cpm -iobyte 0x80 -addr 0x0100 -mem file.com</dd>
       <dt>file.run</dt>
       <dd>-iobyte 0x00 -addr 0xAAAA (from header)</dd>
+    </dl>
+    <p>The following options only have any effect for resizeable windows (X-Window or
+      Microsoft Windows):</p>
+    <dl>
+      <dt>-vid-win-big,-v</dt>
+      <dd>Increase the size of the VDP window. Repeat to further enlarge.</dd>
+      <dt>-vid-win-max</dt>
+      <dd>VDP window the largest size that will fit on the screen.</dd>
+      <dt>-mon-win-big,-mw</dt>
+      <dd>Increase the size of the 80-column display. Repeat to further enlarge.</dd>
+      <dt>-mon-size N</dt>
+      <dd>Sets the size of the 80-column display (but does not enable it).</dd>
+      <dt>-mon-win-max</dt>
+      <dd>Maximises the size of the 80-column display (but does not enable it).</dd>
+      <dt>-mfx-size</dt>
+      <dd>Sets the size of the MFX display. Negative values remember the size
+        without enabling the display.</dd>
+      <dt>-mfx-max</dt>
+      <dd>Show the emulated MFX display using a maximum size window.</dd>
+      <dt>-vid-win-title</dt>
+      <dd>set title for VDP window</dd>
+      <dt>-vid-win-display</dt>
+      <dd>set display to use for VDP window</dd>
+      <dt>-mon-win-title</dt>
+      <dd>set title for 80 column window</dd>
+      <dt>-mon-win-display</dt>
+      <dd>set display to use for 80 column window</dd>
     </dl>
     <p>The following options are currently for the Linux versions only:</p>
     <dl>
