@@ -5,3 +5,4 @@ run_time/memu-*
 run_time/portaudio*
 *.log
 run_time/disks/*.bin
+*.zip

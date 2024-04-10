@@ -21,6 +21,8 @@ It now includes all my current ports of MEMU. It includes versions for:
 * Raspberry Pi: A Linux build with the ability to use GPIO to connect additional hardware.
 * Bare-Metal Raspberry Pi: Runs without any operating system using the Circle library.
 * Microsoft Windows: Does not have DART or Network emulation.
+* WORK IN PROGRESS: Experimental version using SDL. SDL has experimental support for Wayland.
+  It may also provide a single source usable on Windows & Linux, including Networking.
 
 Work is still needed to clean the code. There are probably bugs, and there is certainly
 diagnostic code.

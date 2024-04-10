@@ -66,6 +66,16 @@ extern "C"
 {
 #endif
 
+// Routines in win.c
+
+extern WIN *win_alloc (size_t size_win, size_t size_data);
+extern void win_free (WIN *win);
+extern void win_next (void);
+extern void win_prev (void);
+extern WIN * win_current (void);
+extern void win_show_num (int n);
+
+// Version specific routines
 extern WIN *win_create(
 	int width, int height,
 	int width_scale, int height_scale,
@@ -76,29 +86,12 @@ extern WIN *win_create(
 	void (*keypress)(WIN *, int),
 	void (*keyrelease)(WIN *, int)
 	);
-
-extern WIN *twin_create(
-	int width_scale, int height_scale,
-	const char *title,
-	const char *display,
-	const char *geometry,
-	void (*keypress)(WIN *, int),
-	void (*keyrelease)(WIN *, int),
-    BOOLEAN bMono
-	);
-
-extern WIN *win_alloc (size_t size_win, size_t size_data);
-extern void win_free (WIN *win);
 extern void win_delete (WIN *win);
 extern void win_colour (WIN *win, int idx, COL *clr);
 extern void win_refresh (WIN *win);
 extern int win_shifted_wk (int wk);
 extern void win_show (WIN *win);
-extern void win_show_num (int n);
-extern void win_next (void);
-extern void win_prev (void);
 extern BOOLEAN win_active (WIN *win);
-extern WIN * win_current (void);
 extern void win_term (void);
 extern void win_max_size (const char *display, int *pWth, int *pHgt);
 
@@ -106,6 +99,9 @@ extern void win_max_size (const char *display, int *pWth, int *pHgt);
    A no-op on Windows, where we use separate threads. */
 extern void win_handle_events();
 
+// Routines in txtwin.c
+WIN *twin_create (int width_scale, int height_scale, const char *title, const char *display, const char *geometry,
+    void (*keypress)(WIN *, int), void (*keyrelease)(WIN *, int), BOOLEAN bMono);
 TXTBUF *tbuf_create (BOOLEAN bMono);
 void twin_delete (WIN *win);
 void twin_show (WIN *win);
