@@ -298,7 +298,7 @@ elseif("${TARGET}" STREQUAL "SDL")
       ${CMAKE_CURRENT_LIST_DIR}/sdcard.c
       ${CMAKE_CURRENT_LIST_DIR}/sdxfdc.c
       ${CMAKE_CURRENT_LIST_DIR}/sid.c
-      ${CMAKE_CURRENT_LIST_DIR}/snd.c
+      ${CMAKE_CURRENT_LIST_DIR}/snd_sdl.c
       ${CMAKE_CURRENT_LIST_DIR}/spec.c
       ${CMAKE_CURRENT_LIST_DIR}/tape.c
       ${CMAKE_CURRENT_LIST_DIR}/txtwin.c

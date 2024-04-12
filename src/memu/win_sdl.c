@@ -288,6 +288,7 @@ static int sdlkey_wk (int keycode)
 
 void win_handle_events (void)
     {
+    SDL_Window *sdl_win;
     SDL_Event e;
     while ( SDL_PollEvent (&e) != 0 )
         {
@@ -307,7 +308,9 @@ void win_handle_events (void)
             case SDL_KEYDOWN:
                 if ( e.key.repeat == 0 )
                     {
-                    WIN_PRIV *win = (WIN_PRIV *) SDL_GetWindowData (SDL_GetWindowFromID (e.key.windowID), "MEMU");
+                    sdl_win = SDL_GetWindowFromID (e.key.windowID);
+                    if ( sdl_win == NULL ) break;
+                    WIN_PRIV *win = (WIN_PRIV *) SDL_GetWindowData (sdl_win, "MEMU");
                     int wk = sdlkey_wk (e.key.keysym.sym);
                     if (wk > 0) win->keypress ((WIN *) win, wk);
                     }
@@ -315,7 +318,9 @@ void win_handle_events (void)
             case SDL_KEYUP  :
                 if ( e.key.repeat == 0 )
                     {
-                    WIN_PRIV *win = (WIN_PRIV *) SDL_GetWindowData (SDL_GetWindowFromID (e.key.windowID), "MEMU");
+                    sdl_win = SDL_GetWindowFromID (e.key.windowID);
+                    if ( sdl_win == NULL ) break;
+                    WIN_PRIV *win = (WIN_PRIV *) SDL_GetWindowData (sdl_win, "MEMU");
                     int wk = sdlkey_wk (e.key.keysym.sym);
                     if (wk > 0) win->keyrelease ((WIN *) win, wk);
                     }
