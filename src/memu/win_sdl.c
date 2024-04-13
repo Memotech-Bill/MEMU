@@ -286,6 +286,10 @@ static int sdlkey_wk (int keycode)
     return 0;
     }
 
+#ifdef HAVE_JOY
+void joy_handle_events (SDL_Event *e);
+#endif
+
 void win_handle_events (void)
     {
     SDL_Window *sdl_win;
@@ -315,7 +319,7 @@ void win_handle_events (void)
                     if (wk > 0) win->keypress ((WIN *) win, wk);
                     }
                 break;
-            case SDL_KEYUP  :
+            case SDL_KEYUP:
                 if ( e.key.repeat == 0 )
                     {
                     sdl_win = SDL_GetWindowFromID (e.key.windowID);
@@ -324,6 +328,11 @@ void win_handle_events (void)
                     int wk = sdlkey_wk (e.key.keysym.sym);
                     if (wk > 0) win->keyrelease ((WIN *) win, wk);
                     }
+                break;
+            default:
+#ifdef HAVE_JOY
+                joy_handle_events (&e);
+#endif
                 break;
             }
         }

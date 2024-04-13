@@ -280,7 +280,7 @@ elseif("${TARGET}" STREQUAL "SDL")
       ${CMAKE_CURRENT_LIST_DIR}/dirmap.c
       ${CMAKE_CURRENT_LIST_DIR}/dirt_unix.c
       ${CMAKE_CURRENT_LIST_DIR}/dis.c
-      ${CMAKE_CURRENT_LIST_DIR}/joy_lin.c
+      ${CMAKE_CURRENT_LIST_DIR}/joy_sdl.c
       ${CMAKE_CURRENT_LIST_DIR}/kbd2.c
       ${CMAKE_CURRENT_LIST_DIR}/main.c
       ${CMAKE_CURRENT_LIST_DIR}/mem.c
