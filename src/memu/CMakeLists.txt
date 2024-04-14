@@ -287,7 +287,7 @@ elseif("${TARGET}" STREQUAL "SDL")
     ${CMAKE_CURRENT_LIST_DIR}/mfx.c
     ${CMAKE_CURRENT_LIST_DIR}/mon.c
     ${CMAKE_CURRENT_LIST_DIR}/monprom.c
-    ${CMAKE_CURRENT_LIST_DIR}/nfx.c
+    ${CMAKE_CURRENT_LIST_DIR}/nfx_sdl.c
     ${CMAKE_CURRENT_LIST_DIR}/printer.c
     ${CMAKE_CURRENT_LIST_DIR}/rom_os.c
     ${CMAKE_CURRENT_LIST_DIR}/rom_assem.c
@@ -354,6 +354,7 @@ elseif("${TARGET}" STREQUAL "SDL")
       Z80_emu
       portaudio
       ${SDL2_LIBRARIES}
+      SDL2_net
       m
       )
     

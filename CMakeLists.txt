@@ -454,6 +454,7 @@ elseif("${TARGET}" STREQUAL "SDL")
       Z80_emu
       portaudio
       ${SDL2_LIBRARIES}
+      SDL2_net
       m
       )
   endif()
