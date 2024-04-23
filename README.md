@@ -18,11 +18,13 @@ It now includes all my current ports of MEMU. It includes versions for:
 * Raspberry Pi Pico: A cut-down version due to Pico capacity limits.
 * Linux X-Window: Displays in multiple windows.
 * Linux Framebuffer: No GUI required. One display at a time, full-screen.
-* Raspberry Pi: A Linux build with the ability to use GPIO to connect additional hardware.
-* Bare-Metal Raspberry Pi: Runs without any operating system using the Circle library.
 * Microsoft Windows: Does not have DART or Network emulation.
 * WORK IN PROGRESS: Experimental version using SDL. SDL has experimental support for Wayland.
   It may also provide a single source usable on Windows & Linux, including Networking.
+* OBSOLETE: Raspberry Pi: A Linux build with the ability to use GPIO to connect additional hardware.
+  *Not compatible with recent RPi OS*
+* OBSOLETE: Bare-Metal Raspberry Pi: Runs without any operating system using the Circle library.
+  *Uses old version of Circle - Not compatible with recent RPi hardware*
 
 Work is still needed to clean the code. There are probably bugs, and there is certainly
 diagnostic code.
