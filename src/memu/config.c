@@ -1406,15 +1406,13 @@ static void cfg_save (const char *psConfig)
             {
             if ( cfg.rom_fn[rom] != NULL ) fprintf (pfil, "-rom%d \"%s\"\n", rom, PMapMapped (cfg.rom_fn[rom]));
             }
-#ifndef SMALL_MEM
-        if ( cfg.large_rom != NULL )
-            fprintf (pfil, "%s-largerom %s \"%s\"\n", ( cfg.mfx_emu > 0 ? "" : "-no" ), cfg.large_cfg, PMapMapped (cfg.large_rom));
-#endif
 #ifdef HAVE_CFX2
         if ( cfg.rom_cfx2 != NULL )
             fprintf (pfil, "%s \"%s\"\n", ( cfg.bCFX2 ? "-cfx2" : "-no-cfx2" ), PMapMapped (cfg.rom_cfx2));
 #endif
 #ifdef HAVE_MFX
+        if ( cfg.large_rom != NULL )
+            fprintf (pfil, "%s-largerom %s \"%s\"\n", ( cfg.mfx_emu > 0 ? "" : "-no" ), cfg.large_cfg, PMapMapped (cfg.large_rom));
         if ( cfg.mfx_emu >= MFXEMU_MAX )
             {
             fprintf (pfil, "-mfx-max\n");

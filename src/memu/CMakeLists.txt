@@ -47,7 +47,7 @@ if("${TARGET}" STREQUAL "Pico")
 
 elseif("${TARGET}" STREQUAL "XWin")
   
-  set (sdl_src
+  set (xwin_src
     ${CMAKE_CURRENT_LIST_DIR}/cfx2.c
     ${CMAKE_CURRENT_LIST_DIR}/common.c
     ${CMAKE_CURRENT_LIST_DIR}/config.c
@@ -98,14 +98,14 @@ elseif("${TARGET}" STREQUAL "XWin")
       ${SDL2_INCLUDE_DIRS}
       )
     
-    target_sources(memu_src INTERFACE ${sdl_src})
+    target_sources(memu_src INTERFACE ${xwin_src})
 
   else()
     cmake_minimum_required(VERSION 3.5)
 
     project(memu C)
 
-    add_executable(memu-x ${sdl_src})
+    add_executable(memu-x ${xwin_src})
 
     target_include_directories(memu-x PUBLIC
       ${CMAKE_CURRENT_LIST_DIR}
@@ -242,6 +242,7 @@ elseif("${TARGET}" STREQUAL "RPi")
     ${CMAKE_CURRENT_LIST_DIR}/txtwin.c
     ${CMAKE_CURRENT_LIST_DIR}/ui.c
     ${CMAKE_CURRENT_LIST_DIR}/vdeb.c
+    ${CMAKE_CURRENT_LIST_DIR}/vdp.c
     ${CMAKE_CURRENT_LIST_DIR}/vga.c
     ${CMAKE_CURRENT_LIST_DIR}/vid.c
     ${CMAKE_CURRENT_LIST_DIR}/win.c
