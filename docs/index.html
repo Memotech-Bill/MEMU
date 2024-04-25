@@ -254,7 +254,7 @@
         cd MEMU
         mkdir build-circle
         cd build-circle
-        cmake -DTARGET=Circle -DRPi=? ..
+        cmake -DTARGET=Circle -DRPI=? ..
         make
     </code></pre>
     <p>If required it is possible to create multiple build folders (e.g. "build-circle1"
@@ -305,6 +305,9 @@
     <p>For instructions on using MEMU as a Memotech, please read the Memotech manuals, copies
       of which can be found <a href="http://primrosebank.net/computers/mtx/mtxmanuals.htm">
         here</a>.</p>
+    <p>For versions of MEMU (FBuf, RPi, Circle)  which use the full screen to display each MTX
+      screen (VDP, CP/M ...) use keys &lt;Ctrl+F1&gt;, &lt;Ctrl+F2&gt; etc. to switch between
+      each screen.</p>
     <p>To configure MEMU for different emulation modes, open the configuration screen or window.
       Because different operating environments capture different keys, a number of different key
       presses may be used to open this screen:</p>
