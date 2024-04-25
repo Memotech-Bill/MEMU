@@ -342,6 +342,7 @@ elseif("${TARGET}" STREQUAL "Circle")
     ${CMAKE_CURRENT_LIST_DIR}/txtwin.c
     ${CMAKE_CURRENT_LIST_DIR}/ui.c
     ${CMAKE_CURRENT_LIST_DIR}/vdeb.c
+    ${CMAKE_CURRENT_LIST_DIR}/vdp.c
     ${CMAKE_CURRENT_LIST_DIR}/vid.c
     ${CMAKE_CURRENT_LIST_DIR}/vga.c
     ${CMAKE_CURRENT_LIST_DIR}/win.c
