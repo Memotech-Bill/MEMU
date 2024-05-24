@@ -6,7 +6,7 @@
 #include "diag.h"
 #include "memu.h"
 #include "mem.h"
-#include <stdio.h>
+#include "ff_stdio.h"
 #include <string.h>
 #ifdef WIN32
 #define strcasecmp _stricmp
@@ -228,7 +228,7 @@ void tape_play (void)
                 tape_open_wav (psTapePath);
                 break;
             }
-        if ( pfTapeIn == NULL ) fatal ("Failed to open input tape file");
+        if ( pfTapeIn == NULL ) fatal ("Failed to open input tape file: %s", psTapeIn);
         free ((void *) psTapePath);
         }
     }

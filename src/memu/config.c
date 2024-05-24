@@ -1004,10 +1004,7 @@ static void row_drive_draw (int iDrive, int iState)
         return;
         }
 #endif
-    else
-        {
-        sName[6] = chDrive[iDrive];
-        }
+    sName[6] = chDrive[iDrive];
     file_draw (ROW_DRIVE + iDrive, sName, psCfgDrive[iDrive], iState);
     }
 
