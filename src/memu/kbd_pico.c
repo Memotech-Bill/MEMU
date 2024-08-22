@@ -2,13 +2,8 @@
 
 #include <pico.h>
 #include <tusb.h>
-#include <class/hid/hid.h>
-// #include "types.h"
 #include "win.h"
 #include "diag.h"
-// #include "vid.h"
-// #include "mon.h"
-// #include "memu.h"
 #include "kbd.h"
 #include "common.h"
 
@@ -27,12 +22,20 @@
 #define KBD_VERSION     3
 #elif (TUSB_VERSION_MINOR == 14) | (TUSB_VERSION_MINOR == 15)
 #define KBD_VERSION     4
+#elif (TUSB_VERSION_MINOR == 17)
+#define KBD_VERSION     5
 #endif  // TUSB_VERSION_MINOR
 #endif  // TUSB_VERSION_MAJOR
 #endif  // KBD_VERSION
 #ifndef KBD_VERSION
 #error Unknown USB Version for keyboard
 #endif  // KBD_VERSION
+
+#if KBD_VERSION == 5
+#include "class/hid/hid_host.h"
+#else
+#include "class/hid/hid.h"
+#endif
 
 static const int usb_map[] =
     {
@@ -179,7 +182,7 @@ static void set_leds (uint8_t leds)
             };
 #if KBD_VERSION == 3
         bool bRes = tuh_control_xfer (kbd_addr, &ledreq, &led_flags, NULL);
-#elif KBD_VERSION == 4
+#elif KBD_VERSION >= 4
         tuh_xfer_t ledxfer = {
             .daddr = kbd_addr,
             .setup = &ledreq,
@@ -445,7 +448,7 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
         }
     }
 
-#elif ( KBD_VERSION == 3 ) | ( KBD_VERSION == 4 )
+#elif ( KBD_VERSION >= 3 )
 void hid_task (void)
     {
     static int n = 0;
