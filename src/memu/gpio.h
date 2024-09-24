@@ -47,8 +47,18 @@ int i2c_get (int fd, int iAddr, int iLen, unsigned char *pbData);
 
 #define	 LDEVNAME	 20
 
+typedef enum {
+#if HAVE_HW_GPIO
+    gio_gpio,
+#endif
+#if HAVE_HW_MCP23017
+    gio_xio,
+#endif
+    } gio_type;
+
 struct gio_dev
 	{
+    gio_type         type;             // Device type
 	char			 sDev[LDEVNAME];   // Device name
 	int				 fd;			   // File number
 	int				 iAddr;			   // I2C address
@@ -59,12 +69,12 @@ struct gio_dev
 
 struct gio_pin
 	{
-	struct gio_dev * pdev;		 //	Device for this pin
-	int				 iMask;		 //	Bit mask for this pin
-	int				 iData;		 //	Data for this pin
+	struct gio_dev * pdev;		 //	Device for this pin set
+	int				 iMask;		 //	Bit mask for this pin set
+	int				 iData;		 //	Data for this pin set
 	};
 
-extern struct gio_dev gdev;
+extern struct gio_dev *gdev;
 
 #ifdef __cplusplus
 extern "C"

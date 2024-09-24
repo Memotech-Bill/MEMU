@@ -73,8 +73,9 @@ static volatile uint32_t *gpio	=  NULL;
 
 // General I/O devices
 
-struct gio_dev gdev;
+struct gio_dev *gdev = NULL;
 
+#if HAVE_HW_GPIO
 //
 // Set up memory regions to access the peripherals.
 // No longer requires root access.
@@ -302,7 +303,10 @@ Code 	Model 	Revision 	RAM 	Manufacturer
 	fclose (pfil);
 	return	iRev;
 	}
+#endif
+#endif
 
+#if HAVE_HW_MCP23017
 int i2c_init (const char *psDev, int iAddr)
 	{
 	int	  fd   =  open (psDev, O_RDWR);
@@ -364,7 +368,6 @@ int i2c_get (int fd, int iAddr, int iLen, unsigned char *pbData)
     if ( ioctl (fd, I2C_RDWR, &pkt) < 0 ) return   I2C_EIO;
     return	I2C_OK;
 	}
-#endif
 
 int xio_init (const char *psDev, int iAddr)
 	{
@@ -430,35 +433,56 @@ void xio_put (int fd, int iMask, int iBits)
 	bData[1]	|= (unsigned char) ( 0xFF & ( iBits >> 8 ) );
 	i2c_put (fd, 0x14, 2, bData);
 	}
+#endif
 
 int gio_init (void)
 	{
-	struct gio_dev * pdev = gdev.pnext;
-	int	 iSta  =  gpio_init ();
-	if ( iSta != GPIO_OK ) return	iSta;
+	struct gio_dev * pdev = gdev;
 	while ( pdev != NULL )
 		{
-		pdev->fd  =	 xio_init (pdev->sDev, pdev->iAddr);
-		if ( pdev->fd < 0 )	  return   pdev->fd;
+#if HAVE_HW_GPIO        
+        if ( pdev->type == gio_gpio )
+            {
+            int	 iSta  =  gpio_init ();
+            if ( iSta != GPIO_OK ) return	iSta;
+            }
+#endif
+#if HAVE_HW_MCP23017
+        if ( pdev->type == gio_xio )
+            {
+            pdev->fd  =	 xio_init (pdev->sDev, pdev->iAddr);
+            if ( pdev->fd < 0 )	  return   pdev->fd;
+            }
 		pdev   =  pdev->pnext;
 		}
+#endif
 	return	GPIO_OK;
 	}
 
 void gio_term (void)
 	{
-	struct gio_dev * pdev = gdev.pnext;
-	gpio_term ();
+	struct gio_dev * pdev = gdev;
 	while ( pdev != NULL )
 		{
-		if ( pdev->fd > 0 )	  xio_term (pdev->fd);
+#if HAVE_HW_GPIO        
+        if ( pdev->type == gio_gpio )
+            {
+            gpio_term ();
+            }
+#endif
+#if HAVE_HW_MCP23017
+        if ( pdev->type == gio_xio )
+            {
+            if ( pdev->fd > 0 )	  xio_term (pdev->fd);
+            }
+#endif
 		pdev   =  pdev->pnext;
 		}
 	}
 
 void gio_clear (void)
 	{
-	struct gio_dev * pdev = &gdev;
+	struct gio_dev * pdev = gdev;
 	while ( pdev != NULL )
 		{
 		pdev->iMask	 =	0;
@@ -476,13 +500,10 @@ void gio_set (struct gio_pin *ppin, int iData)
 		}
 	}
 
-
-void gio_input (int nPin, struct gio_pin *ppin, int iData)
-	{
-	struct gio_dev * pdev = gdev.pnext;
+void gio_pins (int nPin, struct gio_pin *ppin, int iData)
+    {
 	int	 iMask =  1;
 	int	 iPin;
-	diag_message (DIAG_GPIO, "gio_input (%d, %p, 0x%02x)", nPin, ppin, iData);
 	gio_clear ();
 	for ( iPin = 0; iPin < nPin; ++iPin )
 		{
@@ -490,97 +511,126 @@ void gio_input (int nPin, struct gio_pin *ppin, int iData)
 		iMask  <<=	 1;
 		++ppin;
 		}
-	if ( gdev.iData )	gpio_input (gdev.iData);
+    }
+
+void gio_input (int nPin, struct gio_pin *ppin, int iData)
+	{
+	diag_message (DIAG_GPIO, "gio_input (%d, %p, 0x%02x)", nPin, ppin, iData);
+    gio_pins (nPin, ppin, iData);
+	struct gio_dev * pdev = gdev;
 	while ( pdev != NULL )
 		{
-		if ( ( pdev->fd > 0 ) && ( pdev->iData ) )	  xio_input (pdev->fd, pdev->iData);
+#if HAVE_HW_GPIO        
+        if ( pdev->type == gio_gpio )
+            {
+            if ( pdev->iData )	gpio_input (pdev->iData);
+            }
+#endif
+#if HAVE_HW_MCP23017
+        if ( pdev->type == gio_xio )
+            {
+            if ( ( pdev->fd > 0 ) && ( pdev->iData ) )	  xio_input (pdev->fd, pdev->iData);
+            }
+#endif
 		pdev   =  pdev->pnext;
 		}
 	}
 
 void gio_output (int nPin, struct gio_pin *ppin, int iData)
 	{
-	struct gio_dev * pdev = gdev.pnext;
-	int	 iMask =  1;
-	int	 iPin;
 	diag_message (DIAG_GPIO, "gio_output (%d, %p, 0x%02x)", nPin, ppin, iData);
-	gio_clear ();
-	for ( iPin = 0; iPin < nPin; ++iPin )
-		{
-		gio_set (ppin, iData & iMask);
-		iMask  <<=	 1;
-		++ppin;
-		}
-	if ( gdev.iData )	gpio_output (gdev.iData);
+    gio_pins (nPin, ppin, iData);
+	struct gio_dev * pdev = gdev;
 	while ( pdev != NULL )
 		{
-		if ( ( pdev->fd > 0 ) && ( pdev->iData ) )	  xio_output (pdev->fd, pdev->iData);
+#if HAVE_HW_GPIO        
+        if ( pdev->type == gio_gpio )
+            {
+            if ( pdev->iData )	gpio_output (pdev->iData);
+            }
+#endif
+#if HAVE_HW_MCP23017
+        if ( pdev->type == gio_xio )
+            {
+            if ( ( pdev->fd > 0 ) && ( pdev->iData ) )	  xio_output (pdev->fd, pdev->iData);
+            }
+#endif
 		pdev   =  pdev->pnext;
 		}
 	}
 
 void gio_pullup (int nPin, struct gio_pin *ppin, int iData)
 	{
-	struct gio_dev * pdev = gdev.pnext;
-	int	 iMask =  1;
-	int	 iPin;
 	diag_message (DIAG_GPIO, "gio_pullup (%d, %p, 0x%02x)", nPin, ppin, iData);
-	gio_clear ();
-	for ( iPin = 0; iPin < nPin; ++iPin )
-		{
-		gio_set (ppin, iData & iMask);
-		iMask  <<=	 1;
-		++ppin;
-		}
-	if ( gdev.iData )	gpio_pullup (gdev.iData);
+    gio_pins (nPin, ppin, iData);
+	struct gio_dev * pdev = gdev;
 	while ( pdev != NULL )
 		{
-		if ( ( pdev->fd > 0 ) && ( pdev->iData ) )	  xio_pullup (pdev->fd, pdev->iData);
+#if HAVE_HW_GPIO        
+        if ( pdev->type == gio_gpio )
+            {
+            if ( pdev->iData )	gpio_pullup (pdev->iData);
+            }
+#endif
+#if HAVE_HW_MCP23017
+        if ( pdev->type == gio_xio )
+            {
+            if ( ( pdev->fd > 0 ) && ( pdev->iData ) )	  xio_pullup (pdev->fd, pdev->iData);
+            }
+#endif
 		pdev   =  pdev->pnext;
 		}
 	}
 
 void gio_pullnone (int nPin, struct gio_pin *ppin, int iData)
 	{
-	struct gio_dev * pdev = gdev.pnext;
-	int	 iMask =  1;
-	int	 iPin;
 	diag_message (DIAG_GPIO, "gio_pullnone (%d, %p, 0x%02x)", nPin, ppin, iData);
-	gio_clear ();
-	for ( iPin = 0; iPin < nPin; ++iPin )
-		{
-		gio_set (ppin, iData & iMask);
-		iMask  <<=	 1;
-		++ppin;
-		}
-	if ( gdev.iData )	gpio_pullnone (gdev.iData);
+    gio_pins (nPin, ppin, iData);
+	struct gio_dev * pdev = gdev;
 	while ( pdev != NULL )
 		{
-		if ( ( pdev->fd > 0 ) && ( pdev->iData ) )	  xio_pullnone (pdev->fd, pdev->iData);
+#if HAVE_HW_GPIO        
+        if ( pdev->type == gio_gpio )
+            {
+            if ( pdev->iData )	gpio_pullnone (pdev->iData);
+            }
+#endif
+#if HAVE_HW_MCP23017
+        if ( pdev->type == gio_xio )
+            {
+            if ( ( pdev->fd > 0 ) && ( pdev->iData ) )	  xio_pullnone (pdev->fd, pdev->iData);
+            }
+#endif
 		pdev   =  pdev->pnext;
 		}
 	}
 
 int gio_get (int nPin, struct gio_pin *ppin)
 	{
-	struct gio_dev * pdev = gdev.pnext;
-	int	 iMask =  1;
-	int	 iData =  0;
-	int	 iPin;
 	diag_message (DIAG_GPIO, "gio_get (%d, %p)", nPin, ppin);
-	gio_clear ();
-	for ( iPin = 0; iPin < nPin; ++iPin )
-		{
-		gio_set (&ppin[iPin], 1);
-		}
-	diag_message (DIAG_GPIO, "gdev.iMask = 0x%08x", gdev.iMask);
-	if ( gdev.iMask )	gdev.iData	=  gpio_get (gdev.iMask);
-	diag_message (DIAG_GPIO, "*(%p) = 0x%08x", &gdev, gdev.iData);
+    gio_pins (nPin, ppin, -1);
+	struct gio_dev * pdev = gdev;
 	while ( pdev != NULL )
 		{
-		if ( ( pdev->fd > 0 ) && ( pdev->iMask ) )	  pdev->iData =	 xio_get (pdev->fd, pdev->iMask);
+#if HAVE_HW_GPIO        
+        if ( pdev->type == gio_gpio )
+            {
+            diag_message (DIAG_GPIO, "pdev->iMask = 0x%08x", pdev->iMask);
+            if ( pdev->iMask )	pdev->iData	=  gpio_get (pdev->iMask);
+            diag_message (DIAG_GPIO, "*(%p) = 0x%08x", &gdev, pdev->iData);
+            }
+#endif
+#if HAVE_HW_MCP23017
+        if ( pdev->type == gio_xio )
+            {
+            if ( ( pdev->fd > 0 ) && ( pdev->iMask ) )	  pdev->iData =	 xio_get (pdev->fd, pdev->iMask);
+            }
+#endif
 		pdev   =  pdev->pnext;
 		}
+    int iData = 0;
+    int iMask = 1;
+    int iPin;
 	for ( iPin = 0; iPin < nPin; ++iPin )
 		{
 		if ( ppin->pdev )
@@ -604,22 +654,24 @@ int gio_get (int nPin, struct gio_pin *ppin)
 
 void gio_put (int nPin, struct gio_pin *ppin, int iData)
 	{
-	struct gio_dev * pdev = gdev.pnext;
-	int	 iMask =  1;
-	int	 iPin;
 	diag_message (DIAG_GPIO, "gio_put (%d, %p, 0x%02x)", nPin, ppin, iData);
-	gio_clear ();
-	for ( iPin = 0; iPin < nPin; ++iPin )
-		{
-		gio_set (ppin, iData & iMask);
-		iMask  <<=	 1;
-		++ppin;
-		}
-	diag_message (DIAG_GPIO, "iMask = 0x%08x, iData = 0x%08x", gdev.iMask, gdev.iData);
-	if ( gdev.iData )	gpio_put (gdev.iMask, gdev.iData);
+    gio_pins (nPin, ppin, iData);
+	struct gio_dev * pdev = gdev;
+	diag_message (DIAG_GPIO, "iMask = 0x%08x, iData = 0x%08x", pdev->iMask, pdev->iData);
 	while ( pdev != NULL )
 		{
-		if ( ( pdev->fd > 0 ) && ( pdev->iData ) )	  xio_put (pdev->fd, pdev->iMask, pdev->iData);
+#if HAVE_HW_GPIO        
+        if ( pdev->type == gio_gpio )
+            {
+            if ( pdev->iData )	gpio_put (pdev->iMask, pdev->iData);
+            }
+#endif
+#if HAVE_HW_MCP23017
+        if ( pdev->type == gio_xio )
+            {
+            if ( ( pdev->fd > 0 ) && ( pdev->iData ) )	  xio_put (pdev->fd, pdev->iMask, pdev->iData);
+            }
+#endif
 		pdev   =  pdev->pnext;
 		}
 	}

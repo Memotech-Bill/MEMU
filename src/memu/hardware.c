@@ -18,8 +18,10 @@
 #include "kfuncs.h"
 #endif
 
+#if HAVE_GPU
 void set_gpu_mode (int mode);
 int get_gpu_mode (void);
+#endif
 
 #define	DEBOUNCE	10000	//	Keyboard debounce delay in micro-seconds
 
@@ -51,31 +53,51 @@ void hw_pindef (TXR *ptxr, struct gio_pin *ppin)
 	TxrGetText (ptxr, sizeof (sText), sText);
 	if ( ! strcasecmp (sText, "GPIO") )
 		{
-		ppin->pdev	 =	&gdev;
-		iPin   =  TxrGetInt (ptxr);
-		if ( ( iPin < 0 ) || ( iPin >= 30 ) )	fatal ("Invalid GPIO pin number: %d", iPin);
-		ppin->iMask	 =	1 << iPin;
-		}
-	else if ( ! strcasecmp (sText, "MCP23017") )
-		{
-		struct gio_dev *pdev  =	 gdev.pnext;
-		char   sDev[LDEVNAME];
-		int	   iAddr;
-		TxrGetText (ptxr, sizeof (sDev), sDev);
-		iAddr  =  TxrGetInt (ptxr);
+#if HAVE_HW_GPIO
+		struct gio_dev *pdev  =	 gdev;
 		while ( pdev )
 			{
-			if ( ( ! strcasecmp (sDev, pdev->sDev) ) && ( iAddr == pdev->iAddr ) )	 break;
+			if ( pdev->type == gio_gpio ) break;
 			pdev  =	 pdev->pnext;
 			}
 		if ( ! pdev )
 			{
 			pdev  =	 (struct gio_dev *) malloc (sizeof (struct gio_dev));
 			if ( pdev == NULL )	 fatal ("Failed to allocate I/O device definition");
+			pdev->type = gio_gpio;
+			pdev->pnext	=  gdev;
+			gdev	=  pdev;
+			}
+		ppin->pdev	 =	pdev;
+		iPin   =  TxrGetInt (ptxr);
+		if ( ( iPin < 0 ) || ( iPin >= 30 ) )	fatal ("Invalid GPIO pin number: %d", iPin);
+		ppin->iMask	 =	1 << iPin;
+#else
+        fatal ("GPIO pins not supported");
+#endif
+		}
+	if ( ! strcasecmp (sText, "MCP23017") )
+		{
+#if HAVE_HW_MCP23017
+		struct gio_dev *pdev  =	 gdev;
+		char   sDev[LDEVNAME];
+		int	   iAddr;
+		TxrGetText (ptxr, sizeof (sDev), sDev);
+		iAddr  =  TxrGetInt (ptxr);
+		while ( pdev )
+			{
+			if ( ( pdev->type == gio_xio ) && ( ! strcasecmp (sDev, pdev->sDev) ) && ( iAddr == pdev->iAddr ) )	 break;
+			pdev  =	 pdev->pnext;
+			}
+		if ( ! pdev )
+			{
+			pdev  =	 (struct gio_dev *) malloc (sizeof (struct gio_dev));
+			if ( pdev == NULL )	 fatal ("Failed to allocate I/O device definition");
+            pdev->type = gio_xio;
 			strcpy (pdev->sDev, sDev);
 			pdev->iAddr	=  iAddr;
-			pdev->pnext	=  gdev.pnext;
-			gdev.pnext	=  pdev;
+			pdev->pnext	=  gdev;
+			gdev	=  pdev;
 			}
 		ppin->pdev	 =	pdev;
 		TxrGetText (ptxr, sizeof (sText), sText);
@@ -87,6 +109,9 @@ void hw_pindef (TXR *ptxr, struct gio_pin *ppin)
 		else sscanf (sText, "%i", &iPin);
 		if ( ( iPin < 0 ) || ( iPin >= 16 ) )	fatal ("Invalid MCP23017 pin number: %s", sText);
 		ppin->iMask	 =	1 << iPin;
+#else
+        fatal ("MCP23017 pins not supported");
+#endif
 		}
 	else
 		{
@@ -304,8 +329,10 @@ void hw_read (const char *psFile)
 
 void hw_save_cfg (FILE *pfil)
 	{
+#if HAVE_GPU
 	int mode = get_gpu_mode ();
 	if ( mode ) fprintf (pfil, "-gpu-mode %d\n", mode);
+#endif
 	if ( psHWCfg != NULL )	fprintf (pfil, "-hw-config \"%s\"\n", psHWCfg);
 	}
 
@@ -316,6 +343,7 @@ BOOLEAN hw_options (int *pargc, const char ***pargv, int *pi)
         {
         return TRUE;
         }
+#if HAVE_GPU
 	else if ( !strcmp((*pargv)[*pi], "-gpu-mode") )
 		{
 		if ( ++(*pi) == (*pargc) )
@@ -323,6 +351,7 @@ BOOLEAN hw_options (int *pargc, const char ***pargv, int *pi)
 		set_gpu_mode (atoi ((*pargv)[*pi]));
         return TRUE;
 		}
+#endif
     else if ( !strcmp((*pargv)[*pi], "-hw-config") )
         {
         if ( ++(*pi) == (*pargc) )
@@ -338,7 +367,9 @@ BOOLEAN hw_options (int *pargc, const char ***pargv, int *pi)
 void hw_usage (void)
     {
     cfg_usage ();
+#if HAVE_GPU
 	fprintf(stderr, "       -gpu-mode            mode for scaling window to display\n");
+#endif
     fprintf(stderr, "       -hw-config file      read definitions of external hardware for MEMU\n");
     }
 

@@ -88,6 +88,14 @@ elseif("${TARGET}" STREQUAL "XWin")
     ${CMAKE_CURRENT_LIST_DIR}/win.c
     ${CMAKE_CURRENT_LIST_DIR}/win_x.c
     )
+
+  if(HAVE_HW)
+    list(APPEND xwin_src
+      ${CMAKE_CURRENT_LIST_DIR}/gpio.c
+      ${CMAKE_CURRENT_LIST_DIR}/hardware.c
+      ${CMAKE_CURRENT_LIST_DIR}/TxtRead.c
+      )
+  endif()
   
   if( NOT (${CMAKE_VERSION} VERSION_LESS "3.12.0"))
     
@@ -165,6 +173,14 @@ elseif("${TARGET}" STREQUAL "FBuf")
     ${CMAKE_CURRENT_LIST_DIR}/win.c
     ${CMAKE_CURRENT_LIST_DIR}/win_fb.c
     )
+
+  if(HAVE_HW)
+    list(APPEND fbuf_src
+      ${CMAKE_CURRENT_LIST_DIR}/gpio.c
+      ${CMAKE_CURRENT_LIST_DIR}/hardware.c
+      ${CMAKE_CURRENT_LIST_DIR}/TxtRead.c
+      )
+  endif()
   
   if( NOT (${CMAKE_VERSION} VERSION_LESS "3.12.0"))
     

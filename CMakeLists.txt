@@ -70,8 +70,6 @@ elseif("${TARGET}" STREQUAL "XWin")
     -DLSB_FIRST
     -DDYNAMIC_ROMS
     -DHAVE_CONFIG
-    -DALT_OPTIONS=cfg_options
-    -DALT_USAGE=cfg_usage
     -DUNIX
     -DHAVE_AUTOTYPE
     -DHAVE_CFX2
@@ -90,6 +88,36 @@ elseif("${TARGET}" STREQUAL "XWin")
     -DHAVE_NFX
     -DZ80_DEBUG
     )
+
+  set (HAVE_HW FALSE)
+  if(HW_GPIO)
+    list(APPEND src_defs
+      -DHAVE_HW_GPIO=1
+      )
+    set (HAVE_HW TRUE)
+  endif()
+  if(HW_23017)
+    list(APPEND src_defs
+      -DHAVE_HW_MCP23017=1
+      )
+    set (HAVE_HW TRUE)
+  endif()
+  if(HAVE_HW)
+    list(APPEND src_defs
+      -DALT_HANDLE_EVENTS=hw_handle_events
+      -DALT_KBD_SENSE1=hw_kbd_sense_1
+      -DALT_KBD_SENSE2=hw_kbd_sense_2
+      -DALT_OPTIONS=hw_options
+      -DALT_USAGE=hw_usage
+      -DALT_Z80_OUT=hw_Z80_out
+      -DALT_Z80_IN=hw_Z80_in
+      )
+  else()
+    list(APPEND src_defs
+      -DALT_OPTIONS=cfg_options
+      -DALT_USAGE=cfg_usage
+      )
+  endif()
   
   if(NOT (${CMAKE_VERSION} VERSION_LESS "3.12.0"))
     
@@ -124,8 +152,6 @@ elseif("${TARGET}" STREQUAL "FBuf")
     -DLSB_FIRST
     -DDYNAMIC_ROMS
     -DHAVE_CONFIG
-    -DALT_OPTIONS=cfg_options
-    -DALT_USAGE=cfg_usage
     -DUNIX
     -DHAVE_CFX2
     -DHAVE_CONSOLE
@@ -142,6 +168,36 @@ elseif("${TARGET}" STREQUAL "FBuf")
     -DHAVE_NFX
     -DZ80_DEBUG
     )
+
+  set (HAVE_HW FALSE)
+  if(HW_GPIO)
+    list(APPEND src_defs
+      -DHAVE_HW_GPIO=1
+      )
+    set (HAVE_HW TRUE)
+  endif()
+  if(HW_23017)
+    list(APPEND src_defs
+      -DHAVE_HW_MCP23017=1
+      )
+    set (HAVE_HW TRUE)
+  endif()
+  if(HAVE_HW)
+    list(APPEND src_defs
+      -DALT_HANDLE_EVENTS=hw_handle_events
+      -DALT_KBD_SENSE1=hw_kbd_sense_1
+      -DALT_KBD_SENSE2=hw_kbd_sense_2
+      -DALT_OPTIONS=hw_options
+      -DALT_USAGE=hw_usage
+      -DALT_Z80_OUT=hw_Z80_out
+      -DALT_Z80_IN=hw_Z80_in
+      )
+  else()
+    list(APPEND src_defs
+      -DALT_OPTIONS=cfg_options
+      -DALT_USAGE=cfg_usage
+      )
+  endif()
   
   if(NOT (${CMAKE_VERSION} VERSION_LESS "3.12.0"))
     
