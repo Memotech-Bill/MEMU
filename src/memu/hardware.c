@@ -62,7 +62,7 @@ void hw_pindef (TXR *ptxr, struct gio_pin *ppin)
 			}
 		if ( ! pdev )
 			{
-			pdev  =	 (struct gio_dev *) malloc (sizeof (struct gio_dev));
+			pdev  =	 (struct gio_dev *) calloc (1, sizeof (struct gio_dev));
 			if ( pdev == NULL )	 fatal ("Failed to allocate I/O device definition");
 			pdev->type = gio_gpio;
 			pdev->pnext	=  gdev;
@@ -72,6 +72,7 @@ void hw_pindef (TXR *ptxr, struct gio_pin *ppin)
 		iPin   =  TxrGetInt (ptxr);
 		if ( ( iPin < 0 ) || ( iPin >= 30 ) )	fatal ("Invalid GPIO pin number: %d", iPin);
 		ppin->iMask	 =	1 << iPin;
+        pdev->iPins |= ppin->iMask;
 #else
         fatal ("GPIO pins not supported");
 #endif
@@ -91,7 +92,7 @@ void hw_pindef (TXR *ptxr, struct gio_pin *ppin)
 			}
 		if ( ! pdev )
 			{
-			pdev  =	 (struct gio_dev *) malloc (sizeof (struct gio_dev));
+			pdev  =	 (struct gio_dev *) calloc (1, sizeof (struct gio_dev));
 			if ( pdev == NULL )	 fatal ("Failed to allocate I/O device definition");
             pdev->type = gio_xio;
 			strcpy (pdev->sDev, sDev);
@@ -109,6 +110,7 @@ void hw_pindef (TXR *ptxr, struct gio_pin *ppin)
 		else sscanf (sText, "%i", &iPin);
 		if ( ( iPin < 0 ) || ( iPin >= 16 ) )	fatal ("Invalid MCP23017 pin number: %s", sText);
 		ppin->iMask	 =	1 << iPin;
+        pdev->iPins |= ppin->iMask;
 #else
         fatal ("MCP23017 pins not supported");
 #endif

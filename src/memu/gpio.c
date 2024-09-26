@@ -1,15 +1,15 @@
-/* gpio.c - Routines to access RPi GPIO for joystick emulation.
+/* gpio.c - Routines to access RPi GPIO for hardware interfacing
 
 Original version strongly based upon Gertboard test software:
    Copyright (C) Gert Jan van Loo & Myra VanInwegen 2012
    No rights reserved
    You may treat this program as if it was in the public domain
 
-Revised based upon tiny_gpio.c by @joan
-   tiny_gpio.c
-   http://abyz.co.uk/rpi/pigpio/code/tiny_gpio.zip
-   2015-09-12
-   Public Domain
+GPIO access using Linux GPIO Character Device Userspace API (v2). Docuumented at:
+   https://docs.kernel.org/userspace-api/gpio/chardev.html
+
+Userspace is supposed to use libgpiod, however the documentation for that is unhelpful:
+   https://libgpiod.readthedocs.io/en/latest/index.html
 
 I2C code based upon "Interfacing an I2C GPIO expander (MCP23017) to the Raspberry Pi using C++ (i2cdev)"
    http://hertaville.com/interfacing-an-i2c-gpio-expander-mcp23017-to-the-raspberry-pi-using-c.html
@@ -31,13 +31,14 @@ I2C code based upon "Interfacing an I2C GPIO expander (MCP23017) to the Raspberr
 #include <dirent.h>
 #include <fcntl.h>
 #include <assert.h>
-#include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <linux/i2c.h>
 #include <linux/i2c-dev.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
+#include <linux/gpio.h>
+#include <errno.h>
 #endif
 
 // I/O access
@@ -80,123 +81,187 @@ struct gio_dev *gdev = NULL;
 // Set up memory regions to access the peripherals.
 // No longer requires root access.
 //
-int gpio_init (void)
+int gpio_init (struct gio_dev *pdev)
 	{
 #ifdef __circle__
     gpio = (uint32_t *) ARM_GPIO_BASE;
 	return	GPIO_OK;
 #else
-    int	 fd;
-    if ( ( fd = open("/dev/gpiomem", O_RDWR|O_SYNC) ) < 0 )	 return	  GPIO_ERR_MEM;
-	diag_message (DIAG_GPIO, "gpio_init: fd = %d", fd);
-
-    //	 mmap GPIO
-
-    gpio = (uint32_t *) mmap (NULL, GPIO_LEN, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
-	diag_message (DIAG_GPIO, "gpio_init: gpio = %p", gpio);
-	close (fd);
-
-	if ( (long) gpio < 0 ) return	GPIO_ERR_MAP;
-
+    pdev->iDirn = 0;
+    pdev->iPullUp = 0;
+    pdev->iPullDn = 0;
+    int chip_fd = open (pdev->sDev, O_RDWR);
+    if (chip_fd < 0) return errno;
+    struct gpio_v2_line_request lreq;
+    memset (&lreq, 0, sizeof (lreq));
+    strcpy (lreq.consumer, "MEMU");
+    int iLine = 0;
+    uint32_t iPins = (uint32_t) pdev->iPins;
+    while (iPins != 0)
+        {
+        if (iPins & 1)
+            {
+            lreq.offsets[lreq.num_lines] = iLine;
+            ++lreq.num_lines;
+            }
+        iPins >>= 1;
+        ++iLine;
+        }
+    lreq.config.flags = GPIO_V2_LINE_FLAG_INPUT + GPIO_V2_LINE_FLAG_BIAS_DISABLED;
+    if (ioctl (chip_fd, GPIO_V2_GET_LINE_IOCTL, &lreq) < 0) return errno;
+    pdev->fd = lreq.fd;
+    close (chip_fd);
 	return	GPIO_OK;
 #endif
 	}
 
-void gpio_term (void)
+void gpio_term (struct gio_dev *pdev)
 	{
 #ifdef __circle__
     gpio = NULL;
 #else
-	if ( gpio != NULL )
-		{
-		munmap ((void *) gpio, GPIO_LEN);
-		gpio  =	 NULL;
-		}
+    if (pdev->fd) close (pdev->fd);
+    pdev->fd = 0;
 #endif
 	}
 
-void gpio_input (int iMask)
+static uint32_t line_mask (struct gio_dev *pdev, uint32_t iMask)
+    {
+    uint32_t lMask = 0;
+    uint32_t iPins = pdev->iPins;
+    uint32_t iBit = 1;
+    while (iMask > 0)
+        {
+        if (iMask & 1) lMask |= iBit;
+        if (iPins & 1) iBit <<= 1;
+        iPins >>= 1;
+        iMask >>= 1;
+        }
+    return iMask;
+    }
+
+void gpio_input (struct gio_dev *pdev, uint32_t iMask)
 	{
-	int	 iPin;
-	int	 iReg;
-	int	 iBits;
-	diag_message (DIAG_GPIO, "gpio_input (0x%08x)", iMask);
-	if ( gpio == NULL )	return;
-	for ( iReg = 0; iReg < 3; ++iReg )
-		{
-		iBits  =  7;
-		for ( iPin = 0; iPin < 10; ++iPin )
-			{
-			if ( iMask & 1 )   gpio[iReg]	&= ~iBits;
-			iMask >>=	1;
-			iBits <<=	3;
-			}
-		}
+	diag_message (DIAG_GPIO, "gpio_input (%s, 0x%08x)", pdev->sDev, iMask);
+    iMask &= pdev->iDirn;
+    if (iMask)
+        {
+        struct gpio_v2_line_config cfg;
+        memset (&cfg, 0, sizeof (cfg));
+        uint32_t lMask = line_mask (pdev, (~(pdev->iPullUp | pdev->iPullDn)) & iMask);
+        if (lMask)
+            {
+            cfg.attrs[cfg.num_attrs].attr.id = GPIO_V2_LINE_ATTR_ID_FLAGS;
+            cfg.attrs[cfg.num_attrs].attr.flags = GPIO_V2_LINE_FLAG_INPUT + GPIO_V2_LINE_FLAG_BIAS_DISABLED;
+            cfg.attrs[cfg.num_attrs].mask = lMask;
+            ++cfg.num_attrs;
+            }
+        lMask = line_mask (pdev, pdev->iPullUp & iMask);
+        if (lMask)
+            {
+            cfg.attrs[cfg.num_attrs].attr.id = GPIO_V2_LINE_ATTR_ID_FLAGS;
+            cfg.attrs[cfg.num_attrs].attr.flags = GPIO_V2_LINE_FLAG_INPUT + GPIO_V2_LINE_FLAG_BIAS_PULL_UP;
+            cfg.attrs[cfg.num_attrs].mask = lMask;
+            ++cfg.num_attrs;
+            }
+        lMask = line_mask (pdev, pdev->iPullDn & iMask);
+        if (lMask)
+            {
+            cfg.attrs[cfg.num_attrs].attr.id = GPIO_V2_LINE_ATTR_ID_FLAGS;
+            cfg.attrs[cfg.num_attrs].attr.flags = GPIO_V2_LINE_FLAG_INPUT + GPIO_V2_LINE_FLAG_BIAS_PULL_DOWN;
+            cfg.attrs[cfg.num_attrs].mask = lMask;
+            ++cfg.num_attrs;
+            }
+        ioctl (pdev->fd, GPIO_V2_LINE_SET_CONFIG_IOCTL, &cfg);
+        pdev->iDirn &= ~ iMask;
+        }
 	}
 
-void gpio_output (int iMask)
+void gpio_output (struct gio_dev *pdev, uint32_t iMask)
 	{
-	int	 iPin;
-	int	 iReg;
-	int	 iBits;
-	int	 iOut;
-	diag_message (DIAG_GPIO, "gpio_output (0x%08x)", iMask);
-	if ( gpio == NULL )	return;
-	for ( iReg = 0; iReg < 3; ++iReg )
-		{
-		iBits  =  7;
-		iOut   =  PI_OUTPUT;
-		for ( iPin = 0; iPin < 10; ++iPin )
-			{
-			if ( iMask & 1 )   gpio[iReg]	=	( gpio[iReg] & (~iBits) ) | iOut;
-			iMask >>=	1;
-			iBits <<=	3;
-			iOut  <<=	3;
-			}
-		}
+	diag_message (DIAG_GPIO, "gpio_output (%s, 0x%08x)", pdev->sDev, iMask);
+    iMask &= pdev->iPins & (~ pdev->iDirn);
+    if (iMask)
+        {
+        struct gpio_v2_line_config cfg;
+        memset (&cfg, 0, sizeof (cfg));
+        cfg.attrs[cfg.num_attrs].attr.id = GPIO_V2_LINE_ATTR_ID_FLAGS;
+        cfg.attrs[cfg.num_attrs].attr.flags = GPIO_V2_LINE_FLAG_OUTPUT;
+        cfg.attrs[cfg.num_attrs].mask = line_mask (pdev, iMask);
+        ++cfg.num_attrs;
+        ioctl (pdev->fd, GPIO_V2_LINE_SET_CONFIG_IOCTL, &cfg);
+        pdev->iDirn |= iMask;
+        }
 	}
 
-void gpio_pullup (int iMask)
+void gpio_pullup (struct gio_dev *pdev, uint32_t iMask)
 	{
-	diag_message (DIAG_GPIO, "gpio_pullup (0x%08x)", iMask);
-	if ( gpio == NULL ) return;
-	gpio[GPPUD]		 =	PI_PUD_UP;
-	usleep(20);
-	gpio[GPPUDCLK0]	 =	iMask;
-	usleep(20);
-	gpio[GPPUD]		 =	0;
-	gpio[GPPUDCLK0]	 =	0;
+	diag_message (DIAG_GPIO, "gpio_pullup (%s, 0x%08x)", pdev->sDev, iMask);
+    iMask &= pdev->iPins & (~ pdev->iPullUp);
+    pdev->iPullUp |= iMask;
+    pdev->iPullDn &= ~ iMask;
+    iMask &= ~ pdev->iDirn;
+    if (iMask)
+        {
+        struct gpio_v2_line_config cfg;
+        memset (&cfg, 0, sizeof (cfg));
+        cfg.attrs[cfg.num_attrs].attr.id = GPIO_V2_LINE_ATTR_ID_FLAGS;
+        cfg.attrs[cfg.num_attrs].attr.flags = GPIO_V2_LINE_FLAG_INPUT + GPIO_V2_LINE_FLAG_BIAS_PULL_UP;
+        cfg.attrs[cfg.num_attrs].mask = line_mask (pdev, iMask);
+        ++cfg.num_attrs;
+        ioctl (pdev->fd, GPIO_V2_LINE_SET_CONFIG_IOCTL, &cfg);
+        }
 	}
 
-void gpio_pullnone (int iMask)
+void gpio_pullnone (struct gio_dev *pdev, uint32_t iMask)
 	{
-	diag_message (DIAG_GPIO, "gpio_pullnone (0x%08x)", iMask);
-	if ( gpio == NULL ) return;
-	gpio[GPPUD]		 =	PI_PUD_OFF;
-	usleep(20);
-	gpio[GPPUDCLK0]	 =	iMask;
-	usleep(20);
-	gpio[GPPUD]		 =	0;
-	gpio[GPPUDCLK0]	 =	0;
+	diag_message (DIAG_GPIO, "gpio_pullnone (%s, 0x%08x)", pdev->sDev, iMask);
+    iMask &= pdev->iPins & (pdev->iPullUp | pdev->iPullDn);
+    pdev->iPullUp &= ~ iMask;
+    pdev->iPullDn &= ~ iMask;
+    iMask &= ~ pdev->iDirn;
+    if (iMask)
+        {
+        struct gpio_v2_line_config cfg;
+        memset (&cfg, 0, sizeof (cfg));
+        cfg.attrs[cfg.num_attrs].attr.id = GPIO_V2_LINE_ATTR_ID_FLAGS;
+        cfg.attrs[cfg.num_attrs].attr.flags = GPIO_V2_LINE_FLAG_INPUT + GPIO_V2_LINE_FLAG_BIAS_DISABLED;
+        cfg.attrs[cfg.num_attrs].mask = line_mask (pdev, iMask);
+        ++cfg.num_attrs;
+        ioctl (pdev->fd, GPIO_V2_LINE_SET_CONFIG_IOCTL, &cfg);
+        }
 	}
 
-int gpio_get (int iMask)
+uint32_t gpio_get (struct gio_dev *pdev, uint32_t iMask)
 	{
-	int iValue;
-	diag_message (DIAG_GPIO, "gpio_get: gpio = %p", gpio);
-	if ( gpio == NULL )	return	 0;
-	iValue = iMask & gpio[GPLEV0];
-	diag_message (DIAG_GPIO, "gpio_get (0x%08x) = 0x%08x", iMask, iValue);
+    struct gpio_v2_line_values getval;
+    iMask &= pdev->iPins;
+    getval.mask = line_mask (pdev, iMask);
+    ioctl (pdev->fd, GPIO_V2_LINE_GET_VALUES_IOCTL, &getval);
+    uint32_t iValue = 0;
+    uint32_t iBit = 1;
+    while (getval.bits > 0)
+        {
+        if (pdev->iPins & iBit)
+            {
+            if (getval.bits &1) iValue |= iBit;
+            getval.bits >>= 1;
+            }
+        iBit <<= 1;
+        }
+	diag_message (DIAG_GPIO, "gpio_get (%s, 0x%08X) = 0x%08X", pdev->sDev, iMask, iValue);
 	return iValue;
 	}
 
 
-void gpio_put (int iMask, int iBits)
+void gpio_put (struct gio_dev *pdev, uint32_t iMask, int iBits)
 	{
-	diag_message (DIAG_GPIO, "gpio_put (0x%08x, 0x%08x)\n", iMask, iBits);
-	if ( gpio == NULL )	return;
-	gpio[GPSET0]  =	 iMask & iBits;
-	gpio[GPCLR0]  =	 iMask & ( ~iBits );
+	diag_message (DIAG_GPIO, "gpio_put (%s, 0x%08x, 0x%08x)\n", pdev->sDev, iMask, iBits);
+    struct gpio_v2_line_values setval;
+    iMask &= pdev->iPins;
+    setval.mask = line_mask (pdev, iMask);
+    setval.bits = line_mask (pdev, iMask & iBits);
+    ioctl (pdev->fd, GPIO_V2_LINE_SET_VALUES_IOCTL, &setval);
 	}
 
 #ifndef __circle__
@@ -379,7 +444,7 @@ void xio_term (int fd)
 	i2c_term (fd);
 	}
 
-void xio_input (int fd, int iMask)
+void xio_input (int fd, uint32_t iMask)
 	{
 	unsigned char bDir[2];
 	i2c_get (fd, 0x00, 2, bDir);
@@ -388,7 +453,7 @@ void xio_input (int fd, int iMask)
 	i2c_put (fd, 0x00, 2, bDir);
 	}
 
-void xio_output (int fd, int iMask)
+void xio_output (int fd, uint32_t iMask)
 	{
 	unsigned char bDir[2];
 	i2c_get (fd, 0x00, 2, bDir);
@@ -397,7 +462,7 @@ void xio_output (int fd, int iMask)
 	i2c_put (fd, 0x00, 2, bDir);
 	}
 
-void xio_pullup (int fd, int iMask)
+void xio_pullup (int fd, uint32_t iMask)
 	{
 	unsigned char bPull[2];
 	i2c_get (fd, 0x0C, 2, bPull);
@@ -406,7 +471,7 @@ void xio_pullup (int fd, int iMask)
 	i2c_put (fd, 0x0C, 2, bPull);
 	}
 
-void xio_pullnone (int fd, int iMask)
+void xio_pullnone (int fd, uint32_t iMask)
 	{
 	unsigned char bPull[2];
 	i2c_get (fd, 0x0C, 2, bPull);
@@ -415,14 +480,14 @@ void xio_pullnone (int fd, int iMask)
 	i2c_put (fd, 0x0C, 2, bPull);
 	}
 
-int xio_get (int fd, int iMask)
+int xio_get (int fd, uint32_t iMask)
 	{
 	unsigned char bData[2];
 	i2c_get (fd, 0x12, 2, bData);
 	return	( ( (int) bData[1] << 8 ) | ( (int) bData[0] ) ) & iMask;
 	}
 
-void xio_put (int fd, int iMask, int iBits)
+void xio_put (int fd, uint32_t iMask, int iBits)
 	{
 	unsigned char bData[2];
 	i2c_get (fd, 0x14, 2, bData);
@@ -443,7 +508,7 @@ int gio_init (void)
 #if HAVE_HW_GPIO        
         if ( pdev->type == gio_gpio )
             {
-            int	 iSta  =  gpio_init ();
+            int	 iSta  =  gpio_init (pdev);
             if ( iSta != GPIO_OK ) return	iSta;
             }
 #endif
@@ -467,7 +532,7 @@ void gio_term (void)
 #if HAVE_HW_GPIO        
         if ( pdev->type == gio_gpio )
             {
-            gpio_term ();
+            gpio_term (pdev);
             }
 #endif
 #if HAVE_HW_MCP23017
@@ -491,7 +556,7 @@ void gio_clear (void)
 		}
 	}
 
-void gio_set (struct gio_pin *ppin, int iData)
+void gio_set (struct gio_pin *ppin, uint32_t iData)
 	{
 	if ( ppin->pdev )
 		{
@@ -500,7 +565,7 @@ void gio_set (struct gio_pin *ppin, int iData)
 		}
 	}
 
-void gio_pins (int nPin, struct gio_pin *ppin, int iData)
+void gio_pins (int nPin, struct gio_pin *ppin, uint32_t iData)
     {
 	int	 iMask =  1;
 	int	 iPin;
@@ -513,7 +578,7 @@ void gio_pins (int nPin, struct gio_pin *ppin, int iData)
 		}
     }
 
-void gio_input (int nPin, struct gio_pin *ppin, int iData)
+void gio_input (int nPin, struct gio_pin *ppin, uint32_t iData)
 	{
 	diag_message (DIAG_GPIO, "gio_input (%d, %p, 0x%02x)", nPin, ppin, iData);
     gio_pins (nPin, ppin, iData);
@@ -523,7 +588,7 @@ void gio_input (int nPin, struct gio_pin *ppin, int iData)
 #if HAVE_HW_GPIO        
         if ( pdev->type == gio_gpio )
             {
-            if ( pdev->iData )	gpio_input (pdev->iData);
+            if ( pdev->iData )	gpio_input (pdev, pdev->iData);
             }
 #endif
 #if HAVE_HW_MCP23017
@@ -536,7 +601,7 @@ void gio_input (int nPin, struct gio_pin *ppin, int iData)
 		}
 	}
 
-void gio_output (int nPin, struct gio_pin *ppin, int iData)
+void gio_output (int nPin, struct gio_pin *ppin, uint32_t iData)
 	{
 	diag_message (DIAG_GPIO, "gio_output (%d, %p, 0x%02x)", nPin, ppin, iData);
     gio_pins (nPin, ppin, iData);
@@ -546,7 +611,7 @@ void gio_output (int nPin, struct gio_pin *ppin, int iData)
 #if HAVE_HW_GPIO        
         if ( pdev->type == gio_gpio )
             {
-            if ( pdev->iData )	gpio_output (pdev->iData);
+            if ( pdev->iData )	gpio_output (pdev, pdev->iData);
             }
 #endif
 #if HAVE_HW_MCP23017
@@ -559,7 +624,7 @@ void gio_output (int nPin, struct gio_pin *ppin, int iData)
 		}
 	}
 
-void gio_pullup (int nPin, struct gio_pin *ppin, int iData)
+void gio_pullup (int nPin, struct gio_pin *ppin, uint32_t iData)
 	{
 	diag_message (DIAG_GPIO, "gio_pullup (%d, %p, 0x%02x)", nPin, ppin, iData);
     gio_pins (nPin, ppin, iData);
@@ -569,7 +634,7 @@ void gio_pullup (int nPin, struct gio_pin *ppin, int iData)
 #if HAVE_HW_GPIO        
         if ( pdev->type == gio_gpio )
             {
-            if ( pdev->iData )	gpio_pullup (pdev->iData);
+            if ( pdev->iData )	gpio_pullup (pdev, pdev->iData);
             }
 #endif
 #if HAVE_HW_MCP23017
@@ -582,7 +647,7 @@ void gio_pullup (int nPin, struct gio_pin *ppin, int iData)
 		}
 	}
 
-void gio_pullnone (int nPin, struct gio_pin *ppin, int iData)
+void gio_pullnone (int nPin, struct gio_pin *ppin, uint32_t iData)
 	{
 	diag_message (DIAG_GPIO, "gio_pullnone (%d, %p, 0x%02x)", nPin, ppin, iData);
     gio_pins (nPin, ppin, iData);
@@ -592,7 +657,7 @@ void gio_pullnone (int nPin, struct gio_pin *ppin, int iData)
 #if HAVE_HW_GPIO        
         if ( pdev->type == gio_gpio )
             {
-            if ( pdev->iData )	gpio_pullnone (pdev->iData);
+            if ( pdev->iData )	gpio_pullnone (pdev, pdev->iData);
             }
 #endif
 #if HAVE_HW_MCP23017
@@ -605,7 +670,7 @@ void gio_pullnone (int nPin, struct gio_pin *ppin, int iData)
 		}
 	}
 
-int gio_get (int nPin, struct gio_pin *ppin)
+uint32_t gio_get (int nPin, struct gio_pin *ppin)
 	{
 	diag_message (DIAG_GPIO, "gio_get (%d, %p)", nPin, ppin);
     gio_pins (nPin, ppin, -1);
@@ -616,7 +681,7 @@ int gio_get (int nPin, struct gio_pin *ppin)
         if ( pdev->type == gio_gpio )
             {
             diag_message (DIAG_GPIO, "pdev->iMask = 0x%08x", pdev->iMask);
-            if ( pdev->iMask )	pdev->iData	=  gpio_get (pdev->iMask);
+            if ( pdev->iMask )	pdev->iData	=  gpio_get (pdev, pdev->iMask);
             diag_message (DIAG_GPIO, "*(%p) = 0x%08x", &gdev, pdev->iData);
             }
 #endif
@@ -628,8 +693,8 @@ int gio_get (int nPin, struct gio_pin *ppin)
 #endif
 		pdev   =  pdev->pnext;
 		}
-    int iData = 0;
-    int iMask = 1;
+    uint32_t iData = 0;
+    uint32_t iMask = 1;
     int iPin;
 	for ( iPin = 0; iPin < nPin; ++iPin )
 		{
@@ -652,7 +717,7 @@ int gio_get (int nPin, struct gio_pin *ppin)
 	return	iData;
 	}
 
-void gio_put (int nPin, struct gio_pin *ppin, int iData)
+void gio_put (int nPin, struct gio_pin *ppin, uint32_t iData)
 	{
 	diag_message (DIAG_GPIO, "gio_put (%d, %p, 0x%02x)", nPin, ppin, iData);
     gio_pins (nPin, ppin, iData);
@@ -663,7 +728,7 @@ void gio_put (int nPin, struct gio_pin *ppin, int iData)
 #if HAVE_HW_GPIO        
         if ( pdev->type == gio_gpio )
             {
-            if ( pdev->iData )	gpio_put (pdev->iMask, pdev->iData);
+            if ( pdev->iData )	gpio_put (pdev, pdev->iMask, pdev->iData);
             }
 #endif
 #if HAVE_HW_MCP23017

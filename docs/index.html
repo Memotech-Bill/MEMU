@@ -13,6 +13,7 @@
           <li><a href="#Build-Pico">Raspberry Pi Pico Build</a></li>
           <li><a href="#Build-Linux">Linux Build</a></li>
           <li><a href="#Build-RPi">Raspberry Pi Build</a></li>
+          <li><a href="#Build-RPi-O">Obsolete Raspberry Pi Build</a></li>
           <li><a href="#Build-Circle">Bare-Metal Raspberry Pi Build</a></li>
           <li><a href="#Build-Windows">Windows Build</a></li>
         </ul>
@@ -31,6 +32,15 @@
           <li><a href="#Diag-Options">Diagnostic Options</a></li>
           <li><a href="#Diag-RunTime">Run Time Diagnostics</a></li>
           <li><a href="#Diag-Windows">Diagnostic Windows</a></li>
+        </ul>
+      </li>
+      <li><a href="#HW-Config">Hardware Configuration</a>
+        <ul>
+          <li><a href="#HW-Pins">Pin Definition</a></li>
+          <li><a href="#HW-Keyboard">Keyboard</a></li>
+          <li><a href="#HW-Joysticks">Joysticks</a></li>
+          <li><a href="#HW-Printer">Printer</a></li>
+          <li><a href="#HW-PIO">Parallel Input/Output Port</a></li>
         </ul>
       </li>
     </ul>
@@ -200,6 +210,27 @@
       "src/memu" sub-folder. Copy the executable into the root of the "run_time" folder.</p>
 
     <h3 id="Build-RPi">Raspberry Pi Build</h3>
+    <p>The Linux builds of MEMU (documented above) will compile and run on any version of
+      Raspberry Pi. The original Raspberry Pi build (documented below) had two additional
+      features:</p>
+    <ul>
+      <li>Used the VideoCore GPU to provide scaling of the MEMU displays.</li>
+      <li>Used GPIO to allow MEMU to interface with real hardware.</li>
+    </ul>
+    <p>The software interfaces used to implement these features have been obsoleted by
+      recent versions of Raspberry Pi OS, and are not available at all for the Raspberry Pi 5.</p>
+    <p>The use of GPIO to connect to real hardware is potentially useful, so this has been
+      re-implemented as an optional feature of the Linux builds, using standard Linux software
+      interfaces. To enable this feature, add the following switches to the <b>cmake</b> line
+      of the Linux build:</p>
+    <ul>
+      <li><b>-DHWGPIO=Y</b> - To enable use of GPIO pins on the device.</li>
+      <li><b>-DHW_23017</b> - To enable use of GPIO pins on an I2C attached MCP23017 GPIO
+        expansion.</li>
+    </ul>
+    <p>To use GPIO attached hardware, it is necessary to use the switch <b>-hw-config</b>
+      when starting MEMU to give the name of a file specifying the hardware attached.</p>
+    <h3 id="Build-RPi-Old">Obsolete Raspberry Pi Build</h3>
     <p>This build is intended to be run from an operating system, typically "Raspberry Pi OS".
       It does not require a GUI, instead it uses the VideoCore IV GPU to display full screen.</p>
     <p>This build must be done on a Raspberry Pi, as the VideoCore libraries are required.
@@ -527,9 +558,9 @@
         of audio (*.wav) files. Binary (*.mtx) files are loaded by converting them
       back to audio.</dd>
       <dt>-cassette-in</dt>
-      <dd>hardware emulation - MTX or WAV file to load</dd>
+      <dd>MTX or WAV file to load</dd>
       <dt>-cassette-out</dt>
-      <dd>hardware emulation - MTX or WAV file to save</dd>
+      <dd>MTX or WAV file to save</dd>
       <dt>-sdx-mfloppy file</dt>
       <dd>specify .mfloppy file in SDX first drive</dd>
       <dt>-sdx-mfloppy2 file</dt>
@@ -692,7 +723,7 @@
       <dt>-hw-config filename</dt>
       <dd>Specifies a separate filename describing the hardware configuration. The format
         of this file differs from the other configuration options and is described
-        <a href="Hardware_config.pdf">here</a>.</dd>
+        <a href="HW-Config">here</a>.</dd>
     </dl>
 
     <p>The Raspberry Pi build has one further option to control the use of the GPU:</p>
@@ -1262,5 +1293,111 @@ DE64 - DE67	       227
     <p>Pressing <b>o</b> takes a new snapshot.
     Pressing <b>v</b> toggles whether you are looking at the
     current value, or the value in the snapshot.</p>
+    <h2 id="HW-Config">Hardware Configuration</h2>
+    <p>If the optional feature of using GPIO to attach real hardware to MEMU
+      is enabled, then it is necessary to provide a hardware configuration
+      file to describe the attachments.</p>
+    <p>The hardware configuration file consists of blocks defining a particular
+      interface, introduced by a name in square brackets, followed by the
+      definition of that interface.</p>
+    <h3>Pin Definitions</h3>
+    <p>Most of the hardware definition file is defining which digital I/O pins
+      connected to what hardware. These may be built in GPIO pins, or there is
+      also support for one or more MCP23017 I2C port expanders.<p>
+      <p>These pin definitions take the form:</p>
+      <code><pre>
+          GPIO, &lt;gpiochip device&gt;, &lt;GPIO number&gt;
+          MCP23017, &lt;I2C device&gt;, &lt;I2C address&gt;, &lt;MPC pin number&gt;
+      </pre></code>
+    <p>Where:</p>
+    <dl>
+      <dt>&lt;gpiochip device&&gt;</dt>
+      <dd>The device name of the gpiochip device used, for example <b>/dev/gpiochip0</b>.</dd>
+      <dt>&lt;GPIO number&gt;</dt>
+      <dd>The number of the GPIO on the device.</dd>
+      <dt>&lt;I2C device&gt;</dt>
+      <dd>The device name of the I2C bus used. This will typically be “/dev/i2c-1” on more
+        recent Raspberry Pis</dd>
+      <dt>&lt;I2C address&gt;</dt>
+      <dd>The I2C address of the port expander. This will typically be 0x20, although up to
+        8 simultaneous port expanders on different addresses are supported.</dd>
+      <dt>&lt;MPC pin number&gt;</dt>
+      <dd>he number of the pin on the port expander. This may either be a number in the range
+        0-15, or a letter and number in the ranges A0-A7 or B0-B7.</dd>
+    </dl>
+    <h3>Keyboard</h3>
+    <p>This block of the configuration file is used to define the connection of a MTX matrix
+      keyboard or equivalent. It takes the form:<p>
+      <code><pre>
+          [keyboard]
+          kb0 = &lt;pin definition&gt;
+	        :
+          kb9 = &lt;pin definition&gt;
+          dr0 = &lt;pin definition&gt;
+            :
+          dr7 = &lt;pin definition&gt;
+          reset = &lt;pin definition&gt;
+          reset2 = &lt;pin definition&gt;
+          dr_reset = &lt;gnd | dr0-dr7&gt;
+      </pre></code>
+    <p>The lines kb0 – kb9 define the 10 keyboard sense lines, and the lines dr0-dr7 define
+      the 8 keyboard drive lines.</p>
+    <p>For an unmodified MTX keyboard, the reset line defines the I/O pin that one of the
+      keyboard reset lines is connected to. The other reset line should be connected to ground
+      (0v). In that case the reset2 and dr_reset lines would be omitted.</p>
+    <p>The MTX keyboard may be modified by soldering an additional connection to the track
+      joining the two reset keys. In that case both the existing keyboard reset lines should
+      be connected to IO pins, and defined by the reset and reset2 lines. The additional
+      connection between the reset keys should either be connected to ground (0v) or to one
+      of the keyboard drive lines. The dr_reset line specifies how this is connected (gnd is
+      the default).</p>
+    <h3>Joysticks</h3>
+    <p>If a matrix keyboard is fitted, then Atari style joysticks may be connected to the
+      drive and sense lines, in parallel with the keyboard, as per the MTX. In that case
+      no joystick definition is required. Alternately, the separate joystick switches may
+      be connected to I/O pins, and the common connection to ground, as per earlier versions
+      of MEMU-Pi. In that case, the joystick connections are defined by a block of the form:</p>
+    <code><pre>
+        [joystick_1]
+        left = &lt;pin definition&gt;
+        right = &lt;pin definition&gt;
+        up = &lt;pin definition&gt;
+        down = &lt;pin definition&gt;
+        fire = &lt;pin definition&gt;
+    </pre></code>
+    <p>The second joystick, if fitted, is defined similarly in a [joystick_2] block.</p>
+    <h3>Printer</h3>
+    <p>A Centronics style printer port may be provided. It should be noted that the Centronics
+      connector uses 5v logic, while the Raspberry Pi GPIO connections are only 3.3v and are not
+      5v tolerant. Therefore some form of level shifting is required, Probably the simplest
+      solution is to use an MCP23017 powered from 5v, but the I2C pullup resistors taken to 3.3v.
+      The printer hardware block takes the form:</p>
+    <code><pre>
+        [printer]
+        d0 = &lt;pin definition&gt;
+	      :
+        d7 = &lt;pin definition&gt;
+        strobe = &lt;pin definition&gt;
+        busy = &lt;pin definition&gt;
+        error = &lt;pin definition&gt;
+        pe = &lt;pin definition&gt;
+        slct = &lt;pin definition&gt;
+    </pre></code>
+    <h3>Parallel Input/Output Port</h3>
+    <p>ote that the MTX PIO port is 5v logic while the Raspberry Pi GPIO connections are only 3.3v
+      tolerant. Also it is not practical to implement the INSTB and OTSTB lines in software. HCT244,
+      HCT245 or HCT373 are examples of devices that could provide an OTSTB function and 3.3v to 5v
+      step-up (not HC chips). A HC373 or HCT373 are examples that could provide INSTB, but the
+      outputs would need resistor dividers to connect to the Raspberry Pi GPIO. The PIO hardware
+      definition block takes the form:</p>
+    <code><pre>
+        [pio]
+        pot0 = &lt;pin definition&gt;
+	      :
+        pot0 = &lt;pin definition&gt;
+        pin0 = &lt;pin definition&gt;
+	      :
+        pin7 = &lt;pin definition&gt;
+    </pre></code>
   </body>
 </html>
