@@ -161,6 +161,7 @@ static FLAGVAL flagvals[] =
 		{"log-type", DIAG_LOG_TYPE},
         {"init", DIAG_INIT},
         {"gpio", DIAG_GPIO},
+        {"i2c", DIAG_I2C},
         {"vga-mode", DIAG_VGA_MODE},
         {"vga-port", DIAG_VGA_PORT},
         {"vga-refresh", DIAG_VGA_REFRESH},

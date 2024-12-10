@@ -375,29 +375,35 @@ Code 	Model 	Revision 	RAM 	Manufacturer
 int i2c_init (const char *psDev, int iAddr)
 	{
 	int	  fd   =  open (psDev, O_RDWR);
+    diag_message (DIAG_I2C, "i2c_init (%s, 0x%02X)", psDev, iAddr);
+    diag_message (DIAG_I2C, "fd = %d", fd);
 	if ( fd < 0 )	return	 I2C_EOPEN;
-	if ( ioctl (fd, I2C_SLAVE, iAddr) < 0 ) return	  I2C_EADDR;
+    int ierr = ioctl (fd, I2C_SLAVE, iAddr);
+    diag_message (DIAG_I2C, "ierr = %d", ierr);
+	if ( ierr < 0 ) return	  I2C_EADDR;
 	return	fd;
 	}
 
-void i2c_term (int fd)
+void i2c_term (struct gio_dev *pdev)
 	{
-	if ( fd > 0 ) close (fd);
+    diag_message (DIAG_I2C, "i2c_term");
+	if ( pdev->fd > 0 ) close (pdev->fd);
 	}
 
-int i2c_put (int fd, int iAddr, int iLen, unsigned char *pbData)
+int i2c_put (struct gio_dev *pdev, int iReg, int iLen, unsigned char *pbData)
 	{
+    diag_message (DIAG_I2C, "i2c_put (%d, 0x%02X, %d, 0x%02X)", pdev->fd, iReg, iLen, *pbData);
 	int	 iSta  =  I2C_OK;
     struct i2c_rdwr_ioctl_data pkt;
     struct i2c_msg msg[1];
     unsigned char *pbBuff = NULL;
-    if ( fd < 0 ) return I2C_EOPEN;
+    if ( pdev->fd < 0 ) return I2C_EOPEN;
     pbBuff = (unsigned char *) malloc (iLen + 1);
     if ( pbBuff == NULL )	return	 I2C_EMEM;
-    pbBuff[0]  =  (unsigned char) iAddr;
+    pbBuff[0]  =  (unsigned char) iReg;
     memcpy (&pbBuff[1], pbData, iLen);
 
-    msg[0].addr	  =	 iAddr;
+    msg[0].addr	  =	 pdev->iAddr;
     msg[0].flags  =	 0;
     msg[0].len	  =	 iLen + 1;
     msg[0].buf	  =	 pbBuff;
@@ -405,24 +411,27 @@ int i2c_put (int fd, int iAddr, int iLen, unsigned char *pbData)
     pkt.msgs   =  msg;
     pkt.nmsgs  =  1;
 
-    if ( ioctl (fd, I2C_RDWR, &pkt) < 0 ) iSta =  I2C_EIO;
+    int ierr = ioctl (pdev->fd, I2C_RDWR, &pkt);
+    diag_message (DIAG_I2C, "ioctl = %d", ierr);
+    if ( ierr < 0 ) iSta =  I2C_EIO;
 	free (pbBuff);
     return	iSta;
 	}
 
-int i2c_get (int fd, int iAddr, int iLen, unsigned char *pbData)
+int i2c_get (struct gio_dev *pdev, int iReg, int iLen, unsigned char *pbData)
 	{
-    unsigned char bAddr = (unsigned char) iAddr;
+    diag_message (DIAG_I2C, "i2c_get (%d, 0x%02X, %d, %p)", pdev->fd, iReg, iLen, pbData);
+    unsigned char bAddr = (unsigned char) iReg;
     struct i2c_rdwr_ioctl_data pkt;
     struct i2c_msg msg[2];
 
-	if ( fd < 0 ) return I2C_EOPEN;
+	if ( pdev->fd < 0 ) return I2C_EOPEN;
 
-    msg[0].addr	  =	 iAddr;
+    msg[0].addr	  =	 pdev->iAddr;
     msg[0].flags  =	 0;
     msg[0].len	  =	 iLen + 1;
     msg[0].buf	  =	 &bAddr;
-    msg[1].addr	  =	 iAddr;
+    msg[1].addr	  =	 pdev->iAddr;
     msg[1].flags  =	 I2C_M_RD;
     msg[1].len	  =	 iLen;
     msg[1].buf	  =	 pbData;
@@ -430,73 +439,75 @@ int i2c_get (int fd, int iAddr, int iLen, unsigned char *pbData)
     pkt.msgs   =  msg;
     pkt.nmsgs  =  2;
 
-    if ( ioctl (fd, I2C_RDWR, &pkt) < 0 ) return   I2C_EIO;
+    int ierr = ioctl (pdev->fd, I2C_RDWR, &pkt);
+    diag_message (DIAG_I2C, "ioctl = %d", ierr);
+    if ( ierr < 0 ) return   I2C_EIO;
     return	I2C_OK;
 	}
 
-int xio_init (const char *psDev, int iAddr)
+int xio_init (const char *psDev, int iReg)
 	{
-	return	i2c_init (psDev, iAddr);
+	return	i2c_init (psDev, iReg);
 	}
 
-void xio_term (int fd)
+void xio_term (struct gio_dev *pdev)
 	{
-	i2c_term (fd);
+	i2c_term (pdev);
 	}
 
-void xio_input (int fd, uint32_t iMask)
+void xio_input (struct gio_dev *pdev, uint32_t iMask)
 	{
 	unsigned char bDir[2];
-	i2c_get (fd, 0x00, 2, bDir);
+	i2c_get (pdev, 0x00, 2, bDir);
 	bDir[0]	|= (unsigned char) ( 0xFF & iMask );
 	bDir[1]	|= (unsigned char) ( 0xFF & ( iMask >> 8 ) );
-	i2c_put (fd, 0x00, 2, bDir);
+	i2c_put (pdev, 0x00, 2, bDir);
 	}
 
-void xio_output (int fd, uint32_t iMask)
+void xio_output (struct gio_dev *pdev, uint32_t iMask)
 	{
 	unsigned char bDir[2];
-	i2c_get (fd, 0x00, 2, bDir);
+	i2c_get (pdev, 0x00, 2, bDir);
 	bDir[0]	&= ~ (unsigned char) ( 0xFF & iMask );
 	bDir[1]	&= ~ (unsigned char) ( 0xFF & ( iMask >> 8 ) );
-	i2c_put (fd, 0x00, 2, bDir);
+	i2c_put (pdev, 0x00, 2, bDir);
 	}
 
-void xio_pullup (int fd, uint32_t iMask)
+void xio_pullup (struct gio_dev *pdev, uint32_t iMask)
 	{
 	unsigned char bPull[2];
-	i2c_get (fd, 0x0C, 2, bPull);
+	i2c_get (pdev, 0x0C, 2, bPull);
 	bPull[0]	|= (unsigned char) ( 0xFF & iMask );
 	bPull[1]	|= (unsigned char) ( 0xFF & ( iMask >> 8 ) );
-	i2c_put (fd, 0x0C, 2, bPull);
+	i2c_put (pdev, 0x0C, 2, bPull);
 	}
 
-void xio_pullnone (int fd, uint32_t iMask)
+void xio_pullnone (struct gio_dev *pdev, uint32_t iMask)
 	{
 	unsigned char bPull[2];
-	i2c_get (fd, 0x0C, 2, bPull);
+	i2c_get (pdev, 0x0C, 2, bPull);
 	bPull[0]	&= ~ (unsigned char) ( 0xFF & iMask );
 	bPull[1]	&= ~ (unsigned char) ( 0xFF & ( iMask >> 8 ) );
-	i2c_put (fd, 0x0C, 2, bPull);
+	i2c_put (pdev, 0x0C, 2, bPull);
 	}
 
-int xio_get (int fd, uint32_t iMask)
+int xio_get (struct gio_dev *pdev, uint32_t iMask)
 	{
 	unsigned char bData[2];
-	i2c_get (fd, 0x12, 2, bData);
+	i2c_get (pdev, 0x12, 2, bData);
 	return	( ( (int) bData[1] << 8 ) | ( (int) bData[0] ) ) & iMask;
 	}
 
-void xio_put (int fd, uint32_t iMask, int iBits)
+void xio_put (struct gio_dev *pdev, uint32_t iMask, int iBits)
 	{
 	unsigned char bData[2];
-	i2c_get (fd, 0x14, 2, bData);
+	i2c_get (pdev, 0x14, 2, bData);
 	bData[0]	&= ~ (unsigned char) ( 0xFF & iMask );
 	bData[1]	&= ~ (unsigned char) ( 0xFF & ( iMask >> 8 ) );
 	iBits	&= iMask;
 	bData[0]	|= (unsigned char) ( 0xFF & iBits );
 	bData[1]	|= (unsigned char) ( 0xFF & ( iBits >> 8 ) );
-	i2c_put (fd, 0x14, 2, bData);
+	i2c_put (pdev, 0x14, 2, bData);
 	}
 #endif
 
@@ -538,7 +549,7 @@ void gio_term (void)
 #if HAVE_HW_MCP23017
         if ( pdev->type == gio_xio )
             {
-            if ( pdev->fd > 0 )	  xio_term (pdev->fd);
+            if ( pdev->fd > 0 )	  xio_term (pdev);
             }
 #endif
 		pdev   =  pdev->pnext;
@@ -594,7 +605,7 @@ void gio_input (int nPin, struct gio_pin *ppin, uint32_t iData)
 #if HAVE_HW_MCP23017
         if ( pdev->type == gio_xio )
             {
-            if ( ( pdev->fd > 0 ) && ( pdev->iData ) )	  xio_input (pdev->fd, pdev->iData);
+            if ( ( pdev->fd > 0 ) && ( pdev->iData ) )	  xio_input (pdev, pdev->iData);
             }
 #endif
 		pdev   =  pdev->pnext;
@@ -617,7 +628,7 @@ void gio_output (int nPin, struct gio_pin *ppin, uint32_t iData)
 #if HAVE_HW_MCP23017
         if ( pdev->type == gio_xio )
             {
-            if ( ( pdev->fd > 0 ) && ( pdev->iData ) )	  xio_output (pdev->fd, pdev->iData);
+            if ( ( pdev->fd > 0 ) && ( pdev->iData ) )	  xio_output (pdev, pdev->iData);
             }
 #endif
 		pdev   =  pdev->pnext;
@@ -640,7 +651,7 @@ void gio_pullup (int nPin, struct gio_pin *ppin, uint32_t iData)
 #if HAVE_HW_MCP23017
         if ( pdev->type == gio_xio )
             {
-            if ( ( pdev->fd > 0 ) && ( pdev->iData ) )	  xio_pullup (pdev->fd, pdev->iData);
+            if ( ( pdev->fd > 0 ) && ( pdev->iData ) )	  xio_pullup (pdev, pdev->iData);
             }
 #endif
 		pdev   =  pdev->pnext;
@@ -663,7 +674,7 @@ void gio_pullnone (int nPin, struct gio_pin *ppin, uint32_t iData)
 #if HAVE_HW_MCP23017
         if ( pdev->type == gio_xio )
             {
-            if ( ( pdev->fd > 0 ) && ( pdev->iData ) )	  xio_pullnone (pdev->fd, pdev->iData);
+            if ( ( pdev->fd > 0 ) && ( pdev->iData ) )	  xio_pullnone (pdev, pdev->iData);
             }
 #endif
 		pdev   =  pdev->pnext;
@@ -688,7 +699,7 @@ uint32_t gio_get (int nPin, struct gio_pin *ppin)
 #if HAVE_HW_MCP23017
         if ( pdev->type == gio_xio )
             {
-            if ( ( pdev->fd > 0 ) && ( pdev->iMask ) )	  pdev->iData =	 xio_get (pdev->fd, pdev->iMask);
+            if ( ( pdev->fd > 0 ) && ( pdev->iMask ) )	  pdev->iData =	 xio_get (pdev, pdev->iMask);
             }
 #endif
 		pdev   =  pdev->pnext;
@@ -734,7 +745,7 @@ void gio_put (int nPin, struct gio_pin *ppin, uint32_t iData)
 #if HAVE_HW_MCP23017
         if ( pdev->type == gio_xio )
             {
-            if ( ( pdev->fd > 0 ) && ( pdev->iData ) )	  xio_put (pdev->fd, pdev->iMask, pdev->iData);
+            if ( ( pdev->fd > 0 ) && ( pdev->iData ) )	  xio_put (pdev, pdev->iMask, pdev->iData);
             }
 #endif
 		pdev   =  pdev->pnext;
