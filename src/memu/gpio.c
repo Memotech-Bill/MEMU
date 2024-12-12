@@ -429,7 +429,7 @@ int i2c_get (struct gio_dev *pdev, int iReg, int iLen, unsigned char *pbData)
 
     msg[0].addr	  =	 pdev->iAddr;
     msg[0].flags  =	 0;
-    msg[0].len	  =	 iLen + 1;
+    msg[0].len	  =	 sizeof (bAddr);
     msg[0].buf	  =	 &bAddr;
     msg[1].addr	  =	 pdev->iAddr;
     msg[1].flags  =	 I2C_M_RD;
@@ -739,13 +739,13 @@ void gio_put (int nPin, struct gio_pin *ppin, uint32_t iData)
 #if HAVE_HW_GPIO        
         if ( pdev->type == gio_gpio )
             {
-            if ( pdev->iData )	gpio_put (pdev, pdev->iMask, pdev->iData);
+            if ( pdev->iMask )	gpio_put (pdev, pdev->iMask, pdev->iData);
             }
 #endif
 #if HAVE_HW_MCP23017
         if ( pdev->type == gio_xio )
             {
-            if ( ( pdev->fd > 0 ) && ( pdev->iData ) )	  xio_put (pdev, pdev->iMask, pdev->iData);
+            if ( ( pdev->fd > 0 ) && ( pdev->iMask ) )	  xio_put (pdev, pdev->iMask, pdev->iData);
             }
 #endif
 		pdev   =  pdev->pnext;
