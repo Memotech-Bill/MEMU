@@ -55,9 +55,11 @@ void hw_pindef (TXR *ptxr, struct gio_pin *ppin)
 		{
 #if HAVE_HW_GPIO
 		struct gio_dev *pdev  =	 gdev;
+		char   sDev[LDEVNAME];
+		TxrGetText (ptxr, sizeof (sDev), sDev);
 		while ( pdev )
 			{
-			if ( pdev->type == gio_gpio ) break;
+			if ( ( pdev->type == gio_gpio ) && ( ! strcasecmp (sDev, pdev->sDev) ) ) break;
 			pdev  =	 pdev->pnext;
 			}
 		if ( ! pdev )
@@ -65,6 +67,7 @@ void hw_pindef (TXR *ptxr, struct gio_pin *ppin)
 			pdev  =	 (struct gio_dev *) calloc (1, sizeof (struct gio_dev));
 			if ( pdev == NULL )	 fatal ("Failed to allocate I/O device definition");
 			pdev->type = gio_gpio;
+			strcpy (pdev->sDev, sDev);
 			pdev->pnext	=  gdev;
 			gdev	=  pdev;
 			}
@@ -77,7 +80,7 @@ void hw_pindef (TXR *ptxr, struct gio_pin *ppin)
         fatal ("GPIO pins not supported");
 #endif
 		}
-	if ( ! strcasecmp (sText, "MCP23017") )
+	else if ( ! strcasecmp (sText, "MCP23017") )
 		{
 #if HAVE_HW_MCP23017
 		struct gio_dev *pdev  =	 gdev;

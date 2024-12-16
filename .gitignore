@@ -6,3 +6,4 @@ run_time/portaudio*
 *.log
 run_time/disks/*.bin
 *.zip
+test*

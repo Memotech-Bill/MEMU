@@ -87,11 +87,17 @@ int gpio_init (struct gio_dev *pdev)
     gpio = (uint32_t *) ARM_GPIO_BASE;
 	return	GPIO_OK;
 #else
+    diag_message (DIAG_GPIO, "gpio_init: sDev = %s, iMask = 0x%02X", pdev->sDev, pdev->iMask);
     pdev->iDirn = 0;
     pdev->iPullUp = 0;
     pdev->iPullDn = 0;
     int chip_fd = open (pdev->sDev, O_RDWR);
-    if (chip_fd < 0) return errno;
+    if (chip_fd < 0)
+        {
+        int err = errno;
+        diag_message (DIAG_GPIO, "GPIO: Failed to open %s: %s", pdev->sDev, strerror (err));
+        return err;
+        }
     struct gpio_v2_line_request lreq;
     memset (&lreq, 0, sizeof (lreq));
     strcpy (lreq.consumer, "MEMU");
@@ -108,9 +114,15 @@ int gpio_init (struct gio_dev *pdev)
         ++iLine;
         }
     lreq.config.flags = GPIO_V2_LINE_FLAG_INPUT + GPIO_V2_LINE_FLAG_BIAS_DISABLED;
-    if (ioctl (chip_fd, GPIO_V2_GET_LINE_IOCTL, &lreq) < 0) return errno;
+    if (ioctl (chip_fd, GPIO_V2_GET_LINE_IOCTL, &lreq) < 0)
+        {
+        int err = errno;
+        diag_message (DIAG_GPIO, "GPIO: Failed to get lines for %s: %s", pdev->sDev, strerror (errno));
+        return err;
+        }
     pdev->fd = lreq.fd;
     close (chip_fd);
+    diag_message (DIAG_GPIO, "GPIO: Initialised %s", pdev->sDev);
 	return	GPIO_OK;
 #endif
 	}
@@ -137,7 +149,7 @@ static uint32_t line_mask (struct gio_dev *pdev, uint32_t iMask)
         iPins >>= 1;
         iMask >>= 1;
         }
-    return iMask;
+    return lMask;
     }
 
 void gpio_input (struct gio_dev *pdev, uint32_t iMask)
@@ -240,11 +252,11 @@ uint32_t gpio_get (struct gio_dev *pdev, uint32_t iMask)
     ioctl (pdev->fd, GPIO_V2_LINE_GET_VALUES_IOCTL, &getval);
     uint32_t iValue = 0;
     uint32_t iBit = 1;
-    while (getval.bits > 0)
+    while ((iBit != 0) && (getval.bits != 0))
         {
         if (pdev->iPins & iBit)
             {
-            if (getval.bits &1) iValue |= iBit;
+            if (getval.bits & 1) iValue |= iBit;
             getval.bits >>= 1;
             }
         iBit <<= 1;
@@ -375,12 +387,20 @@ Code 	Model 	Revision 	RAM 	Manufacturer
 int i2c_init (const char *psDev, int iAddr)
 	{
 	int	  fd   =  open (psDev, O_RDWR);
-    diag_message (DIAG_I2C, "i2c_init (%s, 0x%02X)", psDev, iAddr);
-    diag_message (DIAG_I2C, "fd = %d", fd);
-	if ( fd < 0 )	return	 I2C_EOPEN;
+	if ( fd < 0 )
+        {
+        int err = errno;
+        diag_message (DIAG_I2C, "I2C: Failed to open %s: %s", psDev, strerror (err));
+        return	 I2C_EOPEN;
+        }
     int ierr = ioctl (fd, I2C_SLAVE, iAddr);
-    diag_message (DIAG_I2C, "ierr = %d", ierr);
-	if ( ierr < 0 ) return	  I2C_EADDR;
+	if ( ierr < 0 )
+        {
+        int err = errno;
+        diag_message (DIAG_I2C, "I2C: Error setting address for %s: %s", psDev, strerror (err));
+        return	  I2C_EADDR;
+        }
+    diag_message (DIAG_I2C, "I2C: Initialised MCP23017 at %s : 0x%02X", psDev, iAddr);
 	return	fd;
 	}
 

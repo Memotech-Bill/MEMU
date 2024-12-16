@@ -1,3 +1,4 @@
+
 /*
 
   common.c - Handy utilities
@@ -52,6 +53,8 @@
 #include "vdeb.h"
 #endif
 #include "dirmap.h"
+
+static BOOLEAN bFatal = FALSE;
 
 /*...vdiag\46\h:0:*/
 /*...vcommon\46\h:0:*/
@@ -140,7 +143,15 @@ void terminate(const char *reason)
     vid_term();
     win_term();
     // diag_message (DIAG_ALWAYS, "Terminate: %s", reason);
-    fprintf (stderr, "Terminate: %s\n", reason);
+    if ( bFatal )
+        {
+        fprintf (stderr, "%s\n", reason);
+        // fflush (stderr);
+        }
+    else
+        {
+        fprintf (stderr, "Terminate: %s\n", reason);
+        }
     diag_message (DIAG_INIT, "diag_term");
     diag_term();
 #ifdef BEMEMU
@@ -164,9 +175,15 @@ void fatal(const char *fmt, ...)
     va_start(vars, fmt);
     vsprintf(s+7, fmt, vars);
     va_end(vars);
-    fprintf(stderr, "memu: %s\n", s+7);
-    fflush (stderr);
     diag_flags[DIAG_EXIT] = TRUE;
+    if (bFatal)
+        {
+        win_term ();
+        fprintf(stderr, "Second error: %s\n", s+7);
+        fflush (stderr);
+        exit (1);
+        }
+    bFatal = TRUE;
     terminate (s);
     }
 /*...e*/
