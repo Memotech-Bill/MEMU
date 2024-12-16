@@ -12,8 +12,7 @@
         <ul>
           <li><a href="#Build-Pico">Raspberry Pi Pico Build</a></li>
           <li><a href="#Build-Linux">Linux Build</a></li>
-          <li><a href="#Build-RPi">Raspberry Pi Build</a></li>
-          <li><a href="#Build-RPi-O">Obsolete Raspberry Pi Build</a></li>
+          <li><a href="#Build-RPi">Obsolete Raspberry Pi Build</a></li>
           <li><a href="#Build-Circle">Bare-Metal Raspberry Pi Build</a></li>
           <li><a href="#Build-Windows">Windows Build</a></li>
         </ul>
@@ -209,7 +208,20 @@
       versions of CMake, they may either be in the root of the build folder, or in the
       "src/memu" sub-folder. Copy the executable into the root of the "run_time" folder.</p>
 
-    <h3 id="Build-RPi">Raspberry Pi Build</h3>
+    <p>The Linux version of MEMU will run on many single-board computers such as the Raspberry
+      Pi. On such systems, the use of GPIO to connect to real hardware is potentially useful,
+      so this has been re-implemented as an optional feature of the Linux builds, using standard
+      Linux software interfaces. To enable this feature, add the following switches to the
+      <b>cmake</b> line of the Linux build instructions:</p>
+    <ul>
+      <li><b>-DHWGPIO=Y</b> - To enable use of GPIO pins on the device.</li>
+      <li><b>-DHW_23017=Y</b> - To enable use of GPIO pins on an I2C attached MCP23017 GPIO
+        expansion.</li>
+    </ul>
+    <p>To use GPIO attached hardware, it is necessary to use the switch <b>-hw-config</b>
+      when starting MEMU to give the name of a file specifying the hardware attached.</p>
+
+    <h3 id="Build-RPi">Obsolete Raspberry Pi Build</h3>
     <p>The Linux builds of MEMU (documented above) will compile and run on any version of
       Raspberry Pi. The original Raspberry Pi build (documented below) had two additional
       features:</p>
@@ -219,18 +231,8 @@
     </ul>
     <p>The software interfaces used to implement these features have been obsoleted by
       recent versions of Raspberry Pi OS, and are not available at all for the Raspberry Pi 5.</p>
-    <p>The use of GPIO to connect to real hardware is potentially useful, so this has been
-      re-implemented as an optional feature of the Linux builds, using standard Linux software
-      interfaces. To enable this feature, add the following switches to the <b>cmake</b> line
-      of the Linux build:</p>
-    <ul>
-      <li><b>-DHWGPIO=Y</b> - To enable use of GPIO pins on the device.</li>
-      <li><b>-DHW_23017</b> - To enable use of GPIO pins on an I2C attached MCP23017 GPIO
-        expansion.</li>
-    </ul>
-    <p>To use GPIO attached hardware, it is necessary to use the switch <b>-hw-config</b>
-      when starting MEMU to give the name of a file specifying the hardware attached.</p>
-    <h3 id="Build-RPi-Old">Obsolete Raspberry Pi Build</h3>
+    <p>The GPIO interface as been re-implemented using standard Linux system calls (see above)
+      which should work on all models of Raspberry Pi with a recent operating system.</p>
     <p>This build is intended to be run from an operating system, typically "Raspberry Pi OS".
       It does not require a GUI, instead it uses the VideoCore IV GPU to display full screen.</p>
     <p>This build must be done on a Raspberry Pi, as the VideoCore libraries are required.
@@ -255,7 +257,6 @@
           <li>If the line &quot;dtoverlay=vc4-kms-v3d&quot; is present, comment it out.</li>
           <li>Insert the line &quot;dtoverlay=vc4-<b>f</b>kms-v3d&quot;
         </ul>
-        <p class="todo">TODO: Produce a version which works with the KMS driver.</p>
       </li>
       <li><p>The display must be connected to one of the outputs controlled by the VideoCore
           (e.g. HDMI), and the keyboard attached to a USB port. This version will not work
