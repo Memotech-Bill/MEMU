@@ -5,7 +5,11 @@
 
 #ifdef HAVE_NFX
 #ifndef NFX_BASE
+#ifdef HAVE_MFX
+#define	NFX_BASE    0xA0	// Base I/O address for Wiznet
+#else
 #define	NFX_BASE    0x90	// Base I/O address for Wiznet
+#endif
 #endif
 
 #include "types.h"
