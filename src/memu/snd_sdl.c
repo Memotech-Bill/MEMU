@@ -49,9 +49,9 @@ static word snd_noise_shifter;
 static int snd_noise_bit;
 static float snd_lastvol;
 
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 
-static SDL_AudioDeviceID dev_id = 0;
+static SDL_AudioStream *astream;
 static SDL_AudioSpec aspec;
 /*...e*/
 
@@ -168,10 +168,10 @@ static int snd_next_noise_bit(void)
     }
 /*...e*/
 
-void snd_callback (void *user, uint8_t *stream, int len)
+void snd_callback (void *user, SDL_AudioStream *stream, int len_add, int len_tot)
     {
-    float *out = (float *) stream;
-    int framesPerBuffer = len / sizeof (float);
+    float *buffer = (float *) emalloc (len_add * sizeof (float));
+    float *out = buffer;
     unsigned long i;
     int c;
     float steps[3];
@@ -195,7 +195,7 @@ void snd_callback (void *user, uint8_t *stream, int len)
         }
     scale_noise = snd_scale(snd_noise_atten);
     snd_noise_phase = (float) fmod(snd_noise_phase, 2.0);
-    for ( i = 0; i < framesPerBuffer; i++ )
+    for ( i = 0; i < len_add; ++i )
         {
         float val = 0.0;
         for ( c = 0; c < 3; c++ )
@@ -220,6 +220,8 @@ void snd_callback (void *user, uint8_t *stream, int len)
         *out++ = snd_lastvol = val;
         }
 //    diag_message (DIAG_INIT, "Exit snd_callback: aMin = %6.3f aMax = %6.3f", aMin, aMax);
+    SDL_PutAudioStreamData (stream, buffer, len_add);
+    free (buffer);
     }
 /*...e*/
 
@@ -232,14 +234,11 @@ void snd_init(int emu, double latency)
         snd_emu = emu;
         memset (&areq, 0, sizeof (areq));
         areq.freq = FREQ;
-        areq.format = AUDIO_F32SYS;
+        areq.format = SDL_AUDIO_F32;
         areq.channels = 1;
-        if ( latency > 0 ) areq.samples = FREQ * latency;
-        else areq.samples = 1024;
-        areq.callback = snd_callback;
         SDL_InitSubSystem (SDL_INIT_AUDIO);
-        dev_id = SDL_OpenAudioDevice (NULL, 0, &areq, &aspec, 0);
-        SDL_PauseAudioDevice (dev_id, 0);
+        astream = SDL_OpenAudioDeviceStream (SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &areq, snd_callback, NULL);
+        SDL_ResumeAudioStreamDevice (astream);
         }
     }
 /*...e*/
@@ -248,8 +247,7 @@ void snd_term(void)
     {
     if ( snd_emu & SNDEMU_PORTAUDIO )
         {
-        SDL_CloseAudioDevice (dev_id);
-        dev_id = 0;
+        SDL_DestroyAudioStream (astream);
         }
     snd_emu = 0;
     }

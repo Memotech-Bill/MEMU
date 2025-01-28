@@ -103,7 +103,6 @@ elseif("${TARGET}" STREQUAL "XWin")
     
     target_include_directories(memu_src INTERFACE
       ${CMAKE_CURRENT_LIST_DIR}
-      ${SDL2_INCLUDE_DIRS}
       )
     
     target_sources(memu_src INTERFACE ${xwin_src})
@@ -285,6 +284,7 @@ elseif("${TARGET}" STREQUAL "Win")
     ${CMAKE_CURRENT_LIST_DIR}/mfx.c
     ${CMAKE_CURRENT_LIST_DIR}/mon.c
     ${CMAKE_CURRENT_LIST_DIR}/monprom.c
+    ${CMAKE_CURRENT_LIST_DIR}/nfx.c
     ${CMAKE_CURRENT_LIST_DIR}/printer.c
     ${CMAKE_CURRENT_LIST_DIR}/rom_os.c
     ${CMAKE_CURRENT_LIST_DIR}/rom_assem.c
@@ -373,7 +373,6 @@ elseif("${TARGET}" STREQUAL "SDL")
     ${CMAKE_CURRENT_LIST_DIR}/config.c
     ${CMAKE_CURRENT_LIST_DIR}/cpm.c
     ${CMAKE_CURRENT_LIST_DIR}/ctc.c
-    ${CMAKE_CURRENT_LIST_DIR}/dart.c
     ${CMAKE_CURRENT_LIST_DIR}/diag.c
     ${CMAKE_CURRENT_LIST_DIR}/dirmap.c
     ${CMAKE_CURRENT_LIST_DIR}/dis.c
@@ -385,7 +384,7 @@ elseif("${TARGET}" STREQUAL "SDL")
     ${CMAKE_CURRENT_LIST_DIR}/mfx.c
     ${CMAKE_CURRENT_LIST_DIR}/mon.c
     ${CMAKE_CURRENT_LIST_DIR}/monprom.c
-    ${CMAKE_CURRENT_LIST_DIR}/nfx_sdl.c
+    ${CMAKE_CURRENT_LIST_DIR}/nfx.c
     ${CMAKE_CURRENT_LIST_DIR}/printer.c
     ${CMAKE_CURRENT_LIST_DIR}/rom_os.c
     ${CMAKE_CURRENT_LIST_DIR}/rom_assem.c
@@ -414,7 +413,7 @@ elseif("${TARGET}" STREQUAL "SDL")
       )
   elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
     list(APPEND sdl_src
-      ${CMAKE_CURRENT_LIST_DIR}/dirt_win.c
+      ${CMAKE_CURRENT_LIST_DIR}/dirt_w32.c
       )
   else()
     message(FATAL_ERROR "Directory Traversal Routines not supported")
@@ -450,9 +449,7 @@ elseif("${TARGET}" STREQUAL "SDL")
     
     target_link_libraries(memu-sdl PUBLIC
       Z80_emu
-      portaudio
-      ${SDL2_LIBRARIES}
-      SDL2_net
+      SDL3::SDL3
       m
       )
     

@@ -303,6 +303,7 @@ elseif("${TARGET}" STREQUAL "Win")
     -DHAVE_UI
     -DHAVE_VDEB
     -DHAVE_VGA
+    -DHAVE_NFX
     -DZ80_DEBUG
     )
     
@@ -329,6 +330,7 @@ elseif("${TARGET}" STREQUAL "Win")
       memu_src
       Z80_emu
       portaudio
+      ws2_32
       winmm
       dinput8
       Shcore
@@ -463,9 +465,11 @@ elseif("${TARGET}" STREQUAL "Circle")
     )
 
 elseif("${TARGET}" STREQUAL "SDL")
+  cmake_minimum_required(VERSION 3.12)
 
-  set (SDL2_DIR "/usr/lib/x86_64-linux-gnu/cmake/SDL2/")
-  find_package(SDL2 REQUIRED)
+  # set (SDL2_DIR "/usr/lib/x86_64-linux-gnu/cmake/SDL2/")
+  # find_package(SDL2 REQUIRED)
+  add_subdirectory (../SDL SDL EXCLUDE_FROM_ALL)
   
   set(src_defs
     -DLSB_FIRST
@@ -473,11 +477,9 @@ elseif("${TARGET}" STREQUAL "SDL")
     -DHAVE_CONFIG
     -DALT_OPTIONS=cfg_options
     -DALT_USAGE=cfg_usage
-    -DUNIX
     -DHAVE_AUTOTYPE
     -DHAVE_CFX2
     -DHAVE_CONSOLE
-    -DHAVE_DART
     -DHAVE_DISASS
     -DHAVE_JOY
     -DHAVE_MFX
@@ -502,20 +504,30 @@ elseif("${TARGET}" STREQUAL "SDL")
       RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/run_time
       )
     
-    target_compile_options(memu-sdl PUBLIC -g)
-    target_link_options(memu-sdl PUBLIC -g)
-    # target_compile_options(memu-sdl PUBLIC -fsanitize=address -fsanitize=leak)
-    # target_link_options(memu-sdl PUBLIC -fsanitize=address -fsanitize=leak -static-libasan)
+    if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+      list(APPEND src_defs
+        -DUNIX
+        )
+      target_compile_options(memu-sdl PUBLIC -g)
+      target_link_options(memu-sdl PUBLIC -g)
+      # target_compile_options(memu-sdl PUBLIC -fsanitize=address -fsanitize=leak)
+      # target_link_options(memu-sdl PUBLIC -fsanitize=address -fsanitize=leak -static-libasan)
+      target_link_libraries(memu-sdl PUBLIC
+        m
+        )
+    elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+      target_link_libraries(memu-sdl PUBLIC
+        ws2_32
+	winmm
+        )
+    endif ()
     
     target_compile_definitions(memu-sdl PUBLIC ${src_defs})
     
     target_link_libraries(memu-sdl PUBLIC
       memu_src
       Z80_emu
-      portaudio
-      ${SDL2_LIBRARIES}
-      SDL2_net
-      m
+      SDL3::SDL3
       )
   endif()
 

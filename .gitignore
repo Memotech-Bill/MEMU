@@ -2,7 +2,9 @@
 #*#
 build*
 run_time/memu-*
-run_time/portaudio*
+run_time/*.dll
 *.log
 *.zip
 test*
+temp*
+test/

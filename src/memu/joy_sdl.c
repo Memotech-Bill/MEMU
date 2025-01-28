@@ -7,7 +7,7 @@ joy_sdl.c - Joystick via SDL
 /*...sincludes:0:*/
 #include <stdio.h>
 #include <string.h>
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 
 #include "types.h"
 #include "diag.h"
@@ -109,7 +109,7 @@ void joy_handle_events (SDL_Event *e)
 		{
         switch (e->type)
             {
-            case SDL_JOYAXISMOTION:
+            case SDL_EVENT_JOYSTICK_AXIS_MOTION:
                 idx = joy_index (e->jaxis.which);
                 if (idx < 0) break;
                 int axis = joy_fst_axis[idx] + e->jaxis.axis;
@@ -119,14 +119,14 @@ void joy_handle_events (SDL_Event *e)
                 joy_button(joy_down_row[axis] , joy_down_bitpos[axis],
                     e->jaxis.value >  joy_central);
                 break;
-            case SDL_JOYBUTTONDOWN:
-            case SDL_JOYBUTTONUP:
+            case SDL_EVENT_JOYSTICK_BUTTON_DOWN:
+            case SDL_EVENT_JOYSTICK_BUTTON_UP:
                 idx = joy_index (e->jbutton.which);
                 if (idx < 0) break;
                 int button = joy_fst_button[idx] + e->jbutton.button;
                 if (button >= joy_n_buttons) break;
                 joy_button(joy_buttons_row[button], joy_buttons_bitpos[button],
-                    e->jbutton.state == SDL_PRESSED);
+                    e->jbutton.down);
                 break;
 			}
 		}
@@ -156,18 +156,20 @@ void joy_init(int emu)
 		const char *p;
 		BOOLEAN shifted;
         SDL_InitSubSystem (SDL_INIT_JOYSTICK);
-        int n_joy = SDL_NumJoysticks ();
+        int n_joy;
+        SDL_JoystickID *pid = SDL_GetJoysticks (&n_joy);
         if ( n_joy < 1 ) fatal ("No joystick found");
         if (n_joy > MAX_JOY) n_joy = MAX_JOY;
         for (int i = 0; i < n_joy; ++i)
             {
-            joy_id[i] = SDL_JoystickGetDeviceInstanceID (i);
-            joy_dev[i] = SDL_JoystickOpen (i);
+            joy_id[i] = pid[i];
+            joy_dev[i] = SDL_OpenJoystick (joy_id[i]);
             joy_fst_axis[i] = axes;
             joy_fst_button[i] = buttons;
-            axes += SDL_JoystickNumAxes (joy_dev[i]);
-            buttons += SDL_JoystickNumButtons (joy_dev[i]);
+            axes += SDL_GetNumJoystickAxes (joy_dev[i]);
+            buttons += SDL_GetNumJoystickButtons (joy_dev[i]);
             }
+        SDL_free (pid);
 		if ( axes < 2 )
 			{
             joy_term ();
@@ -283,7 +285,7 @@ void joy_term(void)
         {
         for (int i = 0; i < n_joy; ++i)
             {
-            SDL_JoystickClose (joy_dev[i]);
+            SDL_CloseJoystick (joy_dev[i]);
             joy_dev[i] = NULL;
             joy_id[i] = -1;
             }

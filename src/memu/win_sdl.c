@@ -5,14 +5,7 @@
 #include "common.h"
 #include "types.h"
 #include "diag.h"
-#include <SDL2/SDL.h>
-
-// The Blit is also performing conversion from paletted to direct colou
-// Doing this only seems to work if the scaling is 1 to 1.
-// Hence disabled by default
-#ifndef USE_SCALED_BLIT
-#define USE_SCALED_BLIT     0
-#endif
+#include <SDL3/SDL.h>
 
 typedef struct st_win_sdl
 	{
@@ -27,12 +20,19 @@ typedef struct st_win_sdl
 	/* Private SDL window data here */
     SDL_Window *sdl_win;
     SDL_Surface *sdl_sfc;
-#if USE_SCALED_BLIT
     SDL_Surface *sdl_drw;
-#else
-    uint32_t *pal;
-#endif
+    SDL_Palette *sdl_pal;
+    // const char *title;
 	} WIN_PRIV;
+
+static struct
+    {
+    SDL_Window *sdl;
+    WIN_PRIV *  win;
+    }
+    win_idx[MAX_WINS];
+
+static int nwin = 0;
 
 static BOOLEAN bInit = FALSE;
 
@@ -41,6 +41,50 @@ static void win_init (void)
     if ( SDL_Init (SDL_INIT_VIDEO) < 0 )
         fatal ("SDL_Init Error: %s", SDL_GetError ());
     bInit = TRUE;
+    }
+
+static void win_add (WIN_PRIV *win)
+    {
+    int i = n_wins - 1;
+    while ((i > 0) && (win_idx[i-1].sdl > win->sdl_win))
+        {
+        win_idx[i] = win_idx[i-1];
+        --i;
+        }
+    win_idx[i].sdl = win->sdl_win;
+    win_idx[i].win = win;
+    }
+
+static int win_match (SDL_Window *sdl)
+    {
+    int i1 = -1;
+    int i2 = n_wins;
+    while (i2 > i1 + 1)
+        {
+        int i3 = (i1 + i2) / 2;
+        if (win_idx[i3].sdl == sdl) return i3;
+        if (win_idx[i3].sdl < sdl) i1 = i3;
+        else i2 = i3;
+        }
+    return -1;
+    }
+
+static WIN_PRIV *win_get (SDL_Window *sdl)
+    {
+    int iwin = win_match (sdl);
+    if (iwin < 0) return NULL;
+    return win_idx[iwin].win;
+    }
+
+static void win_del (WIN_PRIV *win)
+    {
+    int iwin = win_match (win->sdl_win);
+    if (iwin < 0) return;
+    while (iwin < n_wins - 1)
+        {
+        win_idx[iwin] = win_idx[iwin + 1];
+        ++iwin;
+        }
     }
 
 WIN *win_create(
@@ -55,11 +99,7 @@ WIN *win_create(
 	)
     {
     if ( ! bInit ) win_init ();
-#if USE_SCALED_BLIT
 	WIN_PRIV *win = (WIN_PRIV *) win_alloc (sizeof(WIN_PRIV), 0);
-#else
-	WIN_PRIV *win = (WIN_PRIV *) win_alloc (sizeof(WIN_PRIV), width * height);
-#endif
 
 	win->width        = width;
 	win->height       = height;
@@ -68,31 +108,26 @@ WIN *win_create(
     win->n_cols       = n_cols;
 	win->keypress     = keypress;
 	win->keyrelease   = keyrelease;
+    // win->title        = strdup (title);
     diag_message (DIAG_WIN_HW, "%s: (%p)", title, win);
     
     win->sdl_win = SDL_CreateWindow (
         title,
-        SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
         width * width_scale, height * height_scale,
-        SDL_WINDOW_SHOWN
+        0
         );
     if ( win->sdl_win == NULL )
         fatal ("SDL error creating window %s: %s", title, SDL_GetError ());
+    win_add (win);
     win->sdl_sfc = SDL_GetWindowSurface (win->sdl_win);
-    SDL_SetWindowData (win->sdl_win, "MEMU", win);
     if ( win->sdl_sfc == NULL )
         fatal ("SDL error getting window surface %s: %s", title, SDL_GetError ());
-#if USE_SCALED_BLIT
-    win->sdl_drw = SDL_CreateRGBSurface (0, width, height, 8, 0, 0, 0, 0);
+    win->sdl_drw = SDL_CreateSurface (width, height, SDL_PIXELFORMAT_INDEX8);
     if ( win->sdl_drw == NULL )
         fatal ("SDL error creating drawing surface %s: %s", title, SDL_GetError ());
     win->data = win->sdl_drw->pixels;
-#else
-    if ( win->sdl_sfc->format->palette == NULL )
-        win->pal = (uint32_t *) emalloc (n_cols * sizeof (uint32_t));
-    else
-        win->pal = NULL;
-#endif
+    win->sdl_pal = SDL_GetSurfacePalette (win->sdl_drw);
+    if (win->sdl_pal == NULL) win->sdl_pal = SDL_CreateSurfacePalette (win->sdl_drw);
     for (int i = 0; i < n_cols; ++i)
         win_colour ((WIN *) win, i, &col[i]);
     return (WIN *) win;
@@ -102,112 +137,30 @@ void win_delete (WIN *win_pub)
     {
     if ( win_pub == NULL ) return;
     WIN_PRIV *win = (WIN_PRIV *) win_pub;
-#if USE_SCALED_BLIT
-    SDL_FreeSurface (win->sdl_drw);
+    SDL_DestroySurface (win->sdl_drw);
     win->data = NULL;
-#else
-    if ( win->pal != NULL ) free (win->pal);
-#endif
     SDL_DestroyWindow (win->sdl_win);
+    win_del (win);
     win_free ((WIN *) win);
     }
 
 void win_colour (WIN *win_pub, int idx, COL *clr)
     {
     WIN_PRIV *win = (WIN_PRIV *) win_pub;
-#if USE_SCALED_BLIT
     SDL_Color sdl_clr;
     sdl_clr.r = clr->r;
     sdl_clr.g = clr->g;
     sdl_clr.b = clr->b;
     sdl_clr.a = 0xFF;
-    SDL_SetPaletteColors (win->sdl_drw->format->palette, &sdl_clr, idx, 1);
-#else
-    if ( win->pal == NULL )
-        {
-        SDL_Color sdl_clr;
-        sdl_clr.r = clr->r;
-        sdl_clr.g = clr->g;
-        sdl_clr.b = clr->b;
-        sdl_clr.a = 0xFF;
-        SDL_SetPaletteColors (win->sdl_sfc->format->palette, &sdl_clr, idx, 1);
-        }
-    else
-        {
-        SDL_PixelFormat *f = win->sdl_sfc->format;
-        win->pal[idx] = ((clr->r >> f->Rloss) << f->Rshift) | ((clr->g >> f->Gloss) << f->Gshift)
-            | ((clr->b >> f->Bloss) << f->Bshift);
-        if ( f->Amask != 0 ) win->pal[idx] |= (0xFF >> f->Aloss) << f->Ashift;
-        }
-#endif
+    SDL_SetPaletteColors (win->sdl_pal, &sdl_clr, idx, 1);
     }
 
 void win_refresh (WIN *win_pub)
     {
     WIN_PRIV *win = (WIN_PRIV *) win_pub;
-#if USE_SCALED_BLIT
-    if ( SDL_BlitScaled (win->sdl_drw, NULL, win->sdl_sfc, NULL) )
-        fatal ("%s: win %p: %d x %d (%d x %d)\n", SDL_GetError (), win, win->width, win->height, win->width_scale, win->height_scale);
-#else
-    // uint8_t *pixels = win->sdl_sfc->pixels;
-    for (int iRow = 0; iRow < win->height; ++iRow)
-        {
-        for (int iHScl = 0; iHScl < win->height_scale; ++iHScl)
-            {
-            uint8_t *data = win->data + iRow * win->width;
-            uint8_t *pixels = win->sdl_sfc->pixels + (iRow * win->height_scale + iHScl) * win->sdl_sfc->pitch;
-            for (int iCol = 0; iCol < win->width; ++iCol)
-                {
-                uint32_t clr;
-                uint8_t *pclr = (uint8_t *) &clr;
-                if ( win->pal == NULL ) clr = *data;
-                else clr = win->pal[*data];
-                for (int iWScl = 0; iWScl < win->width_scale; ++iWScl)
-                    {
-#if SDL_BYTEORDER == SDL_LIL_ENDIAN
-                    switch (win->sdl_sfc->format->BytesPerPixel)
-                        {
-                        case 1:
-                            *pixels = clr;
-                            break;
-                        case 2:
-                            *((uint16_t *)pixels) = clr;
-                            break;
-                        case 3:
-                            pixels[0] = pclr[0];
-                            pixels[1] = pclr[1];
-                            pixels[2] = pclr[2];
-                            break;
-                        case 4:
-                            *((uint32_t *)pixels) = clr;
-                            break;
-                        }
-#else
-                    switch (win->sdl_sfc->format->BytesPerPixel)
-                        {
-                        case 1:
-                            *pixels = pclr[4];
-                            break;
-                        case 2:
-                            *((uint16_t *)pixels) = *((uint16_t)&pclr[2]);
-                            break;
-                        case 3:
-                            pixels[0] = pclr[1];
-                            pixels[1] = pclr[2];
-                            pixels[2] = pclr[3];
-                            break;
-                        case 4:
-                            *((uint32_t *)pixels) = clr;
-                            break;
-                        }
-#endif
-                    pixels += win->sdl_sfc->format->BytesPerPixel;
-                    }
-                ++data;
-                }
-            }
-        }
-#endif
+    if ( ! SDL_BlitSurfaceScaled (win->sdl_drw, NULL, win->sdl_sfc, NULL, SDL_SCALEMODE_NEAREST) )
+        fatal ("%s: win %p: %d x %d (%d x %d)\n", SDL_GetError (), win, win->width, win->height,
+            win->width_scale, win->height_scale);
     SDL_UpdateWindowSurface (win->sdl_win);
     }
 
@@ -218,7 +171,7 @@ typedef struct s_kbd_map
     } KBD_MAP;
 
 // Entries in the following array must be in increasing order of SDLK_ value
-// A bisection searrch is used to locate matches
+// A bisection search is used to locate matches
 static KBD_MAP kbd_map[] = {
     {SDLK_DELETE, WK_Delete},
     {SDLK_CAPSLOCK, WK_Caps_Lock},
@@ -269,7 +222,9 @@ static KBD_MAP kbd_map[] = {
     {SDLK_RCTRL, WK_Control_R},
     {SDLK_RSHIFT, WK_Shift_R},
     {SDLK_RALT, WK_PC_Alt_R},
-    {SDLK_RGUI, WK_PC_Windows_R}};
+    {SDLK_RGUI, WK_PC_Windows_R},
+    {SDLK_MODE, WK_PC_Alt_R},           // SDL3 on Linux is returning this for Right Alt key.
+    };
 
 static int sdlkey_wk (int keycode)
     {
@@ -298,34 +253,40 @@ void win_handle_events (void)
         {
         switch (e.type)
             {
-            case SDL_WINDOWEVENT:
-                switch (e.window.event)
-                    {
-                    case SDL_WINDOWEVENT_CLOSE:
-                        terminate("user closed window");
-                        break;
-                    case SDL_WINDOWEVENT_EXPOSED:
-                        win_refresh ((WIN *) SDL_GetWindowData (SDL_GetWindowFromID (e.window.windowID), "MEMU"));
-                        break;
-                    }
+            case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
+                terminate("user closed window");
                 break;
-            case SDL_KEYDOWN:
-                if ( e.key.repeat == 0 )
+            case SDL_EVENT_WINDOW_EXPOSED:
+                sdl_win = SDL_GetWindowFromID (e.window.windowID);
+                if ( sdl_win == NULL ) break;
+                WIN_PRIV *win = win_get (sdl_win);
+                if (win != NULL) win_refresh ((WIN *) win);
+                break;
+            case SDL_EVENT_KEY_DOWN:
+                if ( ! e.key.repeat )
                     {
+                    // printf ("key down: windowID = %d, key = 0x%02X, scan = 0x%02X, raw = 0x%02X\n",
+                    //     e.key.windowID, e.key.key, e.key.scancode, e.key.raw);
                     sdl_win = SDL_GetWindowFromID (e.key.windowID);
                     if ( sdl_win == NULL ) break;
-                    WIN_PRIV *win = (WIN_PRIV *) SDL_GetWindowData (sdl_win, "MEMU");
-                    int wk = sdlkey_wk (e.key.keysym.sym);
+                    WIN_PRIV *win = win_get (sdl_win);
+                    if (win == NULL) break;
+                    int wk = sdlkey_wk (e.key.key);
+                    // printf ("keypress: %s, wk = 0x%02X\n", win->title, wk);
                     if (wk > 0) win->keypress ((WIN *) win, wk);
                     }
                 break;
-            case SDL_KEYUP:
-                if ( e.key.repeat == 0 )
+            case SDL_EVENT_KEY_UP:
+                if ( ! e.key.repeat )
                     {
+                    // printf ("key up: windowID = %d, key = 0x%02X, scan = 0x%02X, raw = 0x%02X\n",
+                    //     e.key.windowID, e.key.key, e.key.scancode, e.key.raw);
                     sdl_win = SDL_GetWindowFromID (e.key.windowID);
                     if ( sdl_win == NULL ) break;
-                    WIN_PRIV *win = (WIN_PRIV *) SDL_GetWindowData (sdl_win, "MEMU");
-                    int wk = sdlkey_wk (e.key.keysym.sym);
+                    WIN_PRIV *win = win_get (sdl_win);
+                    if (win == NULL) break;
+                    int wk = sdlkey_wk (e.key.key);
+                    // printf ("keyrelease: %s, wk = 0x%02X\n", win->title, wk);
                     if (wk > 0) win->keyrelease ((WIN *) win, wk);
                     }
                 break;
@@ -351,15 +312,17 @@ void win_term (void)
     {
     }
 
-const SDL_DisplayMode **SDL_GetFullscreenDisplayModes(int displayID, int *count);
-
 void win_max_size (const char *display, int *pWth, int *pHgt)
     {
     if ( ! bInit ) win_init ();
+    int num_displays;
+    SDL_DisplayID *displays = SDL_GetDisplays(&num_displays);
+    if ((displays == NULL) || (num_displays == 0)) fatal ("No displays defined");
     SDL_Rect rect;
-    SDL_GetDisplayUsableBounds (0, &rect);
+    SDL_GetDisplayUsableBounds (displays[0], &rect);
     *pWth = rect.w;
     *pHgt = rect.h;
+    SDL_free (displays);
     }
 
 extern void kbd_chk_leds (int *mods)
