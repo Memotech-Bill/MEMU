@@ -19,7 +19,7 @@ It now includes all my current ports of MEMU. It includes versions for:
 * Linux X-Window: Displays in multiple windows.
 * Linux Framebuffer: No GUI required. One display at a time, full-screen.
 * Microsoft Windows: Does not have DART or Network emulation.
-* WORK IN PROGRESS: Experimental version using SDL. SDL has experimental support for Wayland.
+* Experimental version using SDL3. SDL3 has support for Wayland.
   It may also provide a single source usable on Windows & Linux, including Networking.
 * OBSOLETE: Raspberry Pi: A Linux build with the ability to use GPIO to connect additional hardware.
   *Not compatible with recent RPi OS*
@@ -33,11 +33,6 @@ For build and usage information, see the [documentation](https://memotech-bill.g
 
 The game "TOADO" on MEMU running on a Raspberry Pi Pico.
 ![MEMU on a Pico](docs/MEMU_Pico.jpg)
-
-## Pico SDK Version 1.2
-
-The code has been modified for the changes to tinyusb API, however there is an occasional
-panic in the USB code that has yet to be resolved.
 
 ## Licence
 
