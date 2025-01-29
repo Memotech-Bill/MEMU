@@ -1,7 +1,8 @@
+cmake_minimum_required(VERSION 3.12)
 set(CMAKE_C_STANDARD 11)
 
 if("${TARGET}" STREQUAL "Pico")
-  cmake_minimum_required(VERSION 3.12)
+
   set(CMAKE_CXX_STANDARD 17)
   
   set(PICO_BOARD vgaboard)
@@ -19,8 +20,6 @@ if("${TARGET}" STREQUAL "Pico")
 
   add_executable(memu-pico)
 
-  #  add_compile_options(-Werror -Wall -Wextra -Wnull-dereference)
-  #  add_link_options(-g)
   target_compile_options(memu-pico PUBLIC -O1 -g)
   target_link_options(memu-pico PUBLIC -g)
 
@@ -66,7 +65,19 @@ if("${TARGET}" STREQUAL "Pico")
     )
 
 elseif("${TARGET}" STREQUAL "XWin")
-  set(src_defs
+    
+  project(memu C)
+  
+  add_executable(memu-x)
+
+  set_target_properties(memu-x PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/run_time
+    )
+  
+  target_compile_options(memu-x PUBLIC -g)
+  target_link_options(memu-x PUBLIC -g)
+  
+  target_compile_definitions(memu-x PUBLIC
     -DLSB_FIRST
     -DDYNAMIC_ROMS
     -DHAVE_CONFIG
@@ -91,19 +102,19 @@ elseif("${TARGET}" STREQUAL "XWin")
 
   set (HAVE_HW FALSE)
   if(HW_GPIO)
-    list(APPEND src_defs
+    target_compile_definitions(memu-x PUBLIC
       -DHAVE_HW_GPIO=1
       )
     set (HAVE_HW TRUE)
   endif()
   if(HW_23017)
-    list(APPEND src_defs
+    target_compile_definitions(memu-x PUBLIC
       -DHAVE_HW_MCP23017=1
       )
     set (HAVE_HW TRUE)
   endif()
   if(HAVE_HW)
-    list(APPEND src_defs
+    target_compile_definitions(memu-x PUBLIC
       -DALT_HANDLE_EVENTS=hw_handle_events
       -DALT_KBD_SENSE1=hw_kbd_sense_1
       -DALT_KBD_SENSE2=hw_kbd_sense_2
@@ -113,42 +124,35 @@ elseif("${TARGET}" STREQUAL "XWin")
       -DALT_Z80_IN=hw_Z80_in
       )
   else()
-    list(APPEND src_defs
+    target_compile_definitions(memu-x PUBLIC
       -DALT_OPTIONS=cfg_options
       -DALT_USAGE=cfg_usage
       )
   endif()
-  
-  if(NOT (${CMAKE_VERSION} VERSION_LESS "3.12.0"))
     
-    project(memu C)
-    
-    add_executable(memu-x)
-
-    set_target_properties(memu-x PROPERTIES
-      RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/run_time
-      )
-    
-    target_compile_options(memu-x PUBLIC -g)
-    target_link_options(memu-x PUBLIC -g)
-    # target_compile_options(memu-x PUBLIC -fsanitize=address -fsanitize=leak)
-    # target_link_options(memu-x PUBLIC -fsanitize=address -fsanitize=leak -static-libasan)
-    
-    target_compile_definitions(memu-x PUBLIC ${src_defs})
-    
-    target_link_libraries(memu-x PUBLIC
-      memu_src
-      Z80_emu
-      portaudio
-      mcheck
-      X11
-      m
-      )
-  endif()
+  target_link_libraries(memu-x PUBLIC
+    memu_src
+    Z80_emu
+    portaudio
+    mcheck
+    X11
+    m
+    )
 
 elseif("${TARGET}" STREQUAL "FBuf")
+    
+  project(memu C)
+  
+  add_executable(memu-fb)
 
-  set(src_defs
+  set_target_properties(memu-fb PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/run_time
+    )
+  
+  target_compile_options(memu-fb PUBLIC -g)
+  target_link_options(memu-fb PUBLIC -g)
+  
+  target_compile_definitions(memu-fb PUBLIC
     -DLSB_FIRST
     -DDYNAMIC_ROMS
     -DHAVE_CONFIG
@@ -171,19 +175,19 @@ elseif("${TARGET}" STREQUAL "FBuf")
 
   set (HAVE_HW FALSE)
   if(HW_GPIO)
-    list(APPEND src_defs
+    target_compile_definitions(memu-fb PUBLIC
       -DHAVE_HW_GPIO=1
       )
     set (HAVE_HW TRUE)
   endif()
   if(HW_23017)
-    list(APPEND src_defs
+    target_compile_definitions(memu-fb PUBLIC
       -DHAVE_HW_MCP23017=1
       )
     set (HAVE_HW TRUE)
   endif()
   if(HAVE_HW)
-    list(APPEND src_defs
+    target_compile_definitions(memu-fb PUBLIC
       -DALT_HANDLE_EVENTS=hw_handle_events
       -DALT_KBD_SENSE1=hw_kbd_sense_1
       -DALT_KBD_SENSE2=hw_kbd_sense_2
@@ -193,55 +197,39 @@ elseif("${TARGET}" STREQUAL "FBuf")
       -DALT_Z80_IN=hw_Z80_in
       )
   else()
-    list(APPEND src_defs
+    target_compile_definitions(memu-fb PUBLIC
       -DALT_OPTIONS=cfg_options
       -DALT_USAGE=cfg_usage
       )
   endif()
   
-  if(NOT (${CMAKE_VERSION} VERSION_LESS "3.12.0"))
-    
-    project(memu C)
-    
-    add_executable(memu-fb)
-
-    set_target_properties(memu-fb PROPERTIES
-      RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/run_time
-      )
-    
-    #  add_compile_options(-g)
-    #  add_link_options(-g)
-    
-    target_compile_definitions(memu-fb PUBLIC ${src_defs})
-    
-    target_link_libraries(memu-fb PUBLIC
-      memu_src
-      Z80_emu
-      portaudio
-      m
-      )
-  endif()
+  target_link_libraries(memu-fb PUBLIC
+    memu_src
+    Z80_emu
+    portaudio
+    m
+    )
 
 elseif("${TARGET}" STREQUAL "RPi")
     
-    project(memu C)
-    
-    add_executable(memu-pi)
+  project(memu C)
+  
+  add_executable(memu-pi)
 
-    set_target_properties(memu-pi PROPERTIES
-      RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/run_time
-      )
+  set_target_properties(memu-pi PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/run_time
+    )
     
-    #  add_compile_options(-g)
-    #  add_link_options(-g)
+  target_compile_options(memu-pi PUBLIC -g)
+  target_link_options(memu-pi PUBLIC -g)
 
-    target_include_directories(memu-pi PUBLIC
-      /opt/vc/include
-      /opt/vc/include/interface/vcos/pthreads
-      /opt/vc/include/interface/vmcs_host/linux
-      )
-    
-    target_compile_definitions(memu-pi PUBLIC
+  target_include_directories(memu-pi PUBLIC
+    /opt/vc/include
+    /opt/vc/include/interface/vcos/pthreads
+    /opt/vc/include/interface/vmcs_host/linux
+    )
+  
+  target_compile_definitions(memu-pi PUBLIC
     -DLSB_FIRST
     -DDYNAMIC_ROMS
     -DALT_HANDLE_EVENTS=hw_handle_events
@@ -282,7 +270,27 @@ elseif("${TARGET}" STREQUAL "RPi")
     )
 
 elseif("${TARGET}" STREQUAL "Win")
-  set(src_defs
+    
+  project(memu C)
+
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/run_time")
+  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/run_time")
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_CURRENT_LIST_DIR}/run_time")
+  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE "${CMAKE_CURRENT_LIST_DIR}/run_time")
+  
+  add_executable(memu-win)
+
+  set_target_properties(memu-win PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_LIST_DIR}/run_time
+    )
+
+  add_subdirectory(../portaudio portaudio EXCLUDE_FROM_ALL)
+
+  set_target_properties(portaudio PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_LIST_DIR}/run_time
+    )
+  
+  target_compile_definitions(memu-win PUBLIC
     -D_CRT_SECURE_NO_WARNINGS
     -DLSB_FIRST
     -DDYNAMIC_ROMS
@@ -306,37 +314,19 @@ elseif("${TARGET}" STREQUAL "Win")
     -DHAVE_NFX
     -DZ80_DEBUG
     )
-    
-    project(memu C)
-    
-    add_executable(memu-win)
-
-    set_target_properties(memu-win PROPERTIES
-      RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_LIST_DIR}/run_time
-      )
-
-    add_subdirectory(../portaudio portaudio EXCLUDE_FROM_ALL)
-
-    set_target_properties(portaudio PROPERTIES
-      RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_LIST_DIR}/run_time
-      )
-    
-    #  add_compile_options(-g)
-    #  add_link_options(-g)
-    
-    target_compile_definitions(memu-win PUBLIC ${src_defs})
-    
-    target_link_libraries(memu-win PUBLIC
-      memu_src
-      Z80_emu
-      portaudio
-      ws2_32
-      winmm
-      dinput8
-      Shcore
-      )
+  
+  target_link_libraries(memu-win PUBLIC
+    memu_src
+    Z80_emu
+    portaudio
+    ws2_32
+    winmm
+    dinput8
+    Shcore
+    )
 
 elseif("${TARGET}" STREQUAL "Circle")
+
   cmake_minimum_required(VERSION 3.16)
   set(CMAKE_CXX_STANDARD 14)
 
@@ -372,7 +362,6 @@ elseif("${TARGET}" STREQUAL "Circle")
 
   add_compile_definitions(__circle__)
   add_compile_options(${ARCH})
-  # add_compile_options(-nostdinc)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions>)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-nostdinc++>)
@@ -400,9 +389,6 @@ elseif("${TARGET}" STREQUAL "Circle")
                 OUTPUT_STRIP_TRAILING_WHITESPACE)
               
   add_executable(memu-circle)
-
-  #  add_compile_options(-g)
-  #  add_link_options(-g)
 
   target_compile_definitions(memu-circle PUBLIC
     -DAARCH=32
@@ -465,13 +451,19 @@ elseif("${TARGET}" STREQUAL "Circle")
     )
 
 elseif("${TARGET}" STREQUAL "SDL")
-  cmake_minimum_required(VERSION 3.12)
 
-  # set (SDL2_DIR "/usr/lib/x86_64-linux-gnu/cmake/SDL2/")
-  # find_package(SDL2 REQUIRED)
+  project(memu C)
+
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/run_time")
+  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/run_time")
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_CURRENT_LIST_DIR}/run_time")
+  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE "${CMAKE_CURRENT_LIST_DIR}/run_time")
+  
+  add_executable(memu-sdl)
+
   add_subdirectory (../SDL SDL EXCLUDE_FROM_ALL)
   
-  set(src_defs
+  target_compile_definitions(memu-sdl PUBLIC
     -DLSB_FIRST
     -DDYNAMIC_ROMS
     -DHAVE_CONFIG
@@ -493,45 +485,38 @@ elseif("${TARGET}" STREQUAL "SDL")
     -DHAVE_NFX
     -DZ80_DEBUG
     )
-  
-  if(NOT (${CMAKE_VERSION} VERSION_LESS "3.12.0"))
     
-    project(memu C)
-    
-    add_executable(memu-sdl)
-
-    set_target_properties(memu-sdl PROPERTIES
-      RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/run_time
+  if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+    target_compile_definitions(memu-sdl PUBLIC
+      -DUNIX
       )
-    
-    if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
-      list(APPEND src_defs
-        -DUNIX
-        )
-      target_compile_options(memu-sdl PUBLIC -g)
-      target_link_options(memu-sdl PUBLIC -g)
-      # target_compile_options(memu-sdl PUBLIC -fsanitize=address -fsanitize=leak)
-      # target_link_options(memu-sdl PUBLIC -fsanitize=address -fsanitize=leak -static-libasan)
-      target_link_libraries(memu-sdl PUBLIC
-        m
-        )
-    elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
-      target_link_libraries(memu-sdl PUBLIC
-        ws2_32
-	winmm
-        )
+    target_compile_options(memu-sdl PUBLIC -g)
+    target_link_options(memu-sdl PUBLIC -g)
+    target_link_libraries(memu-sdl PUBLIC
+      m
+      )
+  elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+    target_compile_definitions(memu-sdl PUBLIC
+      -D_CRT_SECURE_NO_WARNINGS
+      )
+    target_link_libraries(memu-sdl PUBLIC
+      ws2_32
+      winmm
+      )
     endif ()
     
-    target_compile_definitions(memu-sdl PUBLIC ${src_defs})
+  target_include_directories(memu-sdl INTERFACE
+    ${SDL2_INCLUDE_DIRS}
+    )
     
-    target_link_libraries(memu-sdl PUBLIC
-      memu_src
-      Z80_emu
-      SDL3::SDL3
-      )
-  endif()
+  target_link_libraries(memu-sdl PUBLIC
+    memu_src
+    Z80_emu
+    SDL3::SDL3
+    )
 
 else()
+
   message(FATAL_ERROR "No valid target specified in MEMU/CMakeLists.txt")
 
 endif()

@@ -2,6 +2,7 @@
 #*#
 build*
 run_time/memu-*
+run_time/lib*.so*
 run_time/*.dll
 *.log
 *.zip
