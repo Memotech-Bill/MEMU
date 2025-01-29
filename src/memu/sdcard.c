@@ -16,7 +16,7 @@
 #include "dirmap.h"
 
 #ifdef WIN32
-#define strcasecmp stricmp
+#define strcasecmp _stricmp
 #endif
 
 #define SD_PART_SIZE   ( 8 * 1024 * 1024 )  // Size of CPM partitions on SD card

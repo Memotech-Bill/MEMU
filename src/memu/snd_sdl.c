@@ -172,7 +172,7 @@ void snd_callback (void *user, SDL_AudioStream *stream, int len_add, int len_tot
     {
     float *buffer = (float *) emalloc (len_add * sizeof (float));
     float *out = buffer;
-    unsigned long i;
+    int i;
     int c;
     float steps[3];
     float scales[3];

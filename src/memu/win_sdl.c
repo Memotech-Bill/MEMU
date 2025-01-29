@@ -166,7 +166,7 @@ void win_refresh (WIN *win_pub)
 
 typedef struct s_kbd_map
     {
-    uint32_t    keycode;
+    int         keycode;
     int         wk;
     } KBD_MAP;
 

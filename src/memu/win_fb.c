@@ -44,6 +44,7 @@ typedef struct
 	int left, top;
 	int byte_per_pixel;
 	__u32 *cols;
+    BOOLEAN bPixDbl;
 	} WIN_PRIV;
 
 static int fbfd = 0;
@@ -352,6 +353,13 @@ void win_max_size (const char *display, int *pWth, int *pHgt)
     *pHgt = vinfo.yres;
     }
 
+void win_colour (WIN *win_pub, int idx, COL *clr)
+    {
+    WIN_PRIV *win = (WIN_PRIV *) win_pub;
+    win->cols[idx] =  win_fb_colour (*clr);
+    if (win->bPixDbl) win->cols[idx]  *= 0x10001;
+    }
+
 /*...swin_create:0:*/
 WIN *win_create(
 	int width, int height,
@@ -386,8 +394,10 @@ WIN *win_create(
 	win->cols      = (__u32 *) emalloc (n_cols * sizeof (__u32));
     win->tbuf = NULL;
 	for ( i = 0; i < n_cols; ++i ) win->cols[i]   =  win_fb_colour (cols[i]);
+    win->bPixDbl = FALSE;
 	if ( ( win->width_scale == 2 ) && ( win->byte_per_pixel == 2 ) )
 		{
+        win->bPixDbl = TRUE;
 		win->byte_per_pixel  *= 2;
 		win->width_scale           /= 2;
 		win->left            /= 2;

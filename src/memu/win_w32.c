@@ -759,7 +759,7 @@ void win_delete(WIN *win_pub)
         win->hpalette = NULL;
         }
     */
-    win_free(win);
+    win_free((WIN *)win);
     }
 /*...e*/
 

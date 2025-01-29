@@ -34,8 +34,8 @@
 
 typedef int             socklen_t;
 typedef SSIZE_T         ssize_t;
-#define errno           WSAGetLastError ()
-#define IPPROTO_IP      IPPROTO_TCP
+#define net_errno       WSAGetLastError ()
+// #define IPPROTO_IP      IPPROTO_TCP
 #define SOCK_NONBLOCK   0x100
 #define NET_EINPROGRESS WSAEINPROGRESS
 #define NET_EAGAIN      WSAEWOULDBLOCK
@@ -157,6 +157,7 @@ typedef int SOCKET;
 #define writesocket     write
 #define closesocket     close
 #define net_strerror    strerror
+#define net_errno       errno
 #define INVALID_SOCKET  -1
 #define NET_EINPROGRESS EINPROGRESS
 #define NET_EAGAIN      EAGAIN
@@ -262,7 +263,7 @@ static struct   // Linux connection per TCP port
 
 static struct   // Data for each NFX socket
     {
-    SOCKET icon;    // Linux connection number for this NFX socket
+    int icon;       // Linux connection number for this NFX socket
     SOCKET iskt;    // Socket stream number for established connection
     int rxbase;     // Base of RX buffer
     int rxsize;     // Size of RX buffer
@@ -555,7 +556,7 @@ void nfx_socket_cmnd_tcp (int skt, byte value)
         nfx_conn[icon].iskt = socket3 (AF_INET, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_IP);
         if ( nfx_conn[icon].iskt == INVALID_SOCKET )
             {
-            int iErr = errno;
+            int iErr = net_errno;
             fatal ("Could not create LISTEN socket %d: %s", skt, net_strerror (iErr));
             }
         diag_message (DIAG_NFX_EVENT, "Using connection %d for socket %d: nfx_conn.iskt = %d", icon, skt, nfx_conn[icon].iskt);
@@ -567,12 +568,12 @@ void nfx_socket_cmnd_tcp (int skt, byte value)
         sa.sin_port = htons (oport);
         if ( bind (nfx_conn[icon].iskt, (struct sockaddr *) &sa, sizeof (sa)) < 0 )
             {
-            int iErr = errno;
+            int iErr = net_errno;
             fatal ("Failed to bind socket for connection %d: %s", skt, net_strerror (iErr));
             }
         if ( listen (nfx_conn[icon].iskt, NFX_NSOCK) < 0 )
             {
-            int iErr = errno;
+            int iErr = net_errno;
             fatal ("Failed to listen on socket for connection %d: %s", skt, net_strerror (iErr));
             }
         nfx_sock_reg(skt, S_SR) = SOCK_LISTEN;
@@ -589,7 +590,7 @@ void nfx_socket_cmnd_tcp (int skt, byte value)
             nfx_sock_reg(skt, S_DIPR + 2), nfx_sock_reg(skt, S_DIPR + 3), port, nfx_sock[skt].iskt);
         if ( nfx_sock[skt].iskt == INVALID_SOCKET )
             {
-            int iErr = errno;
+            int iErr = net_errno;
             fatal ("Could not create CONNECT socket %d: %s", skt, net_strerror (iErr));
             }
         struct sockaddr_in sa;
@@ -598,7 +599,7 @@ void nfx_socket_cmnd_tcp (int skt, byte value)
         sa.sin_port = htons (port);
         if ( connect (nfx_sock[skt].iskt, (struct sockaddr *) &sa, sizeof (sa)) < 0 )
             {
-            int iErr = errno;
+            int iErr = net_errno;
             if ( iErr != NET_EINPROGRESS )
                 fatal ("Failed to connect socket %d: Error %d: %s", skt, iErr, net_strerror (iErr));
             }
@@ -671,7 +672,7 @@ void nfx_socket_cmnd_tcp (int skt, byte value)
                 }
             else
                 {
-		int iErr = errno;
+		int iErr = net_errno;
                 diag_message (DIAG_NFX_EVENT, "Error %d sending data on socket %d: iskt = %d %s",
 		    iErr, skt, nfx_sock[skt].iskt, net_strerror (iErr));
                 }
@@ -902,7 +903,7 @@ void nfx_poll (void)
                 struct sockaddr_in sa;
                 socklen_t slen = sizeof (sa);
                 nfx_sock[skt].iskt = accept4 (nfx_conn[icon].iskt, (struct sockaddr *) &sa, &slen, SOCK_NONBLOCK);
-                int iErr = errno;
+                int iErr = net_errno;
                 if ( nfx_sock[skt].iskt != INVALID_SOCKET )
                     {
                     uint32_t addr = ntohl (sa.sin_addr.s_addr);
@@ -948,8 +949,8 @@ void nfx_poll (void)
                     {
                     // diag_message (DIAG_NFX_EVENT, "nfx_poll: rxrd = %d rxwr = %d nfree = %d",
                     //     nfx_sock[skt].rxrd, nfx_sock[skt].rxwr, nfree);
-                    ssize_t nbyte = readsocket (nfx_sock[skt].iskt, nfx_data, nfree);
-		    int iErr = errno;
+                    int nbyte = (int) readsocket (nfx_sock[skt].iskt, nfx_data, nfree);
+		    int iErr = net_errno;
                     if ( nbyte > 0 )
                         {
                         diag_message (DIAG_NFX_EVENT, "Socket %d: Received %d bytes: iskt = %d", skt, nbyte, nfx_sock[skt].iskt);

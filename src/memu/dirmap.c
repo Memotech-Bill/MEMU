@@ -75,7 +75,7 @@ const char *PMapMap (PMapMode pmap, const char *psPath)
     {
     // printf ("pmap = %d, psPath = "%s\n", pmap, psPath);
     if ( pmap == pmapNone ) return psPath;
-    int nLen = strlen (rootdir[pmap]) + strlen (psPath);
+    int nLen = (int)(strlen (rootdir[pmap]) + strlen (psPath));
     char *psMap = PMapAlloc (nLen);
     strcpy (psMap, rootdir[pmap]);
     strcat (psMap, &psPath[psPath[1] == '/' ? 1 : 2]);
@@ -93,10 +93,10 @@ const char *PMapMapped (const char *psPath)
     if ((psPath[0] != '/') && (psPath[0] != '\\')) return psPath;
     for (int pmap = 0; pmap < pmapCount; ++pmap)
         {
-        int nLen = strlen (rootdir[pmap]);
+        int nLen = (int) strlen (rootdir[pmap]);
         if (( psPath[nLen] == psPath[0] ) && ( strncmp (psPath, rootdir[pmap], nLen) == 0 ))
             {
-            char *psMap = PMapAlloc (strlen (psPath) - nLen + 3);
+            char *psMap = PMapAlloc ((int)strlen (psPath) - nLen + 3);
             psMap[0] = '~';
             psMap[1] = "CEHW"[pmap];
             strcpy (&psMap[2], &psPath[nLen]);

@@ -162,6 +162,7 @@ elseif("${TARGET}" STREQUAL "FBuf")
     -DHAVE_DART
     -DHAVE_DISASS
     -DHAVE_JOY
+    -DHAVE_MFX
     -DMAP_PATH
     -DHAVE_OSFS
     -DHAVE_SID

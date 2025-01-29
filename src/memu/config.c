@@ -1791,7 +1791,6 @@ static BOOLEAN row_exit_key (int info, int wk)
             }
         if ( iCfgExit != EXIT_CANCEL )
             {
-            int iDrive;
             cfg.tape_disable = bTapeAudio;
             tape_patch (! bTapeAudio);
             if ( bTapeAudio )

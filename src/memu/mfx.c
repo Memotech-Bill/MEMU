@@ -494,7 +494,7 @@ byte mfx_in (word port)
             value = atr2;
             break;
         default:
-            value = port;
+            value = (byte) port;
         }
     diag_message (DIAG_MFX_PORT, "mfx_in (0x%02X) = 0x%02X", port, value);
     return value;
@@ -666,7 +666,6 @@ static byte grapix (byte ch, int k)
 
 static void s0_refresh (BOOLEAN b48)
     {
-    int thgt;
     int nrow;
     int nppr;
     word base;
@@ -783,7 +782,7 @@ static void s2_refresh (void)
     word addr = ((((word) treg[0x0C]) << 8) | treg[0x0D]) << 4;
     addr = (addr & mask) | base;
     word csr =  ((((word) treg[0x0E]) << 8) | treg[0x0F]) << 4;
-    csr == (csr & mask) | base;
+    csr = (csr & mask) | base;
     BOOLEAN csron;
     switch (treg[0x0A] & 0x60)
         {
@@ -878,7 +877,7 @@ static void s4_refresh (void)
     word addr = ((((word) treg[0x0C]) << 8) | treg[0x0D]) << 5;
     addr = addr & mask;
     word csr =  ((((word) treg[0x0E]) << 8) | treg[0x0F]) << 5;
-    csr == csr & mask;
+    csr = csr & mask;
     BOOLEAN csron;
     switch (treg[0x0A] & 0x60)
         {

@@ -2162,7 +2162,7 @@ void OutZ80(word port, byte value)
 		case 0xd4:
 		case 0xd6:
 #ifdef HAVE_SD_CARD
-            sdcard_out (port, value);
+                    sdcard_out ((byte) port, value);
 #else
 			OutZ80_bad("REMEMOTECH/REMEMOrizer SD Card", port, value, TRUE);
 #endif
@@ -2435,7 +2435,7 @@ byte InZ80(word port)
 		case 0xd6:
 		case 0xd7:
 #ifdef HAVE_SD_CARD
-            return sdcard_in (port);
+                    return sdcard_in ((byte) port);
 #else
 			return InZ80_bad("REMEMOTECH/REMEMOrizer SD Card", port, TRUE);
 #endif
@@ -3528,7 +3528,7 @@ int memu (int argc, const char *argv[])
                 byte run_tmp[4];
                 const char *fpath = path_join (cpm_get_drive_a(), argv[i]);
                 FILE *frun = efopen (fpath, "rb");
-                int len = fread (run_tmp, 1, 4, frun);
+                int len = (int) fread (run_tmp, 1, 4, frun);
                 fclose (frun);
                 if ( len < 4 )
                     fatal("RUN file is way too short");
