@@ -216,6 +216,16 @@
         make
     </code></pre>
 
+    <p>Alternately, to build against a copy of SDL3 installed by a package manager:</p>
+    <pre><code>
+        git clone https://github.com/Memotech-Bill/MEMU.git
+        cd MEMU
+        mkdir build-sdl
+        cd build-sdl
+        cmake -DSDL_SHARED=Y -DTARGET=SDL ..
+        make
+    </code></pre>
+
     <p><b>Note:</b> The framebuffer version is intended for use from the console keyboard
       and screen. It will not work over an SSH connection.</p>
 

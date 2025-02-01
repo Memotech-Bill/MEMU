@@ -462,7 +462,11 @@ elseif("${TARGET}" STREQUAL "SDL")
   
   add_executable(memu-sdl)
 
-  add_subdirectory (../SDL SDL EXCLUDE_FROM_ALL)
+  if (SDL_SHARED)
+    find_package (SDL3 REQUIRED CONFIG REQUIRED COMPONENTS SDL3-shared)
+  else ()
+    add_subdirectory (../SDL SDL EXCLUDE_FROM_ALL)
+  endif ()
   
   target_compile_definitions(memu-sdl PUBLIC
     -DLSB_FIRST
