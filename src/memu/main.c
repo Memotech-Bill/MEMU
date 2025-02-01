@@ -5,7 +5,7 @@
 #include <sys/stat.h>
 #include <stdio.h>
 #include <stdlib.h>
-#ifdef WIN32
+#ifdef _WIN32
 #define BOOLEAN BOOLEANx
 #include <windows.h>
 #include <direct.h>
@@ -14,6 +14,15 @@
 #else
 #include <unistd.h>
 #endif
+#ifdef __APPLE__
+#include <TargetConditionals.h>
+#if TARGET_OS_MAC
+#include <mach-o/dyld.h>
+#include <limits.h>
+#else
+#error Unsupported Apple device
+#endif
+#endif
 #include "common.h"
 #include "types.h"
 #include "dirmap.h"
@@ -21,7 +30,7 @@
 
 //  Test for a regular file
 
-#ifdef WIN32
+#ifdef _WIN32
 #define S_ISREG(mode) (mode & _S_IFREG)
 #endif
 
@@ -34,7 +43,27 @@ BOOLEAN cfg_test_file (const char *psPath)
 
 char * cfg_exe_path (void)
     {
-#ifdef UNIX    
+#if defined(_WIN32)
+    char *psPath = malloc (MAX_PATH + 1);
+    DWORD n;
+    if ( psPath == NULL ) return NULL;
+    n = GetModuleFileName (NULL, psPath, MAX_PATH + 1);
+    if ( ( n == 0 ) || ( GetLastError () == ERROR_INSUFFICIENT_BUFFER ) )
+        {
+        free (psPath);
+        return NULL;
+        }
+    return psPath;
+    
+#elif defined(__APPLE__)
+    char *psPath = malloc (MAX_PATH + 1);
+    uint32_t bufsize = PATH_MAX;
+    if(!_NSGetExecutablePath(psPath, &bufsize))
+        return psPath;
+    free psPath;
+    return NULL;
+    
+#elif defined(UNIX)
     static const char *psLink = "/proc/self/exe";
     struct stat st;
     char *psPath = NULL;
@@ -56,25 +85,14 @@ char * cfg_exe_path (void)
     psPath[n] = '\0';
     return psPath;
 #endif
-#ifdef WIN32
-    char *psPath = malloc (MAX_PATH + 1);
-    DWORD n;
-    if ( psPath == NULL ) return NULL;
-    n = GetModuleFileName (NULL, psPath, MAX_PATH + 1);
-    if ( ( n == 0 ) || ( GetLastError () == ERROR_INSUFFICIENT_BUFFER ) )
-        {
-        free (psPath);
-        return NULL;
-        }
-    return psPath;
-#endif
+    return NULL;
     }
 
 int memu (int argc, const char **argv);
 
 int main (int argc, const char *argv[])
     {
-#ifdef WIN32
+#ifdef _WIN32
     char sHome[MAX_PATH+1];
     strcpy (sHome, getenv("HOMEDRIVE"));
     strcat (sHome, getenv ("HOMEPATH"));
@@ -87,7 +105,7 @@ int main (int argc, const char *argv[])
     if ( psExe != NULL )
         {
         psDEnd = strrchr (psExe, '/');
-#ifdef WIN32
+#ifdef _WIN32
         char *psD2 = strrchr (psExe, '\\');
         if ( psD2 > psDEnd ) psDEnd = psD2;
 #endif
@@ -97,7 +115,11 @@ int main (int argc, const char *argv[])
             }
         PMapRootDir (pmapExe, psExe, FALSE);
         }
-#ifdef WIN32
+    else
+        {
+        PMapRootDir (pmapExe, ".", TRUE);
+        }
+#ifdef _WIN32
     char *psWorkDir = (char *) emalloc (MAX_PATH+1);
     psWorkDir = _getcwd (psWorkDir, MAX_PATH+1);
 #else

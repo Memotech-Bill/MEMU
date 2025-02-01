@@ -30,13 +30,12 @@
 
 // Cross-platform network mappings
 
-#ifdef _WIN32
+#if defined(_WIN32)
 
 typedef int             socklen_t;
 typedef SSIZE_T         ssize_t;
 #define net_errno       WSAGetLastError ()
-// #define IPPROTO_IP      IPPROTO_TCP
-#define SOCK_NONBLOCK   0x100
+#define SOCK_NONBLOCK   0x4000
 #define NET_EINPROGRESS WSAEINPROGRESS
 #define NET_EAGAIN      WSAEWOULDBLOCK
 #define NET_EWOULDBLOCK WSAEWOULDBLOCK
@@ -123,21 +122,10 @@ const char* net_strerror( int errorCode )
 	case WSAEDQUOT: return "Disc quota exceeded";
 	case WSAESTALE: return "Stale NFS file handle";
 	case WSAEREMOTE: return "Too many levels of remote in path";
-	    // case WSAINVALID_HANDLE: return "Event Object Handle is invalid";
-	    // case WSANOT_ENOUGH_MEMORY: return "Windows doesn't have enough memory";
-	    // case WSAINVALID_PARAMETER: return "Invalid parameter(s)";
-	    // case WSAOPERATION_ABORTED: return "Overlapped operation aborted";
-	    // case WSAIO_INCOMPLETE: return "Overlapped I/O operation not completed yet";
-	    // case WSAIO_PENDING: return "Overlapped operation pending, will indicate completion later";        // ?? how is this different from IO_INCOMPLETE ?!
 	case WSAEPROCLIM: return "Too many processes using WinSock";
-	    // case WSASYSNOTREADY: return "Network subsystem unavailable (missing WinSock DLL?)";
-	    // case WSAVERNOTSUPPORTED: return "Requested WinSock version not supported";
-	    // case WSANOTINITIALISED: return "WSAStartup() must be called successfully before using this function";
 	case WSAEDISCON: return "Remote host has shut the connection down";
 	case WSAENOMORE: return "No more results";
-	    // case WSAE_NO_MORE: return "No more results";
 	case WSAECANCELLED: return "Call has been canceled";
-	    // case WSAE_CANCELLED: return "Call has been canceled";
 	case WSAEINVALIDPROCTABLE: return "Service provider procedure table is invalid";
 	case WSAEINVALIDPROVIDER: return "Service provider is invalid";
 	case WSAEPROVIDERFAILEDINIT: return "Service provider failed to initialize";
@@ -149,8 +137,55 @@ const char* net_strerror( int errorCode )
 	default: return "An errorcode that's not supported/used on the current platform (or so I thought..)";
 	}
     }
-	
+
+#elif defined(__APPLE__)
+#include <TargetConditionals.h>
+#if TARGET_OS_MAC
+#define INVALID_SOCKET  -1
+#ifndef SOCK_NONBLOCK
+#define SOCK_NONBLOCK   0x4000
+#endif
+#define NET_EINPROGRESS EINPROGRESS
+#define NET_EAGAIN      EAGAIN
+#define NET_EWOULDBLOCK EWOULDBLOCK
+
+#define readsocket      read
+#define writesocket     write
+#define closesocket     close
+#define net_strerror    strerror
+#define net_errno       errno
+
+static inline SOCKET socket3 (int af, int type, int protocol)
+    {
+    SOCKET sock = socket (af, type & 0xFF, protocol);
+    if ((sock != INVALID_SOCKET) && (type & SOCK_NONBLOCK))
+        {
+        int iflg = fcntl (sock, F_GETFL);
+        fcntl (sock, F_SETFL, iflg | O_NONBLOCK);
+        }
+    return sock;
+    }
+
+static inline SOCKET accept4 (SOCKET sockfd, struct sockaddr *addr, socklen_t *addrlen, int flags)
+    {
+    SOCKET sock = accept (sockfd, addr, addrlen);
+    if ((sock != INVALID_SOCKET) && (flags == SOCK_NONBLOCK))
+        {
+        int iflg = fcntl (sock, F_GETFL);
+        fcntl (sock, F_SETFL, iflg | O_NONBLOCK);
+        }
+    return sock;
+    }
+
 #else
+#error Unsupported Apple device
+#endif
+
+#else
+#define INVALID_SOCKET  -1
+#define NET_EINPROGRESS EINPROGRESS
+#define NET_EAGAIN      EAGAIN
+#define NET_EWOULDBLOCK EWOULDBLOCK
 typedef int SOCKET;
 #define socket3         socket
 #define readsocket      read
@@ -158,10 +193,6 @@ typedef int SOCKET;
 #define closesocket     close
 #define net_strerror    strerror
 #define net_errno       errno
-#define INVALID_SOCKET  -1
-#define NET_EINPROGRESS EINPROGRESS
-#define NET_EAGAIN      EAGAIN
-#define NET_EWOULDBLOCK EWOULDBLOCK
 #endif
 
 #define NFX_MEM             0x8000
