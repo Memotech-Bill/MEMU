@@ -141,6 +141,8 @@ const char* net_strerror( int errorCode )
 #elif defined(__APPLE__)
 #include <TargetConditionals.h>
 #if TARGET_OS_MAC
+
+#include <fcntl.h>
 #define INVALID_SOCKET  -1
 #ifndef SOCK_NONBLOCK
 #define SOCK_NONBLOCK   0x4000
