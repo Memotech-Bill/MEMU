@@ -216,6 +216,10 @@ elseif("${TARGET}" STREQUAL "SDL")
     target_sources(memu_src INTERFACE
       ${CMAKE_CURRENT_LIST_DIR}/dirt_w32.c
       )
+  elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+    target_sources(memu_src INTERFACE
+      ${CMAKE_CURRENT_LIST_DIR}/dirt_unix.c
+      )
   else()
     message(FATAL_ERROR "Directory Traversal Routines not supported")
   endif()
