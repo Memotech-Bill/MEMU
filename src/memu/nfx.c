@@ -151,6 +151,7 @@ const char* net_strerror( int errorCode )
 #define NET_EAGAIN      EAGAIN
 #define NET_EWOULDBLOCK EWOULDBLOCK
 
+typedef int SOCKET;
 #define readsocket      read
 #define writesocket     write
 #define closesocket     close

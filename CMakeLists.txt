@@ -491,7 +491,7 @@ elseif("${TARGET}" STREQUAL "SDL")
     -DZ80_DEBUG
     )
     
-  if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+  if ((${CMAKE_SYSTEM_NAME} STREQUAL "Linux") OR (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin"))
     target_compile_definitions(memu-sdl PUBLIC
       -DUNIX
       )
@@ -508,7 +508,7 @@ elseif("${TARGET}" STREQUAL "SDL")
       ws2_32
       winmm
       )
-    endif ()
+  endif ()
     
   target_include_directories(memu-sdl INTERFACE
     ${SDL2_INCLUDE_DIRS}

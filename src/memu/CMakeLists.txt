@@ -208,17 +208,13 @@ elseif("${TARGET}" STREQUAL "SDL")
     ${CMAKE_CURRENT_LIST_DIR}/win_sdl.c
     )
 
-  if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+  if ((${CMAKE_SYSTEM_NAME} STREQUAL "Linux") OR (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin"))
     target_sources(memu_src INTERFACE
       ${CMAKE_CURRENT_LIST_DIR}/dirt_unix.c
       )
   elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
     target_sources(memu_src INTERFACE
       ${CMAKE_CURRENT_LIST_DIR}/dirt_w32.c
-      )
-  elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
-    target_sources(memu_src INTERFACE
-      ${CMAKE_CURRENT_LIST_DIR}/dirt_unix.c
       )
   else()
     message(FATAL_ERROR "Directory Traversal Routines not supported")

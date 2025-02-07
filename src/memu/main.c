@@ -41,7 +41,7 @@ BOOLEAN cfg_test_file (const char *psPath)
     return ( ( iErr == 0 ) && ( S_ISREG (st.st_mode) ) );
     }
 
-char * cfg_exe_path (void)
+char * cfg_exe_path (const char *argv0)
     {
 #if defined(_WIN32)
     char *psPath = malloc (MAX_PATH + 1);
@@ -55,15 +55,7 @@ char * cfg_exe_path (void)
         }
     return psPath;
     
-#elif defined(__APPLE__)
-    char *psPath = malloc (MAX_PATH + 1);
-    uint32_t bufsize = PATH_MAX;
-    if(!_NSGetExecutablePath(psPath, &bufsize))
-        return psPath;
-    free psPath;
-    return NULL;
-    
-#elif defined(UNIX)
+#elif defined(__linux__)
     static const char *psLink = "/proc/self/exe";
     struct stat st;
     char *psPath = NULL;
@@ -84,6 +76,38 @@ char * cfg_exe_path (void)
         }
     psPath[n] = '\0';
     return psPath;
+    
+#elif defined(UNIX)
+    if (strchr (argv0, '/')) return strdup (argv0);
+    struct stat st;
+    char *psPath = NULL;
+    size_t nPLen = 0;
+    size_t nFLen = strlen (argv0);
+    size_t nDLen;
+    const char *ps1 = getenv ("PATH");
+    if ((ps1 == NULL) || (*ps1 == '\0')) return NULL;
+    while (ps1)
+        {
+        const char *ps2 = strchr (ps1, ':');
+        if (ps2) nDLen = (size_t)(ps2 - ps1);
+        else nDLen = strlen (ps1);
+        size_t nSLen = nDLen + nFLen + 1;
+        if (nSLen > nPLen)
+            {
+            nPLen = nSLen;
+            if (psPath) free (psPath)
+            psPath = (char *) malloc (psPath, nSLen + 1);
+            if (psPath == NULL) return NULL;
+            }
+        strncpy (psPath, ps1, nDLen);
+        psPath[nDLen] = '/';
+        strcpy (psPath + nDLen + 1, argv0);
+        if (stat (psPath, &st) == 0) return psPath;
+        if (ps2 == NULL) break;
+        ps1 = ps2 + 1;
+        }
+    if (psPath) free (psPath);
+            
 #endif
     return NULL;
     }
@@ -100,7 +124,7 @@ int main (int argc, const char *argv[])
 #else
     PMapRootDir (pmapHome, getenv ("HOME"), TRUE);
 #endif
-    char *psExe = cfg_exe_path ();
+    char *psExe = cfg_exe_path (argv[0]);
     char *psDEnd = NULL;
     if ( psExe != NULL )
         {
