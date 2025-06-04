@@ -16,6 +16,7 @@
 #include <sys/ioctl.h>
 #include <linux/kd.h>
 #include <termios.h>
+#include <errno.h>
 
 #include "types.h"
 #include "diag.h"
@@ -69,7 +70,8 @@ void win_fb_init (void)
 	/* save old keyboard mode */
 	if (ioctl (ttyfd, KDGKBMODE, &old_keyboard_mode) < 0)
 		{
-		fatal ("Unable to get existing keyboard mode.");
+        int iErr = errno;
+		fatal ("Unable to get existing keyboard mode: %s", strerror(iErr));
 		}
 
 	tcgetattr (ttyfd, &tty_attr_old);
@@ -92,24 +94,35 @@ void win_fb_init (void)
 	fbfd = open("/dev/fb0", O_RDWR);
 	if (fbfd == -1)
 		{
-		fatal ("Unable to open framebuffer device.");
+        int iErr = errno;
+        win_term();
+		fatal ("Unable to open framebuffer device: %s", strerror(iErr));
 		}
 	diag_message (DIAG_WIN_HW, "Opened framebuffer.");
 
 	// Get fixed screen information
 	if ( ioctl (fbfd, FBIOGET_FSCREENINFO, &finfo) == -1 )
 		{
-		fatal ("Error reading famebuffer fixed information.");
+        int iErr = errno;
+        win_term();
+		fatal ("Error reading famebuffer fixed information: %s", strerror(iErr));
 		}
 	diag_message (DIAG_WIN_HW, "Screen ID: %s", finfo.id);
 	diag_message (DIAG_WIN_HW, "Line length = %d.", finfo.line_length);
 	pbline   =  (byte *) malloc (finfo.line_length);
-	if ( pbline == NULL )   fatal ("Unable to allocate video line buffer.");
+	if ( pbline == NULL )
+        {
+        int iErr = errno;
+        win_term();
+        fatal ("Unable to allocate video line buffer: %s", strerror(iErr));
+        }
 
 	// Get variable screen information
 	if ( ioctl (fbfd, FBIOGET_VSCREENINFO, &vinfo) == -1 )
 		{
-		fatal ("Error reading famebuffer variable information.");
+        int iErr = errno;
+        win_term();
+		fatal ("Error reading famebuffer variable information: %s", strerror(iErr));
 		}
 	diag_message (DIAG_WIN_HW, "Resolution: %d x %d, Bits per pixel: %d", vinfo.xres, vinfo.yres, vinfo.bits_per_pixel);
 	diag_message (DIAG_WIN_HW, "Red: offset = %d, length = %d, msb = %d", vinfo.red.offset, vinfo.red.length,
@@ -126,7 +139,9 @@ void win_fb_init (void)
 	fbp = (byte *) mmap (0, screensize, PROT_READ | PROT_WRITE, MAP_SHARED, fbfd, 0);
 	if ( fbp == (byte *) -1 )
 		{
-		fatal ("Failed to map frame buffer memory.");
+        int iErr = errno;
+        win_term();
+		fatal ("Failed to map frame buffer memory: %s", strerror(iErr));
 		}
 	diag_message (DIAG_WIN_HW, "The framebuffer device was mapped to memory successfully.");
 
@@ -315,6 +330,7 @@ void win_refresh(WIN *win_pub)
 			}
 			default:
 			{
+            win_term();
 			fatal ("Unsupported bits per pixel.");
 			break;
 			}
