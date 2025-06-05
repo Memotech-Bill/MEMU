@@ -201,6 +201,15 @@
         cmake -DTARGET=FBuf ..
         make
     </code></pre>
+
+    <p>The framebuffer version requires permission to open <code>/dev/fb0</code>. This may require
+      membership of a particular group such as <code>video</code> (see <code>ls -l /dev/fbo</code>).
+      To add a user to the <code>video</code> group use the command:</p>
+    <pre><code>
+        sudo usermod -a -G video username
+    </code></pre>
+    <p>Replace <code>username</code> by the required user. If necessary, replacs <code>video</code>
+      by the required group.</p>
         
     <p>To build the experimental SDL3 version of MEMU (for Wayland support):</p>
     <pre><code>

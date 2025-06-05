@@ -29,7 +29,7 @@ It now includes all my current ports of MEMU. It includes versions for:
 Work is still needed to clean the code. There are probably bugs, and there is certainly
 diagnostic code.
 
-For build and usage information, see the [documentation](https://memotech-bill.github.io/MEMU/#Build-RPi).
+For build and usage information, see the [documentation](https://memotech-bill.github.io/MEMU/).
 
 The game "TOADO" on MEMU running on a Raspberry Pi Pico.
 ![MEMU on a Pico](docs/MEMU_Pico.jpg)
