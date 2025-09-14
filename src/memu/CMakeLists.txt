@@ -40,6 +40,7 @@ if("${TARGET}" STREQUAL "Pico")
     ${CMAKE_CURRENT_LIST_DIR}/dirmap.c
     ${CMAKE_CURRENT_LIST_DIR}/ff_disk.c
     ${CMAKE_CURRENT_LIST_DIR}/ff_stdio.c
+    ${CMAKE_CURRENT_LIST_DIR}/kbd2.c
     ${CMAKE_CURRENT_LIST_DIR}/kbd_pico.c
     ${CMAKE_CURRENT_LIST_DIR}/main_pico.c
     ${CMAKE_CURRENT_LIST_DIR}/sd_spi2.c
