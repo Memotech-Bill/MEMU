@@ -1686,6 +1686,7 @@ static void cfg_restart (void)
             mem_set_rom_enable (rom_enable);
             cfg.mfx_emu = -cfg.mfx_emu;
             if ( cfg.mfx_emu <= 0 ) cfg.mfx_emu = MFXEMU_MAX;
+            mfx_init (cfg.mfx_emu);
             }
 #elif defined(HAVE_CFX2)
             case CFG_CFX2:
@@ -1715,6 +1716,8 @@ static void cfg_restart (void)
             cfg.bVGA = TRUE;
             vga_init ();
 #endif
+            cfx2_init ();
+            diag_message (DIAG_INIT, "After cfx2_init");
             break;
             }
 #endif
@@ -1810,12 +1813,6 @@ static BOOLEAN row_exit_key (int info, int wk)
 #endif
             cfg_set_drives ();
             ALERT_OFF();
-#if defined(HAVE_MFX)
-            if ( cfg.mfx_emu > 0 ) mfx_init (cfg.mfx_emu);
-#elif defined(HAVE_CFX2)
-            if ( cfg.bCFX2 ) cfx2_init ();
-            diag_message (DIAG_INIT, "After cfx2_init");
-#endif
             if ( bCfgRemap )
                 {
                 cfg.kbd_emu   |= KBDEMU_REMAP;
