@@ -162,7 +162,7 @@ static BOOLEAN mon_kbd_pressed;
    Latches the data onto the screen. */
 void mon_out30(byte value)
 	{
-    if ( mon_emu == 0 ) return;
+    if (( mon_emu == 0 ) || (mon_tbuf == NULL)) return;
 	diag_message(DIAG_MON_HW, "write address low 0x%02x", value);
 	mon_adr_lo = value;
 	if ( mon_adr_hi & 0x80 )
@@ -182,7 +182,7 @@ void mon_out30(byte value)
 /* Address high */
 void mon_out31(byte value)
 	{
-    if ( mon_emu == 0 ) return;
+    if (( mon_emu == 0 ) || (mon_tbuf == NULL)) return;
 	diag_message(DIAG_MON_HW, "write address high 0x%02x", value);
 	mon_adr_hi = value;
 	}
@@ -191,7 +191,7 @@ void mon_out31(byte value)
 /* ASCII data */
 void mon_out32(byte value)
 	{
-    if ( mon_emu == 0 ) return;
+    if (( mon_emu == 0 ) || (mon_tbuf == NULL)) return;
 	diag_message(DIAG_MON_HW, "write ASCII data 0x%02x", value);
 	mon_ascd = value;
 	}
@@ -200,7 +200,7 @@ void mon_out32(byte value)
 /* Attribute data */
 void mon_out33(byte value)
 	{
-    if ( mon_emu == 0 ) return;
+    if (( mon_emu == 0 ) || (mon_tbuf == NULL)) return;
 	diag_message(DIAG_MON_HW, "write attribute data 0x%02x", value);
 	mon_atrd = value;
 	}
@@ -209,7 +209,7 @@ void mon_out33(byte value)
 /* CRTC address */
 void mon_out38(byte value)
 	{
-    if ( mon_emu == 0 ) return;
+    if (( mon_emu == 0 ) || (mon_tbuf == NULL)) return;
 	diag_message(DIAG_MON_HW, "select CRTC register %d", value);
 	value &= 0x1f; /* Only low 5 bits are significant */
 	if ( value >= NREG80C )
@@ -226,7 +226,7 @@ void mon_out38(byte value)
 /* CRTC data */
 void mon_out39(byte value)
 	{
-    if ( mon_emu == 0 ) return;
+    if (( mon_emu == 0 ) || (mon_tbuf == NULL)) return;
 	diag_message(DIAG_MON_HW, "write CRTC register %d,0x%02x", mon_crtc_address, value);
 	mon_tbuf->reg[mon_crtc_address] = value;
 	switch ( mon_crtc_address )
@@ -284,6 +284,7 @@ byte mon_in30(void)
 /* ASCII data */
 byte mon_in32(void)
 	{
+    if (( mon_emu == 0 ) || (mon_tbuf == NULL)) return 0xff;
 	word adr = ( (((word)(mon_adr_hi&0x07))<<8) | mon_adr_lo );
 	if ( (mon_adr_hi&0x80) == 0x00 )
 		{
@@ -299,6 +300,7 @@ byte mon_in32(void)
 /* Attribute data */
 byte mon_in33(void)
 	{
+    if (( mon_emu == 0 ) || (mon_tbuf == NULL)) return 0xff;
 	word adr = ( (((word)(mon_adr_hi&0x07))<<8) | mon_adr_lo );
 	if ( (mon_adr_hi&0x80) == 0x00 )
 		{
@@ -315,6 +317,7 @@ byte mon_in33(void)
    Not sure if this is readable on real hardware. */
 byte mon_in38(void)
 	{
+    if (( mon_emu == 0 ) || (mon_tbuf == NULL)) return 0xff;
 	diag_message(DIAG_MON_HW, "return selected CRTC register returned %d", mon_crtc_address);
 	return mon_crtc_address;
 	}
@@ -325,6 +328,7 @@ byte mon_in38(void)
    but we allow them all to be read. */
 byte mon_in39(void)
 	{
+    if (( mon_emu == 0 ) || (mon_tbuf == NULL)) return 0xff;
 	if ( mon_crtc_address >= NREG80C )
 		fatal("read of CRTC register %d not emulated", mon_crtc_address);
 	switch ( mon_crtc_address )
