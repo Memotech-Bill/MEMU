@@ -820,9 +820,9 @@ void win_handle_events()
         iPtr = iKBOut;
         if ( ++iKBOut >= LEN_KEYBUF ) iKBOut = 0;
         if ( keybuf[iPtr].wk & WK_Release )
-            keybuf[iPtr].win->keyrelease (active_win, keybuf[iPtr].wk & (~WK_Release));
+            keybuf[iPtr].win->keyrelease (keybuf[iPtr].win, keybuf[iPtr].wk & (~WK_Release));
         else
-            keybuf[iPtr].win->keypress (active_win, keybuf[iPtr].wk);
+            keybuf[iPtr].win->keypress (keybuf[iPtr].win, keybuf[iPtr].wk);
         }
     /* It seems important to some versions of Windows at least,
        that we only shut everything down from the main thread. */
