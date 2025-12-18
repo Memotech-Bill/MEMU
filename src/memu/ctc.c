@@ -265,6 +265,7 @@ void ctc_trigger(int channel)
 		{
 		if ( c->control & CC_COUNTER_MODE )
 			{
+            diag_message(DIAG_CTC_COUNT, "CTC trigger channel %d", channel);
 			if ( --(c->counter) == 0 )
 				{
 				c->counter = c->constant; /* Reload */
@@ -296,15 +297,15 @@ void ctc_advance (int adv)
     for ( channel = 0; channel < N_CHANNELS; ++channel )
         {
         CHANNEL *c = &(ctc_channels[channel]);
-        IF_CHAN(channel)
-            if ( c->run ) diag_message(DIAG_CTC_COUNT, "CTC advance channel %d by %d clocks",
-                channel, adv);
         if ( (c->control & (CC_CONSTANT|CC_RESET)) == 0 )
             {
             if ( (c->control & CC_COUNTER_MODE) == 0 )
                 {
                 if ( c->run )
                     {
+                    IF_CHAN(channel)
+                        diag_message(DIAG_CTC_COUNT, "CTC advance channel %d by %d clocks",
+                            channel, adv);
                     int clks = adv;
                     while ( clks > 0 )
                         {

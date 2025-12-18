@@ -78,64 +78,64 @@ const char* net_strerror( int errorCode )
     // which is placed in the Public Domain
 
     switch( errorCode )
-	{
-	case 0:	return "NO ERROR";
-	case WSAEINTR: return "Interrupted system call";
-	case WSAEBADF: return "Bad file number";
-	case WSAEACCES: return "Permission denied";
-	case WSAEFAULT: return "Bad address";
-	case WSAEINVAL: return "Invalid argument";
-	case WSAEMFILE: return "Too many open sockets";
-	case WSAEWOULDBLOCK: return "Operation would block";
-	case WSAEINPROGRESS: return "Operation now in progress";
-	case WSAEALREADY: return "Operation already in progress";
-	case WSAENOTSOCK: return "Socket operation on non-socket";
-	case WSAEDESTADDRREQ: return "Destination address required";
-	case WSAEMSGSIZE: return "Message too long";
-	case WSAEPROTOTYPE: return "Protocol wrong type for socket";
-	case WSAENOPROTOOPT: return "Bad protocol option";
-	case WSAEPROTONOSUPPORT: return "Protocol not supported";
-	case WSAESOCKTNOSUPPORT: return "Socket type not supported";
-	case WSAEOPNOTSUPP: return "Operation not supported on socket";
-	case WSAEPFNOSUPPORT: return "Protocol family not supported";
-	case WSAEAFNOSUPPORT: return "Address family not supported";
-	case WSAEADDRINUSE: return "Address already in use";
-	case WSAEADDRNOTAVAIL: return "Can't assign requested address";
-	case WSAENETDOWN: return "Network is down";
-	case WSAENETUNREACH: return "Network is unreachable";
-	case WSAENETRESET: return "Net connection reset";
-	case WSAECONNABORTED: return "Software caused connection abort";
-	case WSAECONNRESET: return "Connection reset by peer";
-	case WSAENOBUFS: return "No buffer space available";
-	case WSAEISCONN: return "Socket is already connected";
-	case WSAENOTCONN: return "Socket is not connected";
-	case WSAESHUTDOWN: return "Can't send after socket shutdown";
-	case WSAETOOMANYREFS: return "Too many references, can't splice";
-	case WSAETIMEDOUT: return "Connection timed out";
-	case WSAECONNREFUSED: return "Connection refused";
-	case WSAELOOP: return "Too many levels of symbolic links";
-	case WSAENAMETOOLONG: return "File name too long";
-	case WSAEHOSTDOWN: return "Host is down";
-	case WSAEHOSTUNREACH: return "No route to host";
-	case WSAENOTEMPTY: return "Directory not empty";
-	case WSAEUSERS: return "Too many users";
-	case WSAEDQUOT: return "Disc quota exceeded";
-	case WSAESTALE: return "Stale NFS file handle";
-	case WSAEREMOTE: return "Too many levels of remote in path";
-	case WSAEPROCLIM: return "Too many processes using WinSock";
-	case WSAEDISCON: return "Remote host has shut the connection down";
-	case WSAENOMORE: return "No more results";
-	case WSAECANCELLED: return "Call has been canceled";
-	case WSAEINVALIDPROCTABLE: return "Service provider procedure table is invalid";
-	case WSAEINVALIDPROVIDER: return "Service provider is invalid";
-	case WSAEPROVIDERFAILEDINIT: return "Service provider failed to initialize";
-	case WSASYSCALLFAILURE: return "System call has failed, even though it shouldn't";
-	case WSASERVICE_NOT_FOUND: return "Service not found";
-	case WSATYPE_NOT_FOUND: return "Class type not found";
-	case WSAEREFUSED: return "Database query was refused"; // whatever this means
-	case WSANO_DATA: return "The requested name is valid, but no data of the requested type was found";
-	default: return "An errorcode that's not supported/used on the current platform (or so I thought..)";
-	}
+        {
+        case 0: return "NO ERROR";
+        case WSAEINTR: return "Interrupted system call";
+        case WSAEBADF: return "Bad file number";
+        case WSAEACCES: return "Permission denied";
+        case WSAEFAULT: return "Bad address";
+        case WSAEINVAL: return "Invalid argument";
+        case WSAEMFILE: return "Too many open sockets";
+        case WSAEWOULDBLOCK: return "Operation would block";
+        case WSAEINPROGRESS: return "Operation now in progress";
+        case WSAEALREADY: return "Operation already in progress";
+        case WSAENOTSOCK: return "Socket operation on non-socket";
+        case WSAEDESTADDRREQ: return "Destination address required";
+        case WSAEMSGSIZE: return "Message too long";
+        case WSAEPROTOTYPE: return "Protocol wrong type for socket";
+        case WSAENOPROTOOPT: return "Bad protocol option";
+        case WSAEPROTONOSUPPORT: return "Protocol not supported";
+        case WSAESOCKTNOSUPPORT: return "Socket type not supported";
+        case WSAEOPNOTSUPP: return "Operation not supported on socket";
+        case WSAEPFNOSUPPORT: return "Protocol family not supported";
+        case WSAEAFNOSUPPORT: return "Address family not supported";
+        case WSAEADDRINUSE: return "Address already in use";
+        case WSAEADDRNOTAVAIL: return "Can't assign requested address";
+        case WSAENETDOWN: return "Network is down";
+        case WSAENETUNREACH: return "Network is unreachable";
+        case WSAENETRESET: return "Net connection reset";
+        case WSAECONNABORTED: return "Software caused connection abort";
+        case WSAECONNRESET: return "Connection reset by peer";
+        case WSAENOBUFS: return "No buffer space available";
+        case WSAEISCONN: return "Socket is already connected";
+        case WSAENOTCONN: return "Socket is not connected";
+        case WSAESHUTDOWN: return "Can't send after socket shutdown";
+        case WSAETOOMANYREFS: return "Too many references, can't splice";
+        case WSAETIMEDOUT: return "Connection timed out";
+        case WSAECONNREFUSED: return "Connection refused";
+        case WSAELOOP: return "Too many levels of symbolic links";
+        case WSAENAMETOOLONG: return "File name too long";
+        case WSAEHOSTDOWN: return "Host is down";
+        case WSAEHOSTUNREACH: return "No route to host";
+        case WSAENOTEMPTY: return "Directory not empty";
+        case WSAEUSERS: return "Too many users";
+        case WSAEDQUOT: return "Disc quota exceeded";
+        case WSAESTALE: return "Stale NFS file handle";
+        case WSAEREMOTE: return "Too many levels of remote in path";
+        case WSAEPROCLIM: return "Too many processes using WinSock";
+        case WSAEDISCON: return "Remote host has shut the connection down";
+        case WSAENOMORE: return "No more results";
+        case WSAECANCELLED: return "Call has been canceled";
+        case WSAEINVALIDPROCTABLE: return "Service provider procedure table is invalid";
+        case WSAEINVALIDPROVIDER: return "Service provider is invalid";
+        case WSAEPROVIDERFAILEDINIT: return "Service provider failed to initialize";
+        case WSASYSCALLFAILURE: return "System call has failed, even though it shouldn't";
+        case WSASERVICE_NOT_FOUND: return "Service not found";
+        case WSATYPE_NOT_FOUND: return "Class type not found";
+        case WSAEREFUSED: return "Database query was refused"; // whatever this means
+        case WSANO_DATA: return "The requested name is valid, but no data of the requested type was found";
+        default: return "An errorcode that's not supported/used on the current platform (or so I thought..)";
+        }
     }
 
 #elif defined(__APPLE__)
@@ -706,9 +706,9 @@ void nfx_socket_cmnd_tcp (int skt, byte value)
                 }
             else
                 {
-		int iErr = net_errno;
+                int iErr = net_errno;
                 diag_message (DIAG_NFX_EVENT, "Error %d sending data on socket %d: iskt = %d %s",
-		    iErr, skt, nfx_sock[skt].iskt, net_strerror (iErr));
+                    iErr, skt, nfx_sock[skt].iskt, net_strerror (iErr));
                 }
             }
         break;
@@ -716,6 +716,150 @@ void nfx_socket_cmnd_tcp (int skt, byte value)
         case SCR_SEND_KEEP:
         {
         diag_message (DIAG_NFX_EVENT, "Socket %d Send Keep: iskt = %d", skt, nfx_sock[skt].iskt);
+        break;
+        }
+        case SCR_RECV:
+        {
+        diag_message (DIAG_NFX_EVENT, "Socket %d Receive: iskt = %d", skt, nfx_sock[skt].iskt);
+        nfx_sock[skt].rxrd = ( nfx_sock_reg(skt, S_RX_RD) << 8 ) | nfx_sock_reg(skt, S_RX_RD + 1);
+        int ndata = nfx_sock[skt].rxwr - nfx_sock[skt].rxrd;
+        if ( ndata < 0 ) ndata = 0;
+        // if ( ndata < 0 ) ndata  += nfx_sock[skt].rxsize;
+        nfx_sock_reg(skt, S_RX_RSR) = ndata >> 8;
+        nfx_sock_reg(skt, S_RX_RSR + 1) = ndata & 0xFF;
+        if ( nfx_sock[skt].rxrd > nfx_sock[skt].rxmask )
+            {
+            nfx_sock[skt].rxrd &= nfx_sock[skt].rxmask;
+            nfx_sock[skt].rxwr = nfx_sock[skt].rxrd + ndata;
+            nfx_sock_reg(skt, S_RX_RD) = nfx_sock[skt].rxrd >> 8;
+            nfx_sock_reg(skt, S_RX_RD + 1) = nfx_sock[skt].rxrd & 0xFF;
+            }
+        break;
+        }
+        default:
+        {
+        diag_message (DIAG_NFX_EVENT, "Socket %d Undefined command", skt);
+        break;
+        }
+        }
+    }
+
+void nfx_socket_cmnd_udp (int skt, byte value)
+    {
+    uint16_t port = ( nfx_sock_reg(skt, S_PORT) << 8 ) | nfx_sock_reg(skt, S_PORT + 1);
+    switch (value)
+        {
+        case SCR_OPEN:
+        {
+        // OPEN Command
+        diag_message (DIAG_NFX_EVENT, "Socket %d Open UDP: iskt = %d", skt, nfx_sock[skt].iskt);
+        nfx_sock_reg(skt, S_SR) = SOCK_INIT;
+        nfx_sock[skt].txrd = 0;
+        nfx_sock[skt].txwr = 0;
+        nfx_sock_reg(skt, S_TX_RD) = 0;
+        nfx_sock_reg(skt, S_TX_RD + 1) = 0;
+        nfx_sock_reg(skt, S_TX_WR) = 0;
+        nfx_sock_reg(skt, S_TX_WR + 1) = 0;
+        nfx_sock_reg(skt, S_TX_FSR) = nfx_sock[skt].txsize >> 8;
+        nfx_sock_reg(skt, S_TX_FSR + 1) = nfx_sock[skt].txsize & 0xFF;
+        nfx_sock[skt].rxrd = 0;
+        nfx_sock[skt].rxwr = 0;
+        nfx_sock_reg(skt, S_RX_RD) = 0;
+        nfx_sock_reg(skt, S_RX_RD + 1) = 0;
+        nfx_sock_reg(skt, S_RX_RSR) = 0;
+        nfx_sock_reg(skt, S_RX_RSR + 1) = 0;
+        uint16_t port = ( nfx_sock_reg(skt, S_PORT) << 8 ) | nfx_sock_reg(skt, S_PORT + 1);
+        nfx_sock[skt].iskt = socket3 (AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, IPPROTO_IP);
+        if ( nfx_sock[skt].iskt == INVALID_SOCKET )
+            {
+            int iErr = net_errno;
+            fatal ("Could not create CONNECT socket %d: %s", skt, net_strerror (iErr));
+            }
+        struct sockaddr_in sa;
+        sa.sin_family = AF_INET;
+        sa.sin_addr.s_addr = htonl (INADDR_ANY);
+        sa.sin_port = htons (port);
+        if ( bind (nfx_sock[skt].iskt, (struct sockaddr *) &sa, sizeof (sa)) < 0 )
+            {
+            int iErr = net_errno;
+            if ( iErr != NET_EINPROGRESS )
+                fatal ("Failed to open socket %d: Error %d: %s", skt, iErr, net_strerror (iErr));
+            }
+        nfx_sock_reg(skt, S_SR) = SOCK_UDP;
+        break;
+        }
+        case SCR_CLOSE:
+        {
+        diag_message (DIAG_NFX_EVENT, "Socket %d Close: iskt = %d", skt, nfx_sock[skt].iskt);
+        if ( nfx_sock[skt].iskt != INVALID_SOCKET )
+            {
+            closesocket (nfx_sock[skt].iskt);
+            nfx_sock[skt].iskt = INVALID_SOCKET;
+            }
+        nfx_sock_reg(skt, S_SR) = SOCK_CLOSED;
+        break;
+        }
+        case SCR_SEND:
+        {
+        uint32_t addr = ( nfx_sock_reg(skt, S_DIPR) << 24 ) | ( nfx_sock_reg(skt, S_DIPR + 1) << 16 )
+            | ( nfx_sock_reg(skt, S_DIPR + 2) << 8 ) | nfx_sock_reg(skt, S_DIPR + 3);
+        uint16_t port = ( nfx_sock_reg(skt, S_DPORT) << 8 ) | nfx_sock_reg(skt, S_DPORT + 1);
+        diag_message (DIAG_NFX_EVENT, "Socket %d send to %d.%d.%d.%d:%d: iskt = %d", skt,
+            nfx_sock_reg(skt, S_DIPR), nfx_sock_reg(skt, S_DIPR + 1),
+            nfx_sock_reg(skt, S_DIPR + 2), nfx_sock_reg(skt, S_DIPR + 3), port, nfx_sock[skt].iskt);
+        struct sockaddr_in sa;
+        sa.sin_family = AF_INET;
+        sa.sin_addr.s_addr = htonl (addr);
+        sa.sin_port = htons (port);
+        nfx_sock[skt].txwr = ( nfx_sock_reg(skt, S_TX_WR) << 8 ) | nfx_sock_reg(skt, S_TX_WR + 1);
+        int nsend = nfx_sock[skt].txwr - nfx_sock[skt].txrd;
+        diag_message (DIAG_NFX_EVENT, "Socket %d Send %d bytes: iskt = %d", skt, nsend, nfx_sock[skt].iskt);
+        if ( nsend > 0 )
+            {
+            int nbyte;
+            if ( nfx_sock[skt].txwr <= nfx_sock[skt].txsize )
+                {
+                nbyte = sendto (nfx_sock[skt].iskt, &nfx_reg[nfx_sock[skt].txbase + nfx_sock[skt].txrd], nsend, 0, &sa, sizeof (sa));
+                if ( diag_flags[DIAG_NFX_DATA] )
+                    nfx_show_data (&nfx_reg[nfx_sock[skt].txbase + nfx_sock[skt].txrd], nsend);
+                }
+            else
+                {
+                int ncopy = nfx_sock[skt].txsize - nfx_sock[skt].txrd;
+                // diag_message (DIAG_NFX_EVENT, "ncopy = %d", ncopy);
+                memcpy (nfx_data, &nfx_reg[nfx_sock[skt].txbase + nfx_sock[skt].txrd], ncopy);
+                memcpy (&nfx_data[ncopy],  &nfx_reg[nfx_sock[skt].txbase], nsend - ncopy);
+                nbyte = sendto (nfx_sock[skt].iskt, nfx_data, nsend, 0, &sa, sizeof (sa));
+                if ( diag_flags[DIAG_NFX_DATA] ) nfx_show_data (nfx_data, nsend);
+                }
+            if ( nbyte >= 0 )
+                {
+                nfx_sock[skt].txrd += nbyte;
+                if ( nfx_sock[skt].txrd >= nfx_sock[skt].txsize )
+                    {
+                    nfx_sock[skt].txrd -= nfx_sock[skt].txsize;
+                    nfx_sock[skt].txwr -= nfx_sock[skt].txsize;
+                    }
+                int nfree = nfx_sock[skt].txrd - nfx_sock[skt].txwr;
+                if ( nfree <= 0 ) nfree += nfx_sock[skt].txsize;
+                nfx_sock_reg(skt, S_TX_RD) = nfx_sock[skt].txrd >> 8;
+                nfx_sock_reg(skt, S_TX_RD + 1) = nfx_sock[skt].txrd & 0xFF;
+                nfx_sock_reg(skt, S_TX_WR) = nfx_sock[skt].txwr >> 8;
+                nfx_sock_reg(skt, S_TX_WR + 1) = nfx_sock[skt].txwr & 0xFF;
+                nfx_sock_reg(skt, S_TX_FSR) = nfree >> 8;
+                nfx_sock_reg(skt, S_TX_FSR + 1) = nfree & 0xFF;
+                if ( !(nfx_sock_reg(skt, S_IR) & SIR_SEND_OK) )
+                    diag_message (DIAG_NFX_EVENT, "Socket %d: Raise SEND_OK interrupt: iskt = %d", skt, nfx_sock[skt].iskt);
+                nfx_sock_reg(skt, S_IR) |= SIR_SEND_OK;
+                nfx_reg[R_IR] |= 1 << skt;
+                }
+            else
+                {
+                int iErr = net_errno;
+                diag_message (DIAG_NFX_EVENT, "Error %d sending data on socket %d: iskt = %d %s",
+                    iErr, skt, nfx_sock[skt].iskt, net_strerror (iErr));
+                }
+            }
         break;
         }
         case SCR_RECV:
@@ -839,7 +983,7 @@ void nfx_socket_cmnd (int skt, byte value)
             nfx_socket_cmnd_tcp (skt, value);
             break;
         case PROTO_UDP:
-            nfx_socket_cmnd_other (skt, value);
+            nfx_socket_cmnd_udp (skt, value);
             break;
         case PROTO_IPRAW:
             nfx_socket_cmnd_other (skt, value);
@@ -865,17 +1009,17 @@ void nfx_socket_out (int skt, word addr, byte value)
             nfx_socket_cmnd (skt, value);
             break;
         case S_IR:
-            {
-            byte ir_clr = nfx_sock_reg(skt, S_IR) & value;
-            nfx_sock_reg(skt, S_IR) &= ~value;
-            if ( ir_clr & 0x01 ) diag_message (DIAG_NFX_EVENT, "Socket %d: Clear CONNECT interrupt", skt);
-            if ( ir_clr & 0x02 ) diag_message (DIAG_NFX_EVENT, "Socket %d: Clear DISCONNECT interrupt", skt);
-            if ( ir_clr & 0x04 ) diag_message (DIAG_NFX_EVENT, "Socket %d: Clear RECEIVED interrupt", skt);
-            if ( ir_clr & 0x08 ) diag_message (DIAG_NFX_EVENT, "Socket %d: Clear TIMEOUT interrupt", skt);
-            if ( ir_clr & 0x10 ) diag_message (DIAG_NFX_EVENT, "Socket %d: Clear SEND_OK interrupt", skt);
-            if ( nfx_sock_reg(skt, S_IR) == 0 ) nfx_reg[R_IR] &= ~( 1 << skt );
-            }
-            break;
+        {
+        byte ir_clr = nfx_sock_reg(skt, S_IR) & value;
+        nfx_sock_reg(skt, S_IR) &= ~value;
+        if ( ir_clr & 0x01 ) diag_message (DIAG_NFX_EVENT, "Socket %d: Clear CONNECT interrupt", skt);
+        if ( ir_clr & 0x02 ) diag_message (DIAG_NFX_EVENT, "Socket %d: Clear DISCONNECT interrupt", skt);
+        if ( ir_clr & 0x04 ) diag_message (DIAG_NFX_EVENT, "Socket %d: Clear RECEIVED interrupt", skt);
+        if ( ir_clr & 0x08 ) diag_message (DIAG_NFX_EVENT, "Socket %d: Clear TIMEOUT interrupt", skt);
+        if ( ir_clr & 0x10 ) diag_message (DIAG_NFX_EVENT, "Socket %d: Clear SEND_OK interrupt", skt);
+        if ( nfx_sock_reg(skt, S_IR) == 0 ) nfx_reg[R_IR] &= ~( 1 << skt );
+        }
+        break;
         default:
             nfx_sock_reg(skt, addr) = value;
             break;
@@ -924,105 +1068,151 @@ void nfx_out (byte port, byte value)
         }
     }
 
+static void nfx_write_wrap (int skt, byte *data, int nbyte)
+    {
+    int rxwr = nfx_sock[skt].rxwr & nfx_sock[skt].rxmask;
+    diag_message (DIAG_NFX_EVENT, "nfx_write_wrap: Write %d bytes of data at %d", nbyte, nfx_sock[skt].rxbase + rxwr);
+    if ( diag_flags[DIAG_NFX_DATA] ) nfx_show_data (data, nbyte);
+    if ( rxwr + nbyte > nfx_sock[skt].rxmask )
+        {
+        int ncopy = nfx_sock[skt].rxsize - rxwr;
+        memcpy (&nfx_reg[nfx_sock[skt].rxbase + rxwr], data, ncopy);
+        memcpy (&nfx_reg[nfx_sock[skt].rxbase], &data[ncopy], nbyte - ncopy);
+        }
+    else
+        {
+        memcpy (&nfx_reg[nfx_sock[skt].rxbase + rxwr], data, nbyte);
+        }
+    }
+
 void nfx_poll (void)
     {
     for (int skt = 0; skt < NFX_NSOCK; ++skt)
         {
-//        if ( nfx_sock_reg(skt, S_IR) == 0 )
+        if ( nfx_sock_reg(skt, S_SR) == SOCK_LISTEN )
             {
-            if ( nfx_sock_reg(skt, S_SR) == SOCK_LISTEN )
+            // Test for new connection
+            int icon = nfx_sock[skt].icon;
+            struct sockaddr_in sa;
+            socklen_t slen = sizeof (sa);
+            nfx_sock[skt].iskt = accept4 (nfx_conn[icon].iskt, (struct sockaddr *) &sa, &slen, SOCK_NONBLOCK);
+            int iErr = net_errno;
+            if ( nfx_sock[skt].iskt != INVALID_SOCKET )
                 {
-                // Test for new connection
-                int icon = nfx_sock[skt].icon;
-                struct sockaddr_in sa;
-                socklen_t slen = sizeof (sa);
-                nfx_sock[skt].iskt = accept4 (nfx_conn[icon].iskt, (struct sockaddr *) &sa, &slen, SOCK_NONBLOCK);
+                uint32_t addr = ntohl (sa.sin_addr.s_addr);
+                nfx_sock_reg(skt, S_DIPR)     = ( addr >> 24 ) & 0xFF;
+                nfx_sock_reg(skt, S_DIPR + 1) = ( addr >> 16 ) & 0xFF;
+                nfx_sock_reg(skt, S_DIPR + 2) = ( addr >> 8 ) & 0xFF;
+                nfx_sock_reg(skt, S_DIPR + 3) = addr & 0xFF;
+                uint16_t port = ntohs (sa.sin_port);
+                nfx_sock_reg(skt, S_DPORT)     = ( port >> 8 ) & 0xFF;
+                nfx_sock_reg(skt, S_DPORT + 1) = port & 0xFF;
+                if ( !(nfx_sock_reg(skt, S_IR) & SIR_CON) )
+                    diag_message (DIAG_NFX_EVENT, "Socket %d: Raise CONNECT interrupt @2: iskt = %d", skt, nfx_sock[skt].iskt);
+                nfx_sock_reg(skt, S_IR) |= SIR_CON;
+                nfx_reg[R_IR] |= 1 << skt;
+                nfx_sock_reg(skt, S_SR) = SOCK_ESTABLISHED;
+                slen = sizeof (sa);
+                getsockname (nfx_sock[skt].iskt, (struct sockaddr *) &sa, &slen);
+                addr = ntohl (sa.sin_addr.s_addr);
+                nfx_reg[R_SIPR]     = ( addr >> 24 ) & 0xFF;
+                nfx_reg[R_SIPR + 1] = ( addr >> 16 ) & 0xFF;
+                nfx_reg[R_SIPR + 2] = ( addr >> 8 ) & 0xFF;
+                nfx_reg[R_SIPR + 3] = addr & 0xFF;
+                diag_message (DIAG_NFX_EVENT,
+                    "Socket %d connection from %d.%d.%d.%d port %d to %d.%d.%d.%d: iskt = %d",
+                    skt, nfx_sock_reg(skt, S_DIPR), nfx_sock_reg(skt, S_DIPR + 1),
+                    nfx_sock_reg(skt, S_DIPR + 2), nfx_sock_reg(skt, S_DIPR + 3), port,
+                    nfx_reg[R_SIPR], nfx_reg[R_SIPR + 1], nfx_reg[R_SIPR + 2], nfx_reg[R_SIPR + 3],
+                    nfx_sock[skt].iskt);
+                }
+            else if (( iErr != NET_EAGAIN ) && ( iErr != NET_EWOULDBLOCK ))
+                {
+                diag_message (DIAG_NFX_EVENT, "Error %d testing for connection on socket %d: nfx_conn.iskt = %d %s",
+                    iErr, skt, nfx_conn[icon].iskt, net_strerror (iErr));
+                }
+            }
+        else if ( nfx_sock_reg(skt, S_SR) == SOCK_ESTABLISHED )
+            {
+            // Test for data received
+            // int nfree = nfx_sock[skt].rxrd - nfx_sock[skt].rxwr;
+            // if ( nfree <= 0 ) nfree += nfx_sock[skt].rxsize;
+            int nfree = nfx_sock[skt].rxsize - (nfx_sock[skt].rxwr - nfx_sock[skt].rxrd);
+            if ( nfree > 0 )
+                {
+                // diag_message (DIAG_NFX_EVENT, "nfx_poll: rxrd = %d rxwr = %d nfree = %d",
+                //     nfx_sock[skt].rxrd, nfx_sock[skt].rxwr, nfree);
+                int nbyte = (int) readsocket (nfx_sock[skt].iskt, nfx_data, nfree);
                 int iErr = net_errno;
-                if ( nfx_sock[skt].iskt != INVALID_SOCKET )
+                if ( nbyte > 0 )
                     {
-                    uint32_t addr = ntohl (sa.sin_addr.s_addr);
-                    nfx_sock_reg(skt, S_DIPR)     = ( addr >> 24 ) & 0xFF;
-                    nfx_sock_reg(skt, S_DIPR + 1) = ( addr >> 16 ) & 0xFF;
-                    nfx_sock_reg(skt, S_DIPR + 2) = ( addr >> 8 ) & 0xFF;
-                    nfx_sock_reg(skt, S_DIPR + 3) = addr & 0xFF;
-                    uint16_t port = ntohs (sa.sin_port);
-                    nfx_sock_reg(skt, S_DPORT)     = ( port >> 8 ) & 0xFF;
-                    nfx_sock_reg(skt, S_DPORT + 1) = port & 0xFF;
-                    if ( !(nfx_sock_reg(skt, S_IR) & SIR_CON) )
-                        diag_message (DIAG_NFX_EVENT, "Socket %d: Raise CONNECT interrupt @2: iskt = %d", skt, nfx_sock[skt].iskt);
-                    nfx_sock_reg(skt, S_IR) |= SIR_CON;
+                    diag_message (DIAG_NFX_EVENT, "Socket %d: Received %d bytes: iskt = %d", skt, nbyte, nfx_sock[skt].iskt);
+                    if ( diag_flags[DIAG_NFX_DATA] ) nfx_show_data (nfx_data, nbyte);
+                    nfx_write_wrap (skt, nfx_data, nbyte);
+                    nfx_sock[skt].rxwr += nbyte;
+                    int ndata = nfx_sock[skt].rxwr - nfx_sock[skt].rxrd;
+                    // if ( ndata < 0 ) ndata  += nfx_sock[skt].rxsize;
+                    nfx_sock_reg(skt, S_RX_RSR) = ndata >> 8;
+                    nfx_sock_reg(skt, S_RX_RSR + 1) = ndata & 0xFF;
+                    if ( !(nfx_sock_reg(skt, S_IR) & SIR_RECV) )
+                        diag_message (DIAG_NFX_EVENT, "Socket %d: Raise RECEIVED interrupt: iskt = %d", skt, nfx_sock[skt].iskt);
+                    nfx_sock_reg(skt, S_IR) |= SIR_RECV;
                     nfx_reg[R_IR] |= 1 << skt;
-                    nfx_sock_reg(skt, S_SR) = SOCK_ESTABLISHED;
-                    slen = sizeof (sa);
-                    getsockname (nfx_sock[skt].iskt, (struct sockaddr *) &sa, &slen);
-                    addr = ntohl (sa.sin_addr.s_addr);
-                    nfx_reg[R_SIPR]     = ( addr >> 24 ) & 0xFF;
-                    nfx_reg[R_SIPR + 1] = ( addr >> 16 ) & 0xFF;
-                    nfx_reg[R_SIPR + 2] = ( addr >> 8 ) & 0xFF;
-                    nfx_reg[R_SIPR + 3] = addr & 0xFF;
-                    diag_message (DIAG_NFX_EVENT,
-                        "Socket %d connection from %d.%d.%d.%d port %d to %d.%d.%d.%d: iskt = %d",
-                        skt, nfx_sock_reg(skt, S_DIPR), nfx_sock_reg(skt, S_DIPR + 1),
-                        nfx_sock_reg(skt, S_DIPR + 2), nfx_sock_reg(skt, S_DIPR + 3), port,
-                        nfx_reg[R_SIPR], nfx_reg[R_SIPR + 1], nfx_reg[R_SIPR + 2], nfx_reg[R_SIPR + 3],
-			nfx_sock[skt].iskt);
+                    }
+                else if ( nbyte == 0 )
+                    {
+                    diag_message (DIAG_NFX_EVENT, "Closed socket %d due to zero byte read: iskt = %d", skt, nfx_sock[skt].iskt);
+                    // nfx_sock_reg(skt, S_SR) = SOCK_CLOSE_WAIT;
+                    // nfx_sock_reg(skt, S_IR) |= SIR_DISCON;
+                    // nfx_reg[R_IR] |= 1 << skt;
+                    nfx_socket_close (skt);
                     }
                 else if (( iErr != NET_EAGAIN ) && ( iErr != NET_EWOULDBLOCK ))
                     {
-                    diag_message (DIAG_NFX_EVENT, "Error %d testing for connection on socket %d: nfx_conn.iskt = %d %s",
-                        iErr, skt, nfx_conn[icon].iskt, net_strerror (iErr));
+                    diag_message (DIAG_NFX_EVENT, "Error %d testing for data received on socket %d: iskt = %d, %s",
+                        iErr, skt, nfx_sock[skt].iskt, net_strerror (iErr));
                     }
                 }
-            else if ( nfx_sock_reg(skt, S_SR) == SOCK_ESTABLISHED )
+            }
+        else if ( nfx_sock_reg(skt, S_SR) == SOCK_UDP )
+            {
+            int nfree = nfx_sock[skt].rxsize - (nfx_sock[skt].rxwr - nfx_sock[skt].rxrd);
+            if ( nfree > 8 )
                 {
-                // Test for data received
-                // int nfree = nfx_sock[skt].rxrd - nfx_sock[skt].rxwr;
-                // if ( nfree <= 0 ) nfree += nfx_sock[skt].rxsize;
-                int nfree = nfx_sock[skt].rxsize - (nfx_sock[skt].rxwr - nfx_sock[skt].rxrd);
-                if ( nfree > 0 )
+                struct sockaddr_in sa;
+                socklen_t iSize = sizeof (sa);
+                int nbyte = (int) recvfrom (nfx_sock[skt].iskt, nfx_data, nfree, 0, (struct sockaddr *) &sa, &iSize);
+                int iErr = net_errno;
+                if ( nbyte >= 0 )
                     {
-                    // diag_message (DIAG_NFX_EVENT, "nfx_poll: rxrd = %d rxwr = %d nfree = %d",
-                    //     nfx_sock[skt].rxrd, nfx_sock[skt].rxwr, nfree);
-                    int nbyte = (int) readsocket (nfx_sock[skt].iskt, nfx_data, nfree);
-		    int iErr = net_errno;
-                    if ( nbyte > 0 )
+                    struct _head
                         {
-                        diag_message (DIAG_NFX_EVENT, "Socket %d: Received %d bytes: iskt = %d", skt, nbyte, nfx_sock[skt].iskt);
-                        if ( diag_flags[DIAG_NFX_DATA] ) nfx_show_data (nfx_data, nbyte);
-                        int rxwr = nfx_sock[skt].rxwr & nfx_sock[skt].rxmask;
-                        if ( rxwr + nbyte > nfx_sock[skt].rxmask )
-                            {
-                            int ncopy = nfx_sock[skt].rxsize - rxwr;
-                            memcpy (&nfx_reg[nfx_sock[skt].rxbase + rxwr], nfx_data, ncopy);
-                            memcpy (&nfx_reg[nfx_sock[skt].rxbase], &nfx_data[ncopy], nbyte - ncopy);
-                            }
-                        else
-                            {
-                            memcpy (&nfx_reg[nfx_sock[skt].rxbase + rxwr], nfx_data, nbyte);
-                            }
-                        nfx_sock[skt].rxwr += nbyte;
-                        int ndata = nfx_sock[skt].rxwr - nfx_sock[skt].rxrd;
-                        // if ( ndata < 0 ) ndata  += nfx_sock[skt].rxsize;
-                        nfx_sock_reg(skt, S_RX_RSR) = ndata >> 8;
-                        nfx_sock_reg(skt, S_RX_RSR + 1) = ndata & 0xFF;
-                        if ( !(nfx_sock_reg(skt, S_IR) & SIR_RECV) )
-                            diag_message (DIAG_NFX_EVENT, "Socket %d: Raise RECEIVED interrupt: iskt = %d", skt, nfx_sock[skt].iskt);
-                        nfx_sock_reg(skt, S_IR) |= SIR_RECV;
-                        nfx_reg[R_IR] |= 1 << skt;
+                        unsigned int    ip;
+                        word            port;
+                        word            length;
                         }
-                    else if ( nbyte == 0 )
-                        {
-                        diag_message (DIAG_NFX_EVENT, "Closed socket %d due to zero byte read: iskt = %d", skt, nfx_sock[skt].iskt);
-                        // nfx_sock_reg(skt, S_SR) = SOCK_CLOSE_WAIT;
-                        // nfx_sock_reg(skt, S_IR) |= SIR_DISCON;
-                        // nfx_reg[R_IR] |= 1 << skt;
-                        nfx_socket_close (skt);
-                        }
-                    else if (( iErr != NET_EAGAIN ) && ( iErr != NET_EWOULDBLOCK ))
-                        {
-                        diag_message (DIAG_NFX_EVENT, "Error %d testing for data received on socket %d: iskt = %d, %s",
-                            iErr, skt, nfx_sock[skt].iskt, net_strerror (iErr));
-                        }
+                    head;
+                    diag_message (DIAG_NFX_EVENT, "Socket %d: Received %d bytes from %08X:%d: iskt = %d",
+                        skt, nbyte, sa.sin_addr.s_addr, sa.sin_port, nfx_sock[skt].iskt);
+                    if ( diag_flags[DIAG_NFX_DATA] ) nfx_show_data (nfx_data, nbyte);
+                    head.ip = sa.sin_addr.s_addr;
+                    head.port = sa.sin_port;
+                    head.length = nbyte;
+                    nfx_write_wrap (skt, (byte *) &head, 8);
+                    nfx_sock[skt].rxwr += 8;
+                    nfx_write_wrap (skt, nfx_data, nbyte);
+                    nfx_sock[skt].rxwr += nbyte;
+                    nfx_sock_reg(skt, S_RX_RSR) = nbyte >> 8;
+                    nfx_sock_reg(skt, S_RX_RSR + 1) = nbyte & 0xFF;
+                    if ( !(nfx_sock_reg(skt, S_IR) & SIR_RECV) )
+                        diag_message (DIAG_NFX_EVENT, "Socket %d: Raise RECEIVED interrupt: iskt = %d", skt, nfx_sock[skt].iskt);
+                    nfx_sock_reg(skt, S_IR) |= SIR_RECV;
+                    nfx_reg[R_IR] |= 1 << skt;
+                    }
+                else if (( iErr != NET_EAGAIN ) && ( iErr != NET_EWOULDBLOCK ))
+                    {
+                    diag_message (DIAG_NFX_EVENT, "Error %d testing for data received on socket %d: iskt = %d, %s",
+                        iErr, skt, nfx_sock[skt].iskt, net_strerror (iErr));
                     }
                 }
             }
