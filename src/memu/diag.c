@@ -175,7 +175,11 @@ static FLAGVAL flagvals[] =
         {"mfx-mem", DIAG_MFX_MEM},
         {"mfx-pal", DIAG_MFX_PAL},
         {"mfx-port", DIAG_MFX_PORT},
-        {"mfx-text", DIAG_MFX_TEXT}
+        {"mfx-text", DIAG_MFX_TEXT},
+		{"cfx1-ports" ,DIAG_CFX_PORT},
+		{"cfx2-ports" ,DIAG_CFX2_PORT},
+		{"cfx2-hw" ,DIAG_CFX2_HW},
+		{"cfx2-data" ,DIAG_CFX2_DATA},
 	};
 /*...e*/
 /*...sdiag_flag_of:0:*/

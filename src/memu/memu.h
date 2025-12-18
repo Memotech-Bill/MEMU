@@ -65,6 +65,10 @@ typedef struct s_cfg
     BOOLEAN tape_overwrite;
 	BOOLEAN tape_disable;
 	int screen_refresh;
+#ifdef HAVE_CFX
+    BOOLEAN bCFX;
+    const char *rom_cfx;
+#endif
 #ifdef HAVE_CFX2
     BOOLEAN bCFX2;
     const char *rom_cfx2;

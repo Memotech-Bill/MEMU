@@ -37,6 +37,9 @@
 #include "mfx.h"
 #include "sdcard.h"
 #endif
+#ifdef HAVE_CFX
+#include "cfx.h"
+#endif
 #ifdef HAVE_CFX2
 #include "cfx2.h"
 #endif
@@ -1403,6 +1406,10 @@ static void cfg_save (const char *psConfig)
             {
             if ( cfg.rom_fn[rom] != NULL ) fprintf (pfil, "-rom%d \"%s\"\n", rom, PMapMapped (cfg.rom_fn[rom]));
             }
+#ifdef HAVE_CFX
+        if ( cfg.rom_cfx != NULL )
+            fprintf (pfil, "%s \"%s\"\n", ( cfg.bCFX ? "-cfx" : "-no-cfx" ), PMapMapped (cfg.rom_cfx));
+#endif
 #ifdef HAVE_CFX2
         if ( cfg.rom_cfx2 != NULL )
             fprintf (pfil, "%s \"%s\"\n", ( cfg.bCFX2 ? "-cfx2" : "-no-cfx2" ), PMapMapped (cfg.rom_cfx2));
@@ -1707,7 +1714,7 @@ static void cfg_restart (void)
             */
             mem_alloc (CPM_MEM_BLOCKS);
             if ( cfg.rom_cfx2 == NULL ) { config_term (); fatal ("CFX-II ROM not installed"); }
-            diag_message (DIAG_INIT, "Installing CFX ROM");
+            diag_message (DIAG_INIT, "Installing CFX-II ROM");
             load_rompair (4, cfg.rom_cfx2);
             rom_enable = ROMEN_ASSEM | ROMEN_BASIC | ROMEN_SDX2 | ROMEN_CPM;
             mem_set_rom_enable (rom_enable);
@@ -2123,6 +2130,17 @@ BOOLEAN cfg_options (int *pargc, const char ***pargv, int *pi)
         sscanf ((*pargv)[*pi], "%i", &rom_enable);
         mem_set_rom_enable (rom_enable);
         }
+    else if ( !strcmp ((*pargv)[*pi], "-no-cfx") )
+        {
+#ifdef HAVE_CFX
+        if ( ++(*pi) == (*pargc) )
+            opterror((*pargv)[*pi-1]);
+        cfg.rom_cfx = (*pargv)[*pi];
+#else
+        unimplemented ((*pargv)[*pi]);
+        ++(*pi);
+#endif
+        }
     else if ( !strcmp ((*pargv)[*pi], "-no-cfx2") )
         {
 #ifdef HAVE_CFX2
@@ -2184,6 +2202,9 @@ void cfg_usage (void)
     fprintf(stderr, "       -config-file file    read configuration options from file\n");
     fprintf(stderr, "       -no-ignore-faults    turn off permissive options enabled by -config-file\n");
     fprintf(stderr, "       -rom-enable rom_bits bit flags to enable (1) or disable (0) a rom\n");
+#ifdef HAVE_CFX
+    fprintf(stderr, "       -no-cfx rom_file     disable CFX emulation but specify ROM image file\n");
+#endif
 #ifdef HAVE_CFX2
     fprintf(stderr, "       -no-cfx2 rom_file    disable CFX-II emulation but specify ROM image file\n");
 #endif

@@ -83,6 +83,7 @@ elseif("${TARGET}" STREQUAL "XWin")
     -DHAVE_CONFIG
     -DUNIX
     -DHAVE_AUTOTYPE
+    -DHAVE_CFX
     -DHAVE_CFX2
     -DHAVE_CONSOLE
     -DHAVE_DART
@@ -157,6 +158,7 @@ elseif("${TARGET}" STREQUAL "FBuf")
     -DDYNAMIC_ROMS
     -DHAVE_CONFIG
     -DUNIX
+    -DHAVE_CFX
     -DHAVE_CFX2
     -DHAVE_CONSOLE
     -DHAVE_DART
@@ -242,6 +244,7 @@ elseif("${TARGET}" STREQUAL "RPi")
     -DALT_Z80_OUT=hw_Z80_out
     -DALT_Z80_IN=hw_Z80_in
     -DUNIX
+    -DHAVE_CFX
     -DHAVE_CFX2
     -DHAVE_CONSOLE
     -DHAVE_DART
@@ -300,6 +303,7 @@ elseif("${TARGET}" STREQUAL "Win")
     -DALT_USAGE=cfg_usage
     -DWIN32
     -DHAVE_AUTOTYPE
+    -DHAVE_CFX
     -DHAVE_CFX2
     -DHAVE_CONSOLE
     -DHAVE_DISASS
@@ -399,6 +403,7 @@ elseif("${TARGET}" STREQUAL "Circle")
     -DLSB_FIRST
     -DDYNAMIC_ROMS
     -DHAVE_AUTOTYPE
+    -DHAVE_CFX
     -DHAVE_CFX2
     -DHAVE_DISASS
     -DHAVE_OSFS
@@ -475,6 +480,7 @@ elseif("${TARGET}" STREQUAL "SDL")
     -DALT_OPTIONS=cfg_options
     -DALT_USAGE=cfg_usage
     -DHAVE_AUTOTYPE
+    -DHAVE_CFX
     -DHAVE_CFX2
     -DHAVE_CONSOLE
     -DHAVE_DISASS

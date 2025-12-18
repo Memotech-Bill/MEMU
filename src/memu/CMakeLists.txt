@@ -52,6 +52,7 @@ if("${TARGET}" STREQUAL "Pico")
 elseif("${TARGET}" STREQUAL "XWin")
 
   target_sources(memu_src INTERFACE
+    ${CMAKE_CURRENT_LIST_DIR}/cfx.c
     ${CMAKE_CURRENT_LIST_DIR}/cfx2.c
     ${CMAKE_CURRENT_LIST_DIR}/cpm.c
     ${CMAKE_CURRENT_LIST_DIR}/ctc.c
@@ -84,6 +85,7 @@ elseif("${TARGET}" STREQUAL "XWin")
 elseif("${TARGET}" STREQUAL "FBuf")
   
   target_sources(memu_src INTERFACE
+    ${CMAKE_CURRENT_LIST_DIR}/cfx.c
     ${CMAKE_CURRENT_LIST_DIR}/cfx2.c
     ${CMAKE_CURRENT_LIST_DIR}/cpm.c
     ${CMAKE_CURRENT_LIST_DIR}/ctc.c
@@ -116,6 +118,7 @@ elseif("${TARGET}" STREQUAL "FBuf")
 elseif("${TARGET}" STREQUAL "RPi")
   
   target_sources(memu_src INTERFACE
+    ${CMAKE_CURRENT_LIST_DIR}/cfx.c
     ${CMAKE_CURRENT_LIST_DIR}/cfx2.c
     ${CMAKE_CURRENT_LIST_DIR}/cpm.c
     ${CMAKE_CURRENT_LIST_DIR}/ctc.c
@@ -143,6 +146,7 @@ elseif("${TARGET}" STREQUAL "RPi")
 elseif("${TARGET}" STREQUAL "Win")
 
   target_sources(memu_src INTERFACE
+    ${CMAKE_CURRENT_LIST_DIR}/cfx.c
     ${CMAKE_CURRENT_LIST_DIR}/cfx2.c
     ${CMAKE_CURRENT_LIST_DIR}/cpm.c
     ${CMAKE_CURRENT_LIST_DIR}/ctc.c
@@ -166,6 +170,7 @@ elseif("${TARGET}" STREQUAL "Win")
 elseif("${TARGET}" STREQUAL "Circle")
 
   target_sources(memu_src INTERFACE
+    ${CMAKE_CURRENT_LIST_DIR}/cfx.c
     ${CMAKE_CURRENT_LIST_DIR}/cfx2.c
     ${CMAKE_CURRENT_LIST_DIR}/circleio.cpp
     ${CMAKE_CURRENT_LIST_DIR}/console_cir.cpp
@@ -190,6 +195,7 @@ elseif("${TARGET}" STREQUAL "Circle")
 elseif("${TARGET}" STREQUAL "SDL")
 
   target_sources(memu_src INTERFACE
+    ${CMAKE_CURRENT_LIST_DIR}/cfx.c
     ${CMAKE_CURRENT_LIST_DIR}/cfx2.c
     ${CMAKE_CURRENT_LIST_DIR}/cpm.c
     ${CMAKE_CURRENT_LIST_DIR}/ctc.c

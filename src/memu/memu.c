@@ -75,6 +75,9 @@ memu.c - Memotech Emulator
 #include "vdeb.h"
 #endif
 #include "memu.h"
+#ifdef HAVE_CFX
+#include "cfx.h"
+#endif
 #ifdef HAVE_CFX2
 #include "cfx2.h"
 #endif
@@ -204,6 +207,9 @@ void usage(const char *psErr, ...)
 	fprintf(stderr, "       -sidisc-huge         enable Silicon Disc huge mode\n");
 	fprintf(stderr, "       -sidisc-no-save      don't save Silicon Disc content on termination\n");
 	fprintf(stderr, "       -sidisc-file n file  specify Silicon Disc content for a drive\n");
+#endif
+#ifdef HAVE_CFX
+    fprintf(stderr, "       -cfx  rom_file       enable CFX emulation and specify ROM image file\n");
 #endif
 #ifdef HAVE_CFX2
     fprintf(stderr, "       -cfx2 rom_file       enable CFX-II emulation and specify ROM image file\n");
@@ -2111,7 +2117,12 @@ void OutZ80(word port, byte value)
 		case 0x6d:
 		case 0x6e:
 		case 0x6f:
+#if HAVE_CFX
+			if (! cfg.bCFX ) OutZ80_bad("MTXplus+/CFX CF", port, value, TRUE);
+            else cfx_out (port, value);
+#else
 			OutZ80_bad("MTXplus+/CFX CF", port, value, TRUE);
+#endif
 			break;
 		case 0x70:
 		case 0x71:
@@ -2388,7 +2399,14 @@ byte InZ80(word port)
 #endif
 		case 0x6c:
 		case 0x6d:
+        case 0x6e:
+        case 0x6f:
+#ifdef HAVE_CFX
+			if ( ! cfg.bCFX ) return InZ80_bad("MTXplus+/CFX CF", port, TRUE);
+            else return cfx_in (port);
+#else
 			return InZ80_bad("MTXplus+/CFX CF", port, TRUE);
+#endif
 		case 0x70:
 		case 0x71:
 			return InZ80_bad("MTXplus+ RTC", port, TRUE);
@@ -2967,6 +2985,19 @@ int memu (int argc, const char *argv[])
             i += 2;
 #endif
 			}
+        else if ( !strcmp (argv[i], "-cfx") )
+            {
+#ifdef HAVE_CFX
+			if ( ++i == argc )
+				opterror (argv[i-1]);
+			cfg.rom_cfx = argv[i];
+            load_rompair (4, cfg.rom_cfx);
+            cfg.bCFX = TRUE;
+#else
+            unimplemented (argv[i]);
+            ++i;
+#endif
+            }
         else if ( !strcmp (argv[i], "-cfx2") )
             {
 #ifdef HAVE_CFX2
@@ -3015,7 +3046,6 @@ int memu (int argc, const char *argv[])
 			if ( ++i == argc )
 				opterror (argv[i-2]);
             sdcard_set_image (iPart, argv[i]);
-            // cfg.fn_cfx2[iDrive][iPart] = argv[i];
             sdx_emulate = TRUE;
 #else
             unimplemented (argv[i]);
@@ -3671,7 +3701,7 @@ int memu (int argc, const char *argv[])
 #endif
 
 #ifdef HAVE_CFX2
-    if ( cfg.bCFX2 )
+    if ( cfg.bCFX || cfg.bCFX2 )
         {
         diag_message (DIAG_INIT, "cfx2_init");
         cfx2_init ();

@@ -1,4 +1,6 @@
-/* cfx2.c - Emulation of CFX-2 CompactFlash Interface */
+/* cfx2.c - Emulation of CFX-2 CompactFlash Interface
+
+   Emulates the IDE / ATA interface for both CFX and CFX-2 */
 
 #include <stdio.h>
 #include <string.h>
@@ -29,6 +31,7 @@
 #define CMD_SET_FEATURE 0xEF
 
 #define FTR_8BIT        0x01
+#define FTR_16BIT       0x81
 #define FTR_NOCACHE     0x82
 
 #define STA_BUSY        0x80    // Device is busy
@@ -61,6 +64,8 @@ static byte cferr = 0;
 static byte lbatop = 0;
 static unsigned int nCFPart[NCF_CARD] = { NCF_PART, NCF_PART };
 static long long nCFSize[NCF_CARD];
+static BOOLEAN b16bit = TRUE;
+static byte hidata = 0;
 
 const char *cfx_cmd_name (int iCmd)
     {
@@ -101,7 +106,7 @@ const char *cfx_cmd_name (int iCmd)
         }
     else if ( iCmd == 0xEC )
         {
-        static const char sCmdEC[] = "IDENTELSE IFY";
+        static const char sCmdEC[] = "IDENTIFY";
         return sCmdEC;
         }
     else if ( iCmd == 0xEF )
@@ -118,7 +123,7 @@ void cfx_dump (void)
     char sLine[77];
     unsigned int ad;
     unsigned int i;
-    if ( ! diag_flags[DIAG_SDXFDC_DATA] ) return;
+    if ( ! diag_flags[DIAG_CFX2_DATA] ) return;
     memset (sLine, ' ', 76);
     sLine[76] = '\0';
     for ( ad = 0; ad < 512; ad += 16 )
@@ -167,6 +172,7 @@ void cfx2_set_image (int iCard, int iPartition, const char *psFile)
         }
     else
         {
+        diag_message (DIAG_CFX2_HW, "CF drive %d, partition %d: Image file = \"%s\"", iCard, iPartition, psFile);
         iPartition += NCF_PART * iCard;
         if ( psImage[iPartition] != NULL )
             {
@@ -192,10 +198,10 @@ static void cfx2_seek (void)
         iAddr = ( lba & (LEN_PARTITION - 1) ) << ADDR_BITS;
         part = lba >> SECT_BITS;
         }
-    diag_message (DIAG_SDXFDC_HW, "CFX2 seek: lba = 0x%08X part = 0x%02X", lba, part);
+    diag_message (DIAG_CFX2_HW, "CFX2 seek: lba = 0x%08X part = 0x%02X", lba, part);
     if ( part >= nCFPart[card] )
         {
-        diag_message (DIAG_SDXFDC_HW, "CFX2 seek: lba = 0x%08X part = 0x%02X", lba, part);
+        diag_message (DIAG_CFX2_HW, "CFX2 seek: lba = 0x%08X part = 0x%02X", lba, part);
         cferr |= ERR_IDNF;
         status = STA_ERR;
         command = 0;
@@ -205,11 +211,11 @@ static void cfx2_seek (void)
     if ( lbatop & LTOP_CARD )
         {
         part += NCF_PART;
-        diag_message (DIAG_SDXFDC_HW, "CFX2 seek on second CF card");
+        diag_message (DIAG_CFX2_HW, "CFX2 seek on second CF card");
         }
     if ( pfImage[part] == NULL )
         {
-        diag_message (DIAG_SDXFDC_HW, "CFX2 attempt to seek to undefined partition %d", part);
+        diag_message (DIAG_CFX2_HW, "CFX2 attempt to seek to undefined partition %d", part);
         cferr |= ERR_IDNF;
         status |= STA_ERR;
         command = 0;
@@ -217,7 +223,7 @@ static void cfx2_seek (void)
         }
     else if ( fseek (pfImage[part], iAddr, SEEK_SET) != 0 )
         {
-        diag_message (DIAG_SDXFDC_HW, "CFX2 error seeking to sector %d", lba);
+        diag_message (DIAG_CFX2_HW, "CFX2 error seeking to sector %d", lba);
         cferr |= ERR_IDNF;
         status |= STA_ERR;
         command = 0;
@@ -229,7 +235,7 @@ static void cfx2_seek (void)
 static void cfx2_read (void)
     {
     unsigned int nbyte = (unsigned int) fread (sector, 1, LEN_SECTOR, pfImage[part]);
-    diag_message (DIAG_SDXFDC_HW, "CFX2 read %d bytes from sector %d", nbyte, lba);
+    diag_message (DIAG_CFX2_HW, "CFX2 read %d bytes from sector %d", nbyte, lba);
     cfx_dump ();
     /* When formatting a new partition, need to be able to "read" not yet initialised sectors - so no error
        if ( nbyte != LEN_SECTOR )
@@ -243,21 +249,27 @@ static void cfx2_read (void)
     addr = 0;
     }
 
+void cfx2_out_high (byte value)
+    {
+    hidata = value;
+    }
+
 void cfx2_out (word port, byte value)
     {
-    diag_message (DIAG_SDXFDC_PORT, "CFX2 output to port 0x%02x: 0x%02x", port & 0xFF, value);
+    diag_message (DIAG_CFX2_PORT, "CFX2 output to port 0x%02x: 0x%02x", port & 0xFF, value);
     switch (port & 0x07 )
         {
         case 0: // Data register
             if ( command == CMD_WR_SECTOR )
                 {
                 sector[addr] = value;
-                // diag_message (DIAG_SDXFDC_DATA, "CFX2 write byte %d to sector: 0x%02x", addr, value);
+                if ( b16bit ) sector[++addr] = hidata;
+                // diag_message (DIAG_CFX2_DATA, "CFX2 write byte %d to sector: 0x%02x", addr, value);
                 status |= STA_BUSY;
                 if ( ++addr == LEN_SECTOR )
                     {
                     unsigned int nbyte = (unsigned int) fwrite (sector, 1, LEN_SECTOR, pfImage[part]);
-                    diag_message (DIAG_SDXFDC_HW, "CFX2 write %d bytes to sector %d", nbyte, lba);
+                    diag_message (DIAG_CFX2_HW, "CFX2 write %d bytes to sector %d", nbyte, lba);
                     cfx_dump ();
                     if ( nbyte != LEN_SECTOR )
                         {
@@ -280,7 +292,7 @@ void cfx2_out (word port, byte value)
                 }
             else
                 {
-                diag_message (DIAG_SDXFDC_HW,
+                diag_message (DIAG_CFX2_HW,
                     "CFX2 unexpected write to data register: command = %s (0x%02X), value = %d",
                     cfx_cmd_name (command), command, value);
 #ifdef DEBUG
@@ -313,7 +325,7 @@ void cfx2_out (word port, byte value)
                 {
                 if ( ! diag_flags[DIAG_BAD_PORT_IGNORE] )
                     fatal ("CHS addressing of CompactFlash drives is not supported.");
-                diag_message (DIAG_SDXFDC_HW, "CFX2 error: CHS addressing selected");
+                diag_message (DIAG_CFX2_HW, "CFX2 error: CHS addressing selected");
                 status = STA_ERR;
                 }
             lba = ( lba & 0x00FFFFFF ) | (((unsigned long) value & 0x0F ) << 24);
@@ -326,10 +338,10 @@ void cfx2_out (word port, byte value)
                 switch (value)
                     {
                     case CMD_RECALIBRATE:
-                        diag_message (DIAG_SDXFDC_HW, "CFX2 command: Recalibrate");
+                        diag_message (DIAG_CFX2_HW, "CFX2 command: Recalibrate");
                         break;
                     case CMD_RD_SECTOR:
-                        diag_message (DIAG_SDXFDC_HW, "CFX2 command: Read %d blocks starting at %d",
+                        diag_message (DIAG_CFX2_HW, "CFX2 command: Read %d blocks starting at %d",
                             count, lba);
                         command = value;
                         cfx2_seek ();
@@ -340,20 +352,20 @@ void cfx2_out (word port, byte value)
                             }
                         break;
                     case CMD_WR_SECTOR:
-                        diag_message (DIAG_SDXFDC_HW, "CFX2 command: Write %d blocks starting at %d",
+                        diag_message (DIAG_CFX2_HW, "CFX2 command: Write %d blocks starting at %d",
                             count, lba);
                         command = value;
                         cfx2_seek ();
                         if ( cferr == 0 ) status |= STA_DRQ;
                         break;
                     case CMD_INITIALISE:
-                        diag_message (DIAG_SDXFDC_HW, "CFX2 command: Initialise");
+                        diag_message (DIAG_CFX2_HW, "CFX2 command: Initialise");
                         break;
                     case CMD_SPIN_UP:
-                        diag_message (DIAG_SDXFDC_HW, "CFX2 command: Spin Up");
+                        diag_message (DIAG_CFX2_HW, "CFX2 command: Spin Up");
                         break;
                     case CMD_SPIN_DOWN:
-                        diag_message (DIAG_SDXFDC_HW, "CFX2 command: Spin Down");
+                        diag_message (DIAG_CFX2_HW, "CFX2 command: Spin Down");
                         break;
                     case CMD_IDENTIFY:
                     {
@@ -361,7 +373,7 @@ void cfx2_out (word port, byte value)
                     int card = 0;
                     if ( lbatop & LTOP_CARD ) card = 1;
                     nlb = (int) ( nCFSize[card] / LEN_SECTOR );
-                    diag_message (DIAG_SDXFDC_HW, "CFX2 command: Identify");
+                    diag_message (DIAG_CFX2_HW, "CFX2 command: Identify");
                     command = value;
                     memset (sector, 0, LEN_SECTOR);
                     sector[99] = 0x02;
@@ -375,16 +387,24 @@ void cfx2_out (word port, byte value)
                     break;
                     }
                     case CMD_SET_FEATURE:
-                        diag_message (DIAG_SDXFDC_HW, "CFX2 command: Set feature 0x%02X", feature);
-                        if ( ( feature != FTR_8BIT ) && ( feature != FTR_NOCACHE ) )
+                        diag_message (DIAG_CFX2_HW, "CFX2 command: Set feature 0x%02X", feature);
+                        if ( feature == FTR_8BIT )
                             {
-                            diag_message (DIAG_SDXFDC_HW, "CFX2 Unsupported feature");
+                            b16bit = FALSE;
+                            }
+                        else if ( feature == FTR_16BIT )
+                            {
+                            b16bit = TRUE;
+                            }
+                        else if ( feature != FTR_NOCACHE )
+                            {
+                            diag_message (DIAG_CFX2_HW, "CFX2 Unsupported feature");
                             cferr |= ERR_AMNF;
                             status |= STA_ERR;
                             }
                         break;
                     default:
-                        diag_message (DIAG_SDXFDC_HW, "CFX2 unsupported command: 0x%02X", value);
+                        diag_message (DIAG_CFX2_HW, "CFX2 unsupported command: 0x%02X", value);
                         cferr |= ERR_AMNF;
                         status |= STA_ERR;
                         break;
@@ -392,12 +412,17 @@ void cfx2_out (word port, byte value)
                 }
             else
                 {
-                diag_message (DIAG_SDXFDC_HW, "CFX2 Error: Write to command register while not ready");
+                diag_message (DIAG_CFX2_HW, "CFX2 Error: Write to command register while not ready");
                 cferr |= ERR_ABRT;
                 status |= STA_ERR;
                 }
             break;
         }
+    }
+
+byte cfx2_in_high (void)
+    {
+    return hidata;
     }
 
 byte cfx2_in (word port)
@@ -409,7 +434,8 @@ byte cfx2_in (word port)
             if ( ( command == CMD_RD_SECTOR ) || ( command == CMD_IDENTIFY ) )
                 {
                 b = sector[addr];
-                // diag_message (DIAG_SDXFDC_DATA, "CFX2 byte %d from sector: 0x%02x", addr, b);
+                if ( b16bit ) hidata = sector[++addr];
+                // diag_message (DIAG_CFX2_DATA, "CFX2 byte %d from sector: 0x%02x", addr, b);
                 if ( ++addr == LEN_SECTOR )
                     {
                     if ( --count > 0 )
@@ -428,7 +454,7 @@ byte cfx2_in (word port)
                 }
             else
                 {
-                diag_message (DIAG_SDXFDC_HW,
+                diag_message (DIAG_CFX2_HW,
                     "CFX2 Unexpected read of data register: command = %s (0x%02X)",
                     cfx_cmd_name (command), command);
                 cferr |= ERR_ABRT;
@@ -437,7 +463,7 @@ byte cfx2_in (word port)
             break;
         case 1: // Error register
             b = cferr;
-            diag_message (DIAG_SDXFDC_HW, "CFX2 error register = 0x%02X", cferr);
+            diag_message (DIAG_CFX2_HW, "CFX2 error register = 0x%02X", cferr);
             break;
         case 2: // Sector count register
             b = (byte) count;
@@ -456,11 +482,11 @@ byte cfx2_in (word port)
             break;
         case 7: // Status register
             b = status;
-            diag_message (DIAG_SDXFDC_HW, "CFX2 status register = 0x%02X", status);
+            diag_message (DIAG_CFX2_HW, "CFX2 status register = 0x%02X", status);
             if ( status & STA_BUSY ) status &= ~ STA_BUSY;
             else if ( command == 0 ) status |= STA_RDY;
         }
-    diag_message (DIAG_SDXFDC_PORT, "CFX2 input from port 0x%02x: 0x%02x", port & 0xFF, b);
+    diag_message (DIAG_CFX2_PORT, "CFX2 input from port 0x%02x: 0x%02x", port & 0xFF, b);
     return b;
     }
 
@@ -479,7 +505,7 @@ void cfx2_init (void)
         if ( psImage[part] != NULL )
             {
             card = part / NCF_PART;
-            diag_message (DIAG_SDXFDC_HW, "CFX2 opening image file \"%s\" for partition %d",
+            diag_message (DIAG_CFX2_HW, "CFX2 opening image file \"%s\" for partition %d",
                 psImage[part], part);
             pfImage[part] = fopen (PMapPath (psImage[part]), "r+b");
             // if ( pfImage[part] == NULL ) fatal ("Error opening CF partition image");
@@ -501,6 +527,7 @@ void cfx2_init (void)
     status = STA_RDY;
     cferr = 0;
     lbatop = 0;
+    b16bit = TRUE;
     }
 
 void cfx2_term (void)
@@ -509,7 +536,7 @@ void cfx2_term (void)
         {
         if ( pfImage[part] != NULL )
             {
-            diag_message (DIAG_SDXFDC_HW, "CFX2 closing image file \"%s\" for partition %d",
+            diag_message (DIAG_CFX2_HW, "CFX2 closing image file \"%s\" for partition %d",
                 psImage[part], part);
             fclose (pfImage[part]);
             pfImage[part] = NULL;
