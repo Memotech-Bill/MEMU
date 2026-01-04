@@ -1893,7 +1893,7 @@ void OutZ80(word port, byte value)
 #endif
 			break;
 		case 0x02:
-			vid_out2(value);
+			vid_out2(value, z80.IElapsed);
 #ifdef HAVE_VGA
             if ( cfg.bVGA ) vga_out2(value);
 #endif
@@ -2248,7 +2248,7 @@ byte InZ80(word port)
 		case 0x01:
 			return vid_in1(z80.IElapsed);
 		case 0x02:
-			return vid_in2();
+			return vid_in2(z80.IElapsed);
 		case 0x03:
 			return snd_in3();
 		case 0x04:

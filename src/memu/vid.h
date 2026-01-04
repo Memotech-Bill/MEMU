@@ -23,9 +23,9 @@ extern void vid_reset(void);
 extern void vid_setup_timing_check(unsigned t_2us, unsigned t_8us, unsigned t_blank);
 
 extern void vid_out1(byte val, unsigned long long elapsed);
-extern void vid_out2(byte val);
+extern void vid_out2(byte val, unsigned long long elapsed);
 extern byte vid_in1(unsigned long long elapsed);
-extern byte vid_in2(void);
+extern byte vid_in2(unsigned long long elapsed);
 
 extern void vid_refresh(unsigned long long elapsed);
 extern void vid_refresh_vdeb(void);

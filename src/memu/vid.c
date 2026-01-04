@@ -47,6 +47,8 @@ static const char *vid_display = NULL;
 
 #define	N_COLS_VID 16
 
+#define EXTRA_TIME_CHECK    0
+
 /* These look realistic and reflect what I remember */
 static COL vid_cols_rfd[N_COLS_VID] =
 	{
@@ -108,13 +110,17 @@ static int vid_last_mode;
 static BOOLEAN vid_latched = FALSE;
 static byte vid_latch = 0;
 
+typedef enum {timNone, timRead, timWrite, timAddr} TimMode;
+static TimMode timLast = timNone;
 static unsigned long long vid_elapsed_refresh = 0;
-static unsigned long long vid_elapsed_last_io = 0;
+static unsigned long long vid_elapsed_last_data = 0;
+static unsigned long long vid_elapsed_last_addr = 0;
 
 /* These numbers are for 4MHz Z80, 50Hz refresh, PAL */
 static unsigned vid_t_2us   =  8;
 static unsigned vid_t_8us   = 32;
 static unsigned vid_t_blank = 30769; /* (312-192)/312 scan lines */
+static unsigned vid_t_frame = 80000;
 
 static char *vid_colour_names[] =
 	{
@@ -294,7 +300,7 @@ void vid_setup_timing_check(unsigned t_2us, unsigned t_8us, unsigned t_blank)
 	}
 /*...e*/
 /*...svid_timing_checks:0:*/
-static BOOLEAN vid_timing_checks(unsigned long long elapsed)
+static BOOLEAN vid_timing_checks(unsigned long long elapsed, TimMode tim)
 	{
 	BOOLEAN ok = TRUE;
 	if ( diag_flags[DIAG_VID_TIME_CHECK] )
@@ -303,6 +309,7 @@ static BOOLEAN vid_timing_checks(unsigned long long elapsed)
 		BOOLEAN m2 = ( (vid_regs[1]&0x08) != 0 );
 		BOOLEAN m3 = ( (vid_regs[0]&0x02) != 0 );
 		unsigned gap;
+        while (elapsed - vid_elapsed_refresh > vid_t_frame) vid_elapsed_refresh += vid_t_frame;
 		/* These timings good for 4MHz CPU and 50Hz refresh only */
 		if ( (vid_regs[1]&0x40) == 0 )
 			/* Screen not enabled */
@@ -312,26 +319,44 @@ static BOOLEAN vid_timing_checks(unsigned long long elapsed)
 			gap = vid_t_2us;
 		else
 			/* Other modes */
-			gap = ( elapsed < vid_elapsed_refresh + vid_t_blank ) ? vid_t_2us : vid_t_8us;
+			gap = ( elapsed - vid_elapsed_refresh < vid_t_blank ) ? vid_t_2us : vid_t_8us;
 
-		if ( elapsed < vid_elapsed_last_io + gap )
+        unsigned long long since_last = elapsed;
+        if ((tim == timRead) && (timLast == timAddr)) since_last -= vid_elapsed_last_addr;
+        else since_last -= vid_elapsed_last_data;
+#if EXTRA_TIME_CHECK    
+        diag_message (DIAG_VID_TIME_CHECK, "VDP timing: gap = %llu, required = %llu, elapsed = %lluT, current frame = %lluT",
+            since_last, gap, elapsed, elapsed - vid_elapsed_refresh);
+#endif
+		if ( since_last < gap )
 			{
-			diag_message(DIAG_VID_TIME_CHECK, "VDP error, %uT gap required (elapsed=%lluT)", gap, elapsed);
+			diag_message(DIAG_VID_TIME_CHECK, "VDP error, %uT gap required, %lluT actual (elapsed=%lluT)", gap, since_last, elapsed);
 			if ( diag_flags[DIAG_VID_TIME_CHECK_ABORT] )
 				fatal("VDP timing constraint violated, so exiting");
 			if ( diag_flags[DIAG_VID_TIME_CHECK_DROP] )
 				ok = FALSE;
 			}
 		}
-	if ( ok )
-		vid_elapsed_last_io = elapsed;
+    if (tim == timAddr) vid_elapsed_last_addr = elapsed;
+    else vid_elapsed_last_data = elapsed;
+    timLast = tim;
 	return ok;
 	}
 /*...e*/
 
+#if EXTRA_TIME_CHECK == 2
+unsigned long long io_last = 0;
+#endif
+
 /*...svid_out1 \45\ data write:0:*/
 void vid_out1(byte val, unsigned long long elapsed)
 	{
+#if EXTRA_TIME_CHECK == 2
+    unsigned long long gap = elapsed - io_last;
+    diag_message (DIAG_VID_TIME_CHECK, "out1 (0x%02X) elapsed = %lld, gap = %lld %s", val, elapsed, gap,
+        gap < vid_t_2us ? "****" : gap < vid_t_8us ? "**" : "");
+    io_last = elapsed;
+#endif
 	// diag_message (DIAG_ALWAYS,"Out 0x01: 0x%02X", val);
 	if ( vid_read_mode )
 		/* VDEB.COM can do this, so don't consider it fatal */
@@ -339,7 +364,7 @@ void vid_out1(byte val, unsigned long long elapsed)
 		diag_message(DIAG_VID_DATA, "VDP error, out(1,0x%02x) when in read mode", (unsigned) val);
 		vid_read_mode = FALSE; /* Prevent lots of warnings */
 		}
-	if ( vid_timing_checks(elapsed) )
+	if ( vid_timing_checks(elapsed, timWrite) )
 		{
 		vid_memory[vid_addr] = val;
 		if ( diag_flags[DIAG_VID_DATA] )
@@ -350,12 +375,21 @@ void vid_out1(byte val, unsigned long long elapsed)
 	}
 /*...e*/
 /*...svid_out2 \45\ latch value\44\ then act:0:*/
-void vid_out2(byte val)
+void vid_out2(byte val, unsigned long long elapsed)
 	{
+    static word vid_addr_old;
+#if EXTRA_TIME_CHECK == 2
+    unsigned long long gap = elapsed - io_last;
+    diag_message (DIAG_VID_TIME_CHECK, "out2 (0x%02X) elapsed = %lld, gap = %lld %s", val, elapsed,  gap,
+        gap < vid_t_2us ? "****" : gap < vid_t_8us ? "**" : "");
+    io_last = elapsed;
+#endif
 	// diag_message (DIAG_ALWAYS,"Out 0x02: 0x%02X", val);
 	if ( !vid_latched )
 		/* First write to port 2, record the value */
 		{
+        vid_timing_checks(elapsed, timAddr);
+        vid_addr_old = vid_addr;
 		vid_latch = val;
 		vid_addr = ( (vid_addr&0xff00)|val );
 			/* Son Of Pete relies on the low part of the
@@ -366,19 +400,18 @@ void vid_out2(byte val)
 	else
 		/* Second write to port 2, act */
 		{
-		word vid_addr_old;
 		switch ( val & 0xc0 )
 			{
 			case 0x00:
 				/* Set up for reading from VRAM */
-				vid_addr_old = vid_addr;
+                vid_timing_checks(elapsed, timAddr);
 				vid_addr = ( ((val&0x3f)<<8)|vid_latch );
 				vid_read_mode = TRUE;
 				diag_message(DIAG_VID_ADDRESS, "VDP address set to 0x%04x for reading (was 0x%04x)", vid_addr, vid_addr_old);
 				break;
 			case 0x40:
 				/* Set up for writing to VRAM */
-				vid_addr_old = vid_addr;
+                vid_timing_checks(elapsed, timAddr);
 				vid_addr = ( ((val&0x3f)<<8)|vid_latch );
 				vid_read_mode = FALSE;
 				diag_message(DIAG_VID_ADDRESS, "VDP address set to 0x%04x for writing (was 0x%04x)", vid_addr, vid_addr_old);
@@ -404,6 +437,12 @@ void vid_out2(byte val)
 /*...svid_in1  \45\ data read:0:*/
 byte vid_in1(unsigned long long elapsed)
 	{
+#if EXTRA_TIME_CHECK == 2
+    unsigned long long gap = elapsed - io_last;
+    diag_message (DIAG_VID_TIME_CHECK, "in1 () elapsed = %lld, gap = %lld %s", elapsed, gap,
+        gap < vid_t_2us ? "****" : gap < vid_t_8us ? "**" : "");
+    io_last = elapsed;
+#endif
 	byte val;
 	if ( ! vid_read_mode )
 		/* VDEB.COM can do this, so don't consider it fatal */
@@ -414,7 +453,7 @@ byte vid_in1(unsigned long long elapsed)
 		vid_latched = FALSE; /* For symmetry with vid_out2. */
 		/* Note that we don't do the timing check that perhaps we should. */
 		}
-	else if ( vid_timing_checks(elapsed) )
+	else if ( vid_timing_checks(elapsed, timRead) )
 		{
 		val = vid_memory[vid_addr];
         // diag_message (DIAG_ALWAYS, "VDP Read:      addr = 0x%04X, val = 0x%02X", vid_addr, val);
@@ -432,7 +471,7 @@ byte vid_in1(unsigned long long elapsed)
 /*...e*/
 /*...svid_in2  \45\ read status register:0:*/
 /* Best to only do this while VDP interrupt pending */
-byte vid_in2(void)
+byte vid_in2(unsigned long long elapsed)
 	{
 	// diag_message (DIAG_ALWAYS,"In  0x02");
 	byte value = vid_status;
@@ -911,7 +950,14 @@ void vid_refresh(unsigned long long elapsed)
 			}
 		}
 	vid_status |= 0x80; /* Frame is drawn */
-	vid_elapsed_refresh = elapsed; /* Remember when redrawn */
+    if (vid_regs[1] & 0x20)
+        {
+        vid_elapsed_refresh = elapsed; /* Remember when redrawn */
+        }
+    else
+        {
+        while (elapsed - vid_elapsed_refresh > vid_t_frame) vid_elapsed_refresh += vid_t_frame;
+        }
 	if ( diag_flags[DIAG_ACT_VID_REGS] )
 		{
 		int i;
