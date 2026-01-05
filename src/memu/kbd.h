@@ -124,6 +124,8 @@ extern int kbd_get_emu (void);
 extern void kbd_term(void);
 extern void kbd_chk_leds (int *mods);
 
+extern void kbd_set_alternate (const char *psFile);
+
 extern char * ListModifiers (void);
 
 extern BOOLEAN kbd_diag;

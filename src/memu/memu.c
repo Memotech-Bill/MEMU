@@ -185,6 +185,7 @@ void usage(const char *psErr, ...)
 #ifndef __Pico__
 	fprintf(stderr, "       -kbd-type string     auto type keys in this string\n");
 	fprintf(stderr, "       -kbd-type-file fn    auto type keys in this file\n");
+    fprintf(stderr, "       -alt-kbd fn          load custom key mapping for games from file\n");
 #endif
 #ifdef HAVE_JOY
 	fprintf(stderr, "       -joy,-j              enable joystick support\n");
@@ -2753,6 +2754,14 @@ int memu (int argc, const char *argv[])
             ++i;
 #endif
 			}
+#ifndef __Pico__
+		else if ( !strcmp(argv[i], "-alt-kbd") )
+			{
+			if ( ++i == argc )
+				opterror (argv[i-1]);
+			kbd_set_alternate (PMapPath (argv[i]));
+			}
+#endif
 		else if ( !strcmp(argv[i], "-joy") ||
 		          !strcmp(argv[i], "-j")   )
             {
