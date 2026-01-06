@@ -21,11 +21,14 @@
         <ul>
           <li><a href="#Usage-Basic">Basic Usage</a></li>
           <li><a href="#Usage-DiskImages">Disk Images</a></li>
-          <li><a href="#Usage-Advanced">Advanced Usage</a></li>
         </ul>
       </li>
       <li><a href="#Keyboard">Keyboard</a></li>
+      <ul>
+        <li><a href="#Game-Kbd">Keyboard Mapping for Game Playing</a></li>
+      </ul>
       <li><a href="#VDeb">Visual Debugger</a></li>
+      <li><a href="#Usage-Advanced">Advanced Usage</a></li>
       <li><a href="#Diagnostics">Diagnostics</a>
         <ul>
           <li><a href="#Diag-Options">Diagnostic Options</a></li>
@@ -530,7 +533,364 @@
       optionally include data for HexTrain beyond the CP/M disk images, and / or include an
       MBR partition table. With Linux it is even possible to specify a media device containing
       physical media from a Memotech</p>
-    <h3 id="Usage-Advanced">Advanced Usage</h3>
+    <h2 id="Keyboard">Keyboard</h2>
+    <img class="centre" src="MTX_Keyboard_100.png" alt="MTX Keyboard layout">
+    <p>The layout of the MTX keyboard (illustrated above) differs somewhat from that of
+      typical modern keyboards.</p>
+    <p>The two unlabelled keys either side of the space bar are reset keys. Pressing both
+      simultaneously resets the MTX. In MEMU this is emulated by simultaneously pressing
+      the &lt;Alt&gt; and &lt;Alt Gr&gt; keys to reset the emulated MTX.</p>
+    <p>One difference that causes a few problems is that there are a few symbols which have
+      different shift states compared to modern keyboards. MEMU translates each key press
+      into pressing the corresponding key on the emulated MTX keyboard. However, for these
+      symbols the wrong shift state will be selected.</p>
+    <p>The original solution to this was to require typing a different key to produce the
+      required symbol, as follows:</p>
+    <table>
+      <tr><th>To produce symbol</th><th>Type the following key</th></tr>
+      <tr><td>^</td><td>=</td></tr>
+      <tr><td>:</td><td>#</td></tr>
+      <tr><td>@</td><td>' (quote)</td></tr>
+      <tr><td>=</td><td>^ (shift 6)</td></tr>
+      <tr><td>' (quote)</td><td>@ (shift quote)</td></tr>
+      <tr><td>#</td><td>&pound; (shift 3)</td></tr>
+      <tr><td>` (back quote)</td><td>(shift back quote)</td></tr>
+    </table>
+    <p>To improve on this, the emulation is modified slightly compared to the original
+      hardware. The MTX keyboard is wired as an 8x10 matrix. However the keyboard only
+      has 77 keys (plus the two reset keys). Thus there are three gaps in the matrix.
+      The emulation fills these three spaces with three new keys which have most of the
+      above symbols at shift states corresponding to modern keyboards. These new pseudo
+      keys are:</p>
+    <table>
+      <tr><th>Drive Line</th><th>Sense Line</th><th>Unshifted symbol</th><th>Shifted Symbol</th></tr>
+      <tr><td>4</td><td>8</td><td>=</td><td>^</td></tr>
+      <tr><td>5</td><td>8</td><td>'</td><td>@</td></tr>
+      <tr><td>6</td><td>8</td><td>#</td><td>:</td></tr>
+    </table>
+    <p>If keyboard remapping is enabled, and &lt;Shift Lock&gt; is set on the keyboard
+      then pressing one of these symbols on the keyboard activates one of these new keys
+      in the emulation rather than the original keys. The BASIC and CP/M ROMs are patched
+      to recognise these new keys. However any programs with their own keyboard drivers
+      will not know about these new keys and so will not work properly. Turning off
+      &lt;Scroll Lock&gt; reverts to using the original MTX key mapping.</p>
+    <p>It is still necessary to press &lt;Shift&gt; to produce a back-quote symbol, but
+      this is rarely needed.</p>
+    <p>The cursor keys on the keyboard are mapped onto the MTX cursor keys as expected,
+      and the other navigation keys are:</p>
+    <table>
+      <tr><th>Keyboard</th><th>MTX Key</th></tr>
+      <tr><td>Insert</td><td>Ins</td></tr>
+      <tr><td>Delete</td><td>Del</td></tr>
+      <tr><td>Home</td><td>Home</td></tr>
+      <tr><td>End</td><td>EOL</td></tr>
+      <tr><td>Page Up</td><td>Page</td></tr>
+      <tr><td>Page Down</td><td>Cls</td></tr>
+    </table>
+    <p>For game playing, the physical layout of the keys is often important. For this
+      reason, by default MEMU maps the top left portion of the keypad onto the MTX keypad
+      as shown.</p>
+    <img class="lfloat" src="MTX_Keypad_Overlay.png" alt="Keypad overlay illustration">
+    <table>
+      <tr><th colspan="2">PC Keypad</th><th colspan="2">MTX Keypad</th></tr>
+      <tr><th>Normal</th><th>Shifted</th><th>Normal</th><th>Shifted</th></tr>
+      <tr><td>Num Lock</td><td>&nbsp;</td><td>Page</td><td>7</td></tr>
+      <tr><td>/</td><td>&nbsp;</td><td>EOL</td><td>8</td></tr>
+      <tr><td>*</td><td>&nbsp;</td><td>Break</td><td>9</td></tr>
+      <tr><td>Home</td><td>7</td><td>Tab</td><td>4</td></tr>
+      <tr><td>Up</td><td>8</td><td>Up</td><td>5</td></tr>
+      <tr><td>Page Up</td><td>9</td><td>Del</td><td>6</td></tr>
+      <tr><td>Left</td><td>4</td><td>Left</td><td>1</td></tr>
+      <tr><td>&nbsp;</td><td>5</td><td>Home</td><td>2</td></tr>
+      <tr><td>Right</td><td>6</td><td>Right</td><td>3</td></tr>
+      <tr><td>End</td><td>1</td><td>Ins</td><td>0</td></tr>
+      <tr><td>Down</td><td>2</td><td>Down</td><td>. (Decimal)</td></tr>
+      <tr><td>Page Down</td><td>3</td><td>Cls</td><td>Ent</td></tr>
+    </table>
+    <p class="clear">However this again results in some of the keys not having the effect indicated by
+      the keycap. The &lt;F12&gt; key toggles the "Num Lock" LED. If this is illuminated
+      then the the key mapping is changed to correspond to the labels on the keycaps.
+      In particular the keys produce the expected numbers when the shift key is pressed.
+      The &lt;Num Lock&gt key can not be used for the toggle as it is part of the keypad
+      mapping.</p>
+    <p>On versions of MEMU where each display is shown full screen, ideally use the combination
+      of the &lt;Alt&gt; key and a function key to select the different displays. Unfortunately
+      in some environments the operating system grabs those key combinations. In that case use
+      the left &lt;Ctrl&gt; key in combination with a function key. To send a &lt;Ctrl&gt; and
+      function key to a program running on MEMU, use the right &lt;Ctrl&gt; key.</p>
+    <h3 id="Game-Kbd">Keyboard Mapping for Game Playing</h3>
+    <p>On machines with compact keyboards having no separate numeric keypad, the key layout can make
+      game playing difficult. To work around this an option is now provided to assign keys on the main
+      keyboard to those MTX keys necessary for the game controls.</p>
+    <p>This alternate keyboard mapping may be quickly turned on and off. Typically it will be turned
+      off so that all the alphabetical and numeric keys are available while typing whatever commands
+      are needed to load the game. Once the game is loaded the alternate mapping is activated, assigning
+      some of the main keyboard keys to the game controls.</p>
+    <p>The alternate keyboard mapping is completely configurable, both for the key or keys needed to
+      activate and deactivate it, and the mapping of the host keyboard keys to MTX keys. The configuration
+      is defined by a text file with the following format:</p>
+    <dl>
+      <dt>First Line</dt>
+      <dd><p>This line defines the key combination needed to toggle on or off the alternate keyboard mapping.
+          It consists of one or more key names, separated by spaces. All of the named keys must be pressed
+          simultaneously to toggle the keyboard mapping. The key names are either the single character
+          printable symbols on the key (e.g. A, 3 or ?) or one of the names from the following table:</p>
+        <table><tr valign=top><td width=20%>
+              backspace<br>
+              tab<br>
+              linefeed<br>
+              return<br>
+              escape<br>
+              space<br>
+              left<br>
+              right<br>
+              up<br>
+              down<br>
+              page_up<br>
+              page_down<br>
+              home<br>
+              end<br>
+              </td><td width=20%>
+              insert<br>
+              delete<br>
+              pause<br>
+              scroll_lock<br>
+              sys_req<br>
+              shift_l<br>
+              shift_r<br>
+              control_l<br>
+              control_r<br>
+              caps_lock<br>
+              shift_lock<br>
+              num_lock<br>
+              </td><td width=20%>
+              f1<br>
+              f2<br>
+              f3<br>
+              f4<br>
+              f5<br>
+              f6<br>
+              f7<br>
+              f8<br>
+              f9<br>
+              f10<br>
+              f11<br>
+              f12<br>
+              </td><td width=20%>
+              kp_left<br>
+              kp_right<br>
+              kp_up<br>
+              kp_down<br>
+              kp_page_up<br>
+              kp_page_down<br>
+              kp_home<br>
+              kp_hnd<br>
+              kp_add<br>
+              kp_subtract<br>
+              kp_multiply<br>
+              kp_divide<br>
+              kp_enter<br>
+              kp_middle<br>
+              </td><td width=20%>
+              pc_windows_l<br>
+              pc_windows_r<br>
+              pc_alt_l<br>
+              pc_alt_r<br>
+              pc_menu<br>
+              mac_cmd_l<br>
+              mac_cmd_r<br>
+              mac_alt<br>
+              menu<br>
+          </td></tr></table>
+        <p>The key names are not case sensitive. If more than one key name is specified then
+          typically this will be one normal key and one or more modifier keys. However this
+          is not required. The key combination may be purely modifier keys or may contain
+          more than one normal key. Whatever combination, all the specified keys must be
+          pressed to toggle the alternate keyboard layout. Note that the operating system
+          may hide some key combinations from MEMU.</p>
+      </dd>
+      <dt>Subsequent lines</dt>
+      <dd><p>The second and subsequent lines define the alternate key mapping, one line per
+          key. Each line consists of two key names, the first being the name of a key on the
+          host keyboard (same format as the key names for line one). The second is the name
+          of the corresponding MTX keyboard key. This can be a single printable character
+          or one of the names from the following table:</p>
+        <table><tr valign=top><td width=25%>
+              shift_l<br>
+              shift_r<br>
+              ctrl<br>
+              alphalock<br>
+              space<br>
+              backspace<br>
+              ret<br>
+              tab<br>
+            </td><td width=25%>
+              left<br>
+              right<br>
+              up<br>
+              down<br>
+              linefeed<br>
+              home<br>
+            </td><td width=25%>
+              brk<br>
+              cls<br>
+              del<br>
+              esc<br>
+              eol<br>
+              ins<br>
+              page<br>
+            </td><td width=25%>
+              f1<br>
+              f2<br>
+              f3<br>
+              f4<br>
+              f5<br>
+              f6<br>
+              f7<br>
+              f8<br>
+        </td></tr></table>
+      </dd>
+    </dl>
+    <p>A typical configuraion file <b>alt_keypad.kbd</b> is:</p>
+    <pre>
+F10
+7       Page
+8       EOL
+9       Brk
+u       Tab
+i       Up
+o       Del
+j       Left
+k       Home
+l       Right
+m       Ins
+,       Down
+.       Cls
+    </pre>
+    <p>This specifies F10 as the toggle key, and maps the 12 key trapisoidal block:</p>
+    <pre>
+      789
+      uio
+      jkl
+      m,.</pre>
+    <p>to the keys of the MTX keypad in the same physical arrangement.</p>
+    <p>At present it is necessary to use a command line switch to specifiy the alternate
+      keyboard mapping. The simplest method is to include a line such as the following
+      in <b>memu0.cfg</b>:</p>
+    <pre>
+      -alt-kbd alt_keypad.kbd
+    </pre>
+    <p><b>TODO:</b> Add an option to the configuration dialog to select an alternate keyboard
+        mapping file.</p>
+    
+    <h2 id="VDeb">MEMU Visual Debugger</h2>
+    <img class="centre" src="MEMU_vdeb.png" alt="MEMU Visual Debugger screenshot">
+    <p>The MEMU Visual Debugger is a machine code inspector and debugger similar to the
+      MTX PANEL command or the CP/M VDEB utility. However it offers a number of advantages
+      over those tools:</p>
+    <ul>
+      <li>It has a separate display window / screen, so that does not corrupt the normal
+        VDU or Monitor displays, simplifying the debugging of display code.</li>
+      <li>It does not depend upon Z80 interrupts, so it can be used to debug interrupt code.</li>
+      <li>It does not occupy any Z80 memory, leaving all memory free for the program being
+        tested.</li>
+      <li>It can follow code in all MTX ROMS.</li>
+      <li>It has more advanced features for stepping through Z80 code.</li>
+    </ul>
+    <p>To open the Visual Debugger, press and hold the &lt;F9&gt; key and press the "h" key.</p>
+    <p>Visual Debugger commands are invoked by pressing the key corresponding to the capital
+      letter of the command.</p>
+    <h3>Break</h3>
+    <p>Sets an address at which program execution will halt. Enter the required address
+      as a hex number, and type &ltReturn&gt;. It is now possible to specify a specific ROM
+      number or RAM page for the break. To do this type the two hex digit PAGE port selector
+      (e.g. 40 for ROM 4, or 01 for RAM page 1), followed by a colon and then the address
+      within that page. For example, to set a break at the start of the CRSPR routine enter
+      10:3E09. The page selector does not have to exactly match that specified for the break
+      to occur, as long as they both point to the same location. Thus within the ROM region
+      the RAM bits are ignored, while within RAM the ROM bits are ignored. If no page selector
+      is specified, the current PAGE value is assumed.</p>
+    <p>When prompted for the Break Condition (COND&gt;) there are a number of options:</p>
+    <ul>
+      <li>Just type &lt;Return&gt;. This will create an unconditional break point. Execution
+        will halt every time this address is reached, until the break point is manually
+        cleared.</li>
+      <li>Type N= followed by a number in hex. Execution will only halt when this address
+        has been reached the specified number of times. This break point will then be
+        automatically cleared.</li>
+      <li>Type a register name (single register or pair) followed by an equals sign and then
+        a value in hex (e.g. "HL=0123" or "B'=C0"). Execution will then stop at this
+        address every time the specified register has the specified value.</li>
+    </ul>
+    <p>Note that the Break command can only set one break condition at each address. However
+      there may be breaks set for a number of different addresses.</p>
+    <h3>Clear</h3>
+    <p>Clears a break condition set at a specified address.</p>
+    <h3>Display</h3>
+    <p>Displays a block of memory starting at the specified address. The values starting at
+      this location may then be changed by typing two digit hex values followed by &lt;Return&gt;.
+      Use &lt;Esc&gt; to stop editing values.</p>
+    <h3>Go</h3>
+    <p>Starts program execution at specified address. If no address is specified (just
+      &lt;Return&gt;) then start at the current value of the program counter (i.e continue
+      execution). Optionally ("TO&gt;" prompt) specify an address where execution is to halt
+      again. The halt address may include a page specifier, as for the Break command.</p>
+    <h3>Invert</h3>
+    <p>Toggle between displaying memory in hex or ASCII.</p>
+    <h3>List</h3>
+    <p>List machine code starting at a specified address. If an address is specified, then the
+      listing will remain fixed, starting at this address. If no address is given, then the
+      listing will start at the location of the program counter, and will be updated whenever
+      the program counter leaves the displayed listing.</p>
+    <h3>Next</h3>
+    <p>Sets a temporary break point at the next instruction, and then starts execution.</p>
+    <ul>
+      <li>For most instructions this will have the effect of single-stepping.</li>
+      <li>It will treat most CALL instructions as a single step. This will fail if the
+        subroutine call instruction is followed by parameter bytes (see the Trace command).</li>
+      <li>For loops formed by the DJNZ instruction or other conditional jumps, it will run
+        until the end of the loop.</li>
+    </ul>
+    <h3>Profile</h3>
+    <p>Toggles on and off collection of an execution profile.</p>
+    <p>When turned on, all the counts are reset to zero, and a count of the number of instructions
+      executed is shown to the right of the prompt line.</p>
+    <p>When turned off, the number of times each instruction was executed since profiling was
+      turned on is saved to a file with the name "Profile_&lt;date&gt;_&lt;time&gt;.txt" in
+      the current folder, with the format:</p>
+    <pre>
+Address    	     Count
+DBFD - DC00	      1920
+FC65 - FC6D	      1542
+FC6F - FC71	      1536
+FE1D - FE1E	       450
+DD20 - DD22	       290
+DE53 - DE55	       241
+DE58 - DE61	       228
+DE64 - DE67	       227
+      </pre>
+    <h3>Quit</h3>
+    <p>Quits the Visual Debugger. The window will be closed and all breakpoints will be inactive
+      until the Visual Debugger is re-opened.</p>
+    <h3>Register</h3>
+    <p>Updates the value of the register pair pointed to by the register cursor. This cursor is
+      moved by the stop "." key. Note that there is one step in the cycle when no register is
+      selected.</p>
+    <h3>Step</h3>
+    <p>Executes a single machine code instruction then updates the display.</p>
+    <h3>Trace</h3>
+    <p>For most machine code instructions, this is the same as "Step". For a subroutine call
+      (one that is taken for a conditional call), execute until a return statement brings the
+      stack pointer back to the current value. For most subroutines, this will execute the routine
+      as a single step, even if the call is followed by parameter bytes. It will fail if the
+      routine does not finish with a return statement (e.g. finishes with "JP (HL)").</p>
+    <h3>eXit</h3>
+    <p>Attempts to exit the current subroutine. Works by running until a return statement is
+      executed with the stack pointer at the current value. This will usually work if you have
+      just mistakenly stepped into a routine you are not interested in. It will fail if there
+      have been mis-matched PUSH and POP statements since the subroutine call.</p>
+
+    <h2 id="Usage-Advanced">Advanced Usage</h2>
     <p>MEMU configuration is controlled by a large number of option flags or switches. These
       may be either in configuration files or specified on the command line.</p>
     <p>For bare-metal systems the configuration will be specified in files "memu0.cfg" and
@@ -680,6 +1040,8 @@
       <dd>auto type keys in this string</dd>
       <dt>-kbd-type-file fn</dt>
       <dd>auto type keys in this file</dd>
+      <dt>-alt-kbd fn</dt>
+      <dd>Configure the alternate keyboard mapping for game playing</dd>
       <dt>-joy,-j</dt>
       <dd>enable joystick support</dd>
       <dt>-joy-buttons string</dt>
@@ -784,199 +1146,6 @@
         </ol>
       </dd>
     </dl>
-    
-    <h2 id="Keyboard">Keyboard</h2>
-    <img class="centre" src="MTX_Keyboard_100.png" alt="MTX Keyboard layout">
-    <p>The layout of the MTX keyboard (illustrated above) differs somewhat from that of
-      typical modern keyboards.</p>
-    <p>The two unlabelled keys either side of the space bar are reset keys. Pressing both
-      simultaneously resets the MTX. In MEMU this is emulated by simultaneously pressing
-      the &lt;Alt&gt; and &lt;Alt Gr&gt; keys to reset the emulated MTX.</p>
-    <p>One difference that causes a few problems is that there are a few symbols which have
-      different shift states compared to modern keyboards. MEMU translates each key press
-      into pressing the corresponding key on the emulated MTX keyboard. However, for these
-      symbols the wrong shift state will be selected.</p>
-    <p>The original solution to this was to require typing a different key to produce the
-      required symbol, as follows:</p>
-    <table>
-      <tr><th>To produce symbol</th><th>Type the following key</th></tr>
-      <tr><td>^</td><td>=</td></tr>
-      <tr><td>:</td><td>#</td></tr>
-      <tr><td>@</td><td>' (quote)</td></tr>
-      <tr><td>=</td><td>^ (shift 6)</td></tr>
-      <tr><td>' (quote)</td><td>@ (shift quote)</td></tr>
-      <tr><td>#</td><td>&pound; (shift 3)</td></tr>
-      <tr><td>` (back quote)</td><td>(shift back quote)</td></tr>
-    </table>
-    <p>To improve on this, the emulation is modified slightly compared to the original
-      hardware. The MTX keyboard is wired as an 8x10 matrix. However the keyboard only
-      has 77 keys (plus the two reset keys). Thus there are three gaps in the matrix.
-      The emulation fills these three spaces with three new keys which have most of the
-      above symbols at shift states corresponding to modern keyboards. These new pseudo
-      keys are:</p>
-    <table>
-      <tr><th>Drive Line</th><th>Sense Line</th><th>Unshifted symbol</th><th>Shifted Symbol</th></tr>
-      <tr><td>4</td><td>8</td><td>=</td><td>^</td></tr>
-      <tr><td>5</td><td>8</td><td>'</td><td>@</td></tr>
-      <tr><td>6</td><td>8</td><td>#</td><td>:</td></tr>
-    </table>
-    <p>If keyboard remapping is enabled, and &lt;Shift Lock&gt; is set on the keyboard
-      then pressing one of these symbols on the keyboard activates one of these new keys
-      in the emulation rather than the original keys. The BASIC and CP/M ROMs are patched
-      to recognise these new keys. However any programs with their own keyboard drivers
-      will not know about these new keys and so will not work properly. Turning off
-      &lt;Scroll Lock&gt; reverts to using the original MTX key mapping.</p>
-    <p>It is still necessary to press &lt;Shift&gt; to produce a back-quote symbol, but
-      this is rarely needed.</p>
-    <p>The cursor keys on the keyboard are mapped onto the MTX cursor keys as expected,
-      and the other navigation keys are:</p>
-    <table>
-      <tr><th>Keyboard</th><th>MTX Key</th></tr>
-      <tr><td>Insert</td><td>Ins</td></tr>
-      <tr><td>Delete</td><td>Del</td></tr>
-      <tr><td>Home</td><td>Home</td></tr>
-      <tr><td>End</td><td>EOL</td></tr>
-      <tr><td>Page Up</td><td>Page</td></tr>
-      <tr><td>Page Down</td><td>Cls</td></tr>
-    </table>
-    <p>For game playing, the physical layout of the keys is often important. For this
-      reason, by default MEMU maps the top left portion of the keypad onto the MTX keypad
-      as shown.</p>
-    <img class="lfloat" src="MTX_Keypad_Overlay.png" alt="Keypad overlay illustration">
-    <table>
-      <tr><th colspan="2">PC Keypad</th><th colspan="2">MTX Keypad</th></tr>
-      <tr><th>Normal</th><th>Shifted</th><th>Normal</th><th>Shifted</th></tr>
-      <tr><td>Num Lock</td><td>&nbsp;</td><td>Page</td><td>7</td></tr>
-      <tr><td>/</td><td>&nbsp;</td><td>EOL</td><td>8</td></tr>
-      <tr><td>*</td><td>&nbsp;</td><td>Break</td><td>9</td></tr>
-      <tr><td>Home</td><td>7</td><td>Tab</td><td>4</td></tr>
-      <tr><td>Up</td><td>8</td><td>Up</td><td>5</td></tr>
-      <tr><td>Page Up</td><td>9</td><td>Del</td><td>6</td></tr>
-      <tr><td>Left</td><td>4</td><td>Left</td><td>1</td></tr>
-      <tr><td>&nbsp;</td><td>5</td><td>Home</td><td>2</td></tr>
-      <tr><td>Right</td><td>6</td><td>Right</td><td>3</td></tr>
-      <tr><td>End</td><td>1</td><td>Ins</td><td>0</td></tr>
-      <tr><td>Down</td><td>2</td><td>Down</td><td>. (Decimal)</td></tr>
-      <tr><td>Page Down</td><td>3</td><td>Cls</td><td>Ent</td></tr>
-    </table>
-    <p class="clear">However this again results in some of the keys not having the effect indicated by
-      the keycap. The &lt;F12&gt; key toggles the "Num Lock" LED. If this is illuminated
-      then the the key mapping is changed to correspond to the labels on the keycaps.
-      In particular the keys produce the expected numbers when the shift key is pressed.
-      The &lt;Num Lock&gt key can not be used for the toggle as it is part of the keypad
-      mapping.</p>
-    <p>On versions of MEMU where each display is shown full screen, ideally use the combination
-      of the &lt;Alt&gt; key and a function key to select the different displays. Unfortunately
-      in some environments the operating system grabs those key combinations. In that case use
-      the left &lt;Ctrl&gt; key in combination with a function key. To send a &lt;Ctrl&gt; and
-      function key to a program running on MEMU, use the right &lt;Ctrl&gt; key.</p>
-
-    <h2 id="VDeb">MEMU Visual Debugger</h2>
-    <img class="centre" src="MEMU_vdeb.png" alt="MEMU Visual Debugger screenshot">
-    <p>The MEMU Visual Debugger is a machine code inspector and debugger similar to the
-      MTX PANEL command or the CP/M VDEB utility. However it offers a number of advantages
-      over those tools:</p>
-    <ul>
-      <li>It has a separate display window / screen, so that does not corrupt the normal
-        VDU or Monitor displays, simplifying the debugging of display code.</li>
-      <li>It does not depend upon Z80 interrupts, so it can be used to debug interrupt code.</li>
-      <li>It does not occupy any Z80 memory, leaving all memory free for the program being
-        tested.</li>
-      <li>It can follow code in all MTX ROMS.</li>
-      <li>It has more advanced features for stepping through Z80 code.</li>
-    </ul>
-    <p>To open the Visual Debugger, press and hold the &lt;F9&gt; key and press the "h" key.</p>
-    <p>Visual Debugger commands are invoked by pressing the key corresponding to the capital
-      letter of the command.</p>
-    <h3>Break</h3>
-    <p>Sets an address at which program execution will halt. Enter the required address
-      as a hex number, and type &ltReturn&gt;. It is now possible to specify a specific ROM
-      number or RAM page for the break. To do this type the two hex digit PAGE port selector
-      (e.g. 40 for ROM 4, or 01 for RAM page 1), followed by a colon and then the address
-      within that page. For example, to set a break at the start of the CRSPR routine enter
-      10:3E09. The page selector does not have to exactly match that specified for the break
-      to occur, as long as they both point to the same location. Thus within the ROM region
-      the RAM bits are ignored, while within RAM the ROM bits are ignored. If no page selector
-      is specified, the current PAGE value is assumed.</p>
-    <p>When prompted for the Break Condition (COND&gt;) there are a number of options:</p>
-    <ul>
-      <li>Just type &lt;Return&gt;. This will create an unconditional break point. Execution
-        will halt every time this address is reached, until the break point is manually
-        cleared.</li>
-      <li>Type N= followed by a number in hex. Execution will only halt when this address
-        has been reached the specified number of times. This break point will then be
-        automatically cleared.</li>
-      <li>Type a register name (single register or pair) followed by an equals sign and then
-        a value in hex (e.g. "HL=0123" or "B'=C0"). Execution will then stop at this
-        address every time the specified register has the specified value.</li>
-    </ul>
-    <p>Note that the Break command can only set one break condition at each address. However
-      there may be breaks set for a number of different addresses.</p>
-    <h3>Clear</h3>
-    <p>Clears a break condition set at a specified address.</p>
-    <h3>Display</h3>
-    <p>Displays a block of memory starting at the specified address. The values starting at
-      this location may then be changed by typing two digit hex values followed by &lt;Return&gt;.
-      Use &lt;Esc&gt; to stop editing values.</p>
-    <h3>Go</h3>
-    <p>Starts program execution at specified address. If no address is specified (just
-      &lt;Return&gt;) then start at the current value of the program counter (i.e continue
-      execution). Optionally ("TO&gt;" prompt) specify an address where execution is to halt
-      again. The halt address may include a page specifier, as for the Break command.</p>
-    <h3>Invert</h3>
-    <p>Toggle between displaying memory in hex or ASCII.</p>
-    <h3>List</h3>
-    <p>List machine code starting at a specified address. If an address is specified, then the
-      listing will remain fixed, starting at this address. If no address is given, then the
-      listing will start at the location of the program counter, and will be updated whenever
-      the program counter leaves the displayed listing.</p>
-    <h3>Next</h3>
-    <p>Sets a temporary break point at the next instruction, and then starts execution.</p>
-    <ul>
-      <li>For most instructions this will have the effect of single-stepping.</li>
-      <li>It will treat most CALL instructions as a single step. This will fail if the
-        subroutine call instruction is followed by parameter bytes (see the Trace command).</li>
-      <li>For loops formed by the DJNZ instruction or other conditional jumps, it will run
-        until the end of the loop.</li>
-    </ul>
-    <h3>Profile</h3>
-    <p>Toggles on and off collection of an execution profile.</p>
-    <p>When turned on, all the counts are reset to zero, and a count of the number of instructions
-      executed is shown to the right of the prompt line.</p>
-    <p>When turned off, the number of times each instruction was executed since profiling was
-      turned on is saved to a file with the name "Profile_&lt;date&gt;_&lt;time&gt;.txt" in
-      the current folder, with the format:</p>
-    <pre>
-Address    	     Count
-DBFD - DC00	      1920
-FC65 - FC6D	      1542
-FC6F - FC71	      1536
-FE1D - FE1E	       450
-DD20 - DD22	       290
-DE53 - DE55	       241
-DE58 - DE61	       228
-DE64 - DE67	       227
-      </pre>
-    <h3>Quit</h3>
-    <p>Quits the Visual Debugger. The window will be closed and all breakpoints will be inactive
-      until the Visual Debugger is re-opened.</p>
-    <h3>Register</h3>
-    <p>Updates the value of the register pair pointed to by the register cursor. This cursor is
-      moved by the stop "." key. Note that there is one step in the cycle when no register is
-      selected.</p>
-    <h3>Step</h3>
-    <p>Executes a single machine code instruction then updates the display.</p>
-    <h3>Trace</h3>
-    <p>For most machine code instructions, this is the same as "Step". For a subroutine call
-      (one that is taken for a conditional call), execute until a return statement brings the
-      stack pointer back to the current value. For most subroutines, this will execute the routine
-      as a single step, even if the call is followed by parameter bytes. It will fail if the
-      routine does not finish with a return statement (e.g. finishes with "JP (HL)").</p>
-    <h3>eXit</h3>
-    <p>Attempts to exit the current subroutine. Works by running until a return statement is
-      executed with the stack pointer at the current value. This will usually work if you have
-      just mistakenly stepped into a routine you are not interested in. It will fail if there
-      have been mis-matched PUSH and POP statements since the subroutine call.</p>
     
     <h2 id="Diagnostics">Diagnostics</h2>
     <h3 id="Diag-Options">Diagnostic Options</h3>
@@ -1213,6 +1382,7 @@ DE64 - DE67	       227
       <dt>-diag-all </dt>
       <dd>Turn on all of the above (except -diag-console and -diag-file).</dd>
     </dl>
+    
     <h3 id="Diag-RunTime">Run Time Diagnostics</h3>
     <p>A number of these diagnostics (and other features) may be turned on or off at run-time
       by pressing the &lt;F9&gt; key and a letter (the &lt;F9&gt; acting as a kind of shift
