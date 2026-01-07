@@ -2006,25 +2006,25 @@ void OutZ80(word port, byte value)
             break;
 #endif
 		case 0x30:
-			mon_out30(value);
+			if ( cfg.mon_emu > 0) mon_out30(value);
 #ifdef HAVE_MFX
             if ( cfg.mfx_emu > 0 ) mfx_out (port, value);
 #endif
 			break;
 		case 0x31:
-			mon_out31(value);
+			if ( cfg.mon_emu > 0) mon_out31(value);
 #ifdef HAVE_MFX
             if ( cfg.mfx_emu > 0 ) mfx_out (port, value);
 #endif
 			break;
 		case 0x32:
-			mon_out32(value);
+			if ( cfg.mon_emu > 0) mon_out32(value);
 #ifdef HAVE_MFX
             if ( cfg.mfx_emu > 0 ) mfx_out (port, value);
 #endif
 			break;
 		case 0x33:
-			mon_out33(value);
+			if ( cfg.mon_emu > 0) mon_out33(value);
 #ifdef HAVE_MFX
             if ( cfg.mfx_emu > 0 ) mfx_out (port, value);
 #endif
@@ -2045,13 +2045,13 @@ void OutZ80(word port, byte value)
             break;
 #endif
 		case 0x38:
-			mon_out38(value);
+			if ( cfg.mon_emu > 0) mon_out38(value);
 #ifdef HAVE_MFX
             if ( cfg.mfx_emu > 0 ) mfx_out (port, value);
 #endif
 			break;
 		case 0x39:
-			mon_out39(value);
+			if ( cfg.mon_emu > 0) mon_out39(value);
 #ifdef HAVE_MFX
             if ( cfg.mfx_emu > 0 ) mfx_out (port, value);
 #endif
@@ -2298,66 +2298,56 @@ byte InZ80(word port)
 #endif
 		case 0x30:
 #ifdef HAVE_MFX
-            if ( cfg.mfx_emu > 0 )
-                return mfx_in (port);
-            else
+            if ( cfg.mfx_emu > 0 ) return mfx_in (port);
 #endif
 			return mon_in30();
 		case 0x32:
 #ifdef HAVE_MFX
-            if ( cfg.mfx_emu > 0 )
-                return mfx_in (port);
-            else
+            if ( cfg.mfx_emu > 0 ) return mfx_in (port);
 #endif
 			return mon_in32();
 		case 0x33:
 #ifdef HAVE_MFX
-            if ( cfg.mfx_emu > 0 )
-                return mfx_in (port);
-            else
+            if ( cfg.mfx_emu > 0 ) return mfx_in (port);
 #endif
 			return mon_in33();
 #ifdef HAVE_MFX
         case 0x34:
             if ( cfg.mfx_emu > 0 ) return mfx_in (port);
-            else return InZ80_bad("MFX character repeat", port, TRUE);
+            return InZ80_bad("MFX character repeat", port, TRUE);
         case 0x35:
             if ( cfg.mfx_emu > 0 ) return mfx_in (port);
-            else return InZ80_bad("MFX serial number", port, TRUE);
+            return InZ80_bad("MFX serial number", port, TRUE);
         case 0x36:
         case 0x37:
             if ( cfg.mfx_emu > 0 ) return mfx_in (port);
-            else return InZ80_bad("MFX font definition", port, TRUE);
+            return InZ80_bad("MFX font definition", port, TRUE);
 #endif
 		case 0x38:
 #ifdef HAVE_MFX
-            if ( cfg.mfx_emu > 0 )
-                return mfx_in (port);
-            else
+            if ( cfg.mfx_emu > 0 ) return mfx_in (port);
 #endif
 			return mon_in38();
 		case 0x39:
 #ifdef HAVE_MFX
-            if ( cfg.mfx_emu > 0 )
-                return mfx_in (port);
-            else
+            if ( cfg.mfx_emu > 0 ) return mfx_in (port);
 #endif
 			return mon_in39();
 #ifdef HAVE_MFX
         case 0x3A:
             if ( cfg.mfx_emu > 0 ) return mfx_in (port);
-            else return InZ80_bad("MFX FPGA configuration", port, TRUE);
+            return InZ80_bad("MFX FPGA configuration", port, TRUE);
         case 0x3B:
             if ( cfg.mfx_emu > 0 ) return mfx_in (port);
-            else return InZ80_bad("MFX shadow page port", port, TRUE);
+            return InZ80_bad("MFX shadow page port", port, TRUE);
         case 0x3C:
         case 0x3D:
         case 0x3E:
             if ( cfg.mfx_emu > 0 ) return mfx_in (port);
-            else return InZ80_bad("MFX colour palette", port, TRUE);
+            return InZ80_bad("MFX colour palette", port, TRUE);
         case 0x3F:
             if ( cfg.mfx_emu > 0 ) return mfx_in (port);
-            else return InZ80_bad("MFX second character attribute", port, TRUE);
+            return InZ80_bad("MFX second character attribute", port, TRUE);
 #endif
 		case 0x40:
 		case 0x41:
@@ -2919,18 +2909,17 @@ int memu (int argc, const char *argv[])
 #endif
             }
 #ifdef HAVE_MFX
-		else if ( !strcmp(argv[i], "-mfx") )
+		else if ( !strncmp(argv[i], "-mfx", 4) )
             {
             ++cfg.mfx_emu;
 			cfg.mon_emu = 0;
-            }
-		else if ( !strcmp(argv[i], "-mfx-max") )
-            {
-            cfg.mfx_emu = MFXEMU_MAX;
-			cfg.mon_emu = 0;
-			// cfg.mon_emu = MONEMU_WIN | MONEMU_IGNORE_INIT;
-			// cfg.mon_height_scale = 2;
-			// cfg.mon_width_scale = 1;
+            const char *ps = argv[i] + 4;
+            if ((*ps >= '1') && (*ps <= '4'))
+                {
+                cfg.mfx_emu = (cfg.mfx_emu & 0xFFFF) | ((*ps - '0') << 16);
+                ++ps;
+                }
+            if (!strcmp (ps, "-max")) cfg.mfx_emu |= MFXEMU_MAX;
             }
 #endif
 		else if ( !strcmp(argv[i], "-sdx-tracks") )

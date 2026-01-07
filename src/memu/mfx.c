@@ -2,6 +2,7 @@
 
 #include "types.h"
 #include "mfx.h"
+#include "memu.h"
 #include "vdp.h"
 #include "win.h"
 #include "kbd.h"
@@ -291,6 +292,7 @@ typedef byte FONT[0x100][THEIGHT];
 static FONT *font = NULL;
 
 static int mfx_emu = 0;
+static int mfx_ver = 0;
 static byte page = 0;
 static byte palidx = 0;
 static byte raddr = 0;
@@ -316,9 +318,11 @@ static byte *vdppix = NULL;
 
 void mfx_init (int emu)
     {
-    mfx_emu = emu;
+    mfx_emu = emu & 0xFFFF;
+    mfx_ver = emu >> 16;
     diag_message (DIAG_INIT, "mfx_init (%d)", mfx_emu);
     if ( mfx_emu == 0 ) return;
+    if ( mfx_ver == 0 ) mfx_ver = 2;
     if ( mfx_emu >= MFXEMU_MAX )
         {
         int ix;
@@ -410,29 +414,37 @@ byte mfx_in (word port)
     switch (port)
         {
         case 0x28:
+            if (mfx_ver < 2) InZ80_bad ("MFX", port, TRUE);
             value = ccntr & 0xFF;
             break;
         case 0x29:
+            if (mfx_ver < 2) InZ80_bad ("MFX", port, TRUE);
             value = ccntr >> 8;
             break;
         case 0x2A:
+            if (mfx_ver < 2) InZ80_bad ("MFX", port, TRUE);
             value = caddr & 0xFF;
             break;
         case 0x2B:
+            if (mfx_ver < 2) InZ80_bad ("MFX", port, TRUE);
             value = caddr >> 8;
             break;
         case 0x2C:
+            if (mfx_ver < 2) InZ80_bad ("MFX", port, TRUE);
             value = vaddr & 0xFF;
             break;
         case 0x2D:
+            if (mfx_ver < 2) InZ80_bad ("MFX", port, TRUE);
             value = vaddr >> 8;
             break;
         case 0x2E:
+            if (mfx_ver < 2) InZ80_bad ("MFX", port, TRUE);
             value = vram[VADDR(vaddr)];
             vaddr = (vaddr + vincr) & 0x7FFF;
             value = value;
             break;
         case 0x2F:
+            if (mfx_ver < 2) InZ80_bad ("MFX", port, TRUE);
             value = vram[VADDR(vaddr)];
             break;
         case 0x30:
@@ -457,10 +469,12 @@ byte mfx_in (word port)
             value = value;
             break;
         case 0x36:
+            if (mfx_ver < 2) InZ80_bad ("MFX", port, TRUE);
             diag_message (DIAG_MFX_FONT, "Read font index = 0x%02X", fontidx);
             value = fontidx;
             break;
         case 0x37:
+            if (mfx_ver < 2) InZ80_bad ("MFX", port, TRUE);
             value = (*font)[fontidx][fontrow];
             diag_message (DIAG_MFX_FONT, "Read font character 0X%02X row %d = 0x%02X", fontidx, fontrow, value);
             if ( ++fontrow >= THEIGHT )
@@ -482,15 +496,19 @@ byte mfx_in (word port)
             value = page;
             break;
         case 0x3C:
+            if (mfx_ver < 2) InZ80_bad ("MFX", port, TRUE);
             value = palidx;
             break;
         case 0x3D:
+            if (mfx_ver < 2) InZ80_bad ("MFX", port, TRUE);
             value = (mfx_pal[palidx].g & 0xF0) | (mfx_pal[palidx].r >> 4);
             break;
         case 0x3E:
+            if (mfx_ver < 2) InZ80_bad ("MFX", port, TRUE);
             value = mfx_pal[palidx].b >> 4;
             break;
         case 0x3F:
+            if (mfx_ver < 2) InZ80_bad ("MFX", port, TRUE);
             value = atr2;
             break;
         default:
@@ -517,6 +535,7 @@ void mfx_out (word port, byte value)
             vdp_out2 (&mfxvdp, value);
             break;
         case 0x28:
+            if (mfx_ver < 2) OutZ80_bad ("MFX", port, value, TRUE);
             ccntr = (ccntr & 0x7F00) | value;
             diag_message (DIAG_MFX_MEM, "Copy %d bytes from 0x%04X to 0x%04X with increment 0x%02X",
                 ccntr, caddr, vaddr, vincr);
@@ -529,28 +548,34 @@ void mfx_out (word port, byte value)
                 }
             break;
         case 0x29:
+            if (mfx_ver < 2) OutZ80_bad ("MFX", port, value, TRUE);
             ccntr = (((word)(value & 0x7F)) << 8) | (ccntr & 0x00FF);
             diag_message (DIAG_MFX_MEM, "Set VRAM copy counter high bits. Counter = %d", ccntr);
             break;
         case 0x2A:
+            if (mfx_ver < 2) OutZ80_bad ("MFX", port, value, TRUE);
             caddr = (caddr & 0x7F00) | value;
             diag_message (DIAG_MFX_MEM, "Set VRAM copy address low bits. Address = 0x%04X", caddr);
             break;
         case 0x2B:
+            if (mfx_ver < 2) OutZ80_bad ("MFX", port, value, TRUE);
             caddr = (((word)(value & 0x7F)) << 8) | (caddr & 0x00FF);
             diag_message (DIAG_MFX_MEM, "Set VRAM copy address high bits. Address = 0x%04X", caddr);
             break;
         case 0x2C:
+            if (mfx_ver < 2) OutZ80_bad ("MFX", port, value, TRUE);
             vaddr = (vaddr & 0x7F00) | value;
             diag_message (DIAG_MFX_MEM, "Set VRAM destination address low bits. Address = 0x%04X", vaddr);
             vincr = 1;
             break;
         case 0x2D:
+            if (mfx_ver < 2) OutZ80_bad ("MFX", port, value, TRUE);
             vaddr = (((word)(value & 0x7F)) << 8) | (vaddr & 0x00FF);
             diag_message (DIAG_MFX_MEM, "Set VRAM destination address high bits. Address = 0x%04X", vaddr);
             vincr = 1;
             break;
         case 0x2E:
+            if (mfx_ver < 2) OutZ80_bad ("MFX", port, value, TRUE);
             vram[VADDR(vaddr)] = value;
             diag_message (DIAG_MFX_MEM, "Write vram[0x%04X] = 0x%02X. Address incremented by 0x%02X",
                 vaddr, value, vincr);
@@ -558,6 +583,7 @@ void mfx_out (word port, byte value)
             vaddr = (vaddr + vincr) & 0x7FFF;
             break;
         case 0x2F:
+            if (mfx_ver < 2) OutZ80_bad ("MFX", port, value, TRUE);
             vincr = value;
             diag_message (DIAG_MFX_MEM, "Set vram address increment = 0x%02X", vincr);
             break;
@@ -590,11 +616,13 @@ void mfx_out (word port, byte value)
             iSer = value & 0x07;
             break;
         case 0x36:
+            if (mfx_ver < 2) OutZ80_bad ("MFX", port, value, TRUE);
             fontidx = value;
             fontrow = 0;
             diag_message (DIAG_MFX_FONT, "Set font index = 0x%02X", value);
             break;
         case 0x37:
+            if (mfx_ver < 2) OutZ80_bad ("MFX", port, value, TRUE);
             (*font)[fontidx][fontrow] = value;
             changed = TRUE;
             diag_message (DIAG_MFX_FONT, "Set font character 0x%02X row %d = 0x%02X", fontidx, fontrow, value);
@@ -617,9 +645,11 @@ void mfx_out (word port, byte value)
             diag_message (DIAG_MFX_CFG, "FPGA configuration = 0x%02X", byFPGA);
             break;
         case 0x3C:
+            if (mfx_ver < 2) OutZ80_bad ("MFX", port, value, TRUE);
             palidx = value;
             break;
         case 0x3D:
+            if (mfx_ver < 2) OutZ80_bad ("MFX", port, value, TRUE);
             {
             byte red = value & 0x0F;
             byte green = value >> 4;
@@ -631,12 +661,14 @@ void mfx_out (word port, byte value)
             break;
             }
         case 0x3E:
+            if (mfx_ver < 2) OutZ80_bad ("MFX", port, value, TRUE);
             mfx_pal[palidx].b = 0x11 * (value & 0x0F);
             changed = TRUE;
             win_colour (mfx_win, palidx, &mfx_pal[palidx]);
             diag_message (DIAG_MFX_PAL, "Palette entry %d: Blue = 0x%X", palidx, value & 0x0F);
             break;
         case 0x3F:
+            if (mfx_ver < 2) OutZ80_bad ("MFX", port, value, TRUE);
             diag_message (DIAG_MFX_TEXT, "Character attribute 2 = 0x%02X", value);
             atr2 = value;
             break;
