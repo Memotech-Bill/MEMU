@@ -96,7 +96,7 @@ char * cfg_exe_path (const char *argv0)
             {
             nPLen = nSLen;
             if (psPath) free (psPath)
-            psPath = (char *) malloc (psPath, nSLen + 1);
+            psPath = (char *) malloc (nSLen + 1);
             if (psPath == NULL) return NULL;
             }
         strncpy (psPath, ps1, nDLen);
