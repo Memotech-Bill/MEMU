@@ -20,6 +20,7 @@ ui.c - User Interface
 #include "vid.h"
 #include "monprom.h"
 #include "dis.h"
+#include "memu.h"
 #include "ui.h"
 
 /*...vtypes\46\h:0:*/
@@ -512,7 +513,7 @@ static void ui_mem_init(void)
 	ui_vk_init(&ui_mem_vk);
 	ui_mem_win = win_create(
 		UI_MEM_WIDTH, UI_MEM_HEIGHT,
-		1, 1,
+		cfg.mon_width_scale, cfg.mon_height_scale,
 		ui_mem_title ? ui_mem_title : "Memu Memory Inspector",
 		ui_mem_display, /* display */
 		NULL, /* geometry */
@@ -726,7 +727,7 @@ static void ui_vram_init(void)
 	ui_vk_init(&ui_vram_vk);
 	ui_vram_win = win_create(
 		UI_VRAM_WIDTH, UI_VRAM_HEIGHT,
-		1, 1,
+		cfg.mon_width_scale, cfg.mon_height_scale,
 		ui_vram_title ? ui_vram_title : "Memu VRAM Inspector",
 		ui_vram_display, /* display */
 		NULL, /* geometry */
@@ -1047,7 +1048,7 @@ static void ui_dis_init(void)
 
 	ui_dis_win = win_create(
 		UI_DIS_WIDTH, UI_DIS_HEIGHT,
-		1, 1,
+		cfg.mon_width_scale, cfg.mon_height_scale,
 		ui_dis_title ? ui_dis_title : "Memu Disassembly Inspector",
 		ui_dis_display, /* display */
 		NULL, /* geometry */
