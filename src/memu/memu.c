@@ -2127,8 +2127,19 @@ void OutZ80(word port, byte value)
 			break;
 		case 0x70:
 		case 0x71:
-			OutZ80_bad("MTXplus+ RTC", port, value, TRUE);
+#if HAVE_MFX
+            if ( cfg.mfx_emu > 0 ) mfx_out (port, value);
+            else
+#endif
+                OutZ80_bad("MTXplus+ RTC", port, value, TRUE);
 			break;
+#if HAVE_MFX
+        case 0x72:
+        case 0x73:
+            if ( cfg.mfx_emu > 0 ) mfx_out (port, value);
+            else  OutZ80_bad("Unknown hardware", port, value, TRUE);
+			break;
+#endif
 #ifdef HAVE_SPEC
 		case 0x7e:
 			spec_out7E(port>>8, value);
@@ -2400,7 +2411,16 @@ byte InZ80(word port)
 #endif
 		case 0x70:
 		case 0x71:
+#if HAVE_MFX
+            if ( cfg.mfx_emu ) return mfx_in (port);
+#endif
 			return InZ80_bad("MTXplus+ RTC", port, TRUE);
+#if HAVE_MFX
+        case 0x72:
+        case 0x73:
+            if ( cfg.mfx_emu ) return mfx_in (port);
+			return InZ80_bad("Unknown hardware", port, TRUE);
+#endif
 #ifdef HAVE_SPEC
 		case 0x7e:
 			return spec_in7E();

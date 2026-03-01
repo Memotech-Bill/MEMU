@@ -64,6 +64,7 @@ elseif("${TARGET}" STREQUAL "XWin")
     ${CMAKE_CURRENT_LIST_DIR}/main.c
     ${CMAKE_CURRENT_LIST_DIR}/mfx.c
     ${CMAKE_CURRENT_LIST_DIR}/nfx.c
+    ${CMAKE_CURRENT_LIST_DIR}/rtc.c
     ${CMAKE_CURRENT_LIST_DIR}/sdcard.c
     ${CMAKE_CURRENT_LIST_DIR}/snd.c
     ${CMAKE_CURRENT_LIST_DIR}/spec.c
@@ -97,6 +98,7 @@ elseif("${TARGET}" STREQUAL "FBuf")
     ${CMAKE_CURRENT_LIST_DIR}/main.c
     ${CMAKE_CURRENT_LIST_DIR}/mfx.c
     ${CMAKE_CURRENT_LIST_DIR}/nfx.c
+    ${CMAKE_CURRENT_LIST_DIR}/rtc.c
     ${CMAKE_CURRENT_LIST_DIR}/sdcard.c
     ${CMAKE_CURRENT_LIST_DIR}/snd.c
     ${CMAKE_CURRENT_LIST_DIR}/spec.c
@@ -157,6 +159,7 @@ elseif("${TARGET}" STREQUAL "Win")
     ${CMAKE_CURRENT_LIST_DIR}/main.c
     ${CMAKE_CURRENT_LIST_DIR}/mfx.c
     ${CMAKE_CURRENT_LIST_DIR}/nfx.c
+    ${CMAKE_CURRENT_LIST_DIR}/rtc.c
     ${CMAKE_CURRENT_LIST_DIR}/sdcard.c
     ${CMAKE_CURRENT_LIST_DIR}/snd.c
     ${CMAKE_CURRENT_LIST_DIR}/spec.c
@@ -205,6 +208,7 @@ elseif("${TARGET}" STREQUAL "SDL")
     ${CMAKE_CURRENT_LIST_DIR}/main.c
     ${CMAKE_CURRENT_LIST_DIR}/mfx.c
     ${CMAKE_CURRENT_LIST_DIR}/nfx.c
+    ${CMAKE_CURRENT_LIST_DIR}/rtc.c
     ${CMAKE_CURRENT_LIST_DIR}/sdcard.c
     ${CMAKE_CURRENT_LIST_DIR}/snd_sdl.c
     ${CMAKE_CURRENT_LIST_DIR}/spec.c

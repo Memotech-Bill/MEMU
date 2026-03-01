@@ -3,6 +3,7 @@
 #include "types.h"
 #include "mfx.h"
 #include "memu.h"
+#include "rtc.h"
 #include "vdp.h"
 #include "win.h"
 #include "kbd.h"
@@ -25,6 +26,7 @@
 #define GHEIGHT     ( 2 * GLYPH_HEIGHT )
 #define GROWS       ( HEIGHT / GHEIGHT )
 #define GCOLS       ( WIDTH / GWIDTH )
+#define LEN_FIFO    1024
 
 static WIN *mfx_win = NULL;
 
@@ -316,13 +318,18 @@ static word ccntr = 0;
 static VDP mfxvdp;
 static byte *vdppix = NULL;
 
+static byte fifo_buf[LEN_FIFO];
+static word fifo_rd = 0;
+static word fifo_wr = 0;
+static byte fifo_data = 0;
+
 void mfx_init (int emu)
     {
     mfx_emu = emu & 0xFFFF;
     mfx_ver = emu >> 16;
     diag_message (DIAG_INIT, "mfx_init (%d)", mfx_emu);
     if ( mfx_emu == 0 ) return;
-    if ( mfx_ver == 0 ) mfx_ver = 2;
+    if ( mfx_ver == 0 ) mfx_ver = 4;
     if ( mfx_emu >= MFXEMU_MAX )
         {
         int ix;
@@ -511,7 +518,24 @@ byte mfx_in (word port)
             if (mfx_ver < 2) InZ80_bad ("MFX", port, TRUE);
             value = atr2;
             break;
+        case 0x71:
+            if (mfx_ver < 4) InZ80_bad ("MFX", port, TRUE);
+            value = rtc_in71 ();
+            break;
+        case 0x72:
+            if (mfx_ver < 4) InZ80_bad ("MFX", port, TRUE);
+            value = rtc_in72 ();
+            break;
+        case 0x73:
+            if (mfx_ver < 4) InZ80_bad ("MFX", port, TRUE);
+            value = fifo_data;
+            fifo_data = fifo_buf[fifo_rd];
+            ++fifo_rd;
+            fifo_rd &= LEN_FIFO - 1;
+            fifo_wr = 0;
+            break;
         default:
+            InZ80_bad ("MFX", port, TRUE);
             value = (byte) port;
         }
     diag_message (DIAG_MFX_PORT, "mfx_in (0x%02X) = 0x%02X", port, value);
@@ -671,6 +695,28 @@ void mfx_out (word port, byte value)
             if (mfx_ver < 2) OutZ80_bad ("MFX", port, value, TRUE);
             diag_message (DIAG_MFX_TEXT, "Character attribute 2 = 0x%02X", value);
             atr2 = value;
+            break;
+        case 0x70:
+            if (mfx_ver < 4) OutZ80_bad ("MFX", port, value, TRUE);
+            rtc_out70 (value);
+            break;
+        case 0x71:
+            if (mfx_ver < 4) OutZ80_bad ("MFX", port, value, TRUE);
+            rtc_out71 (value);
+            break;
+        case 0x72:
+            if (mfx_ver < 4) OutZ80_bad ("MFX", port, value, TRUE);
+            rtc_out72 (value);
+            break;
+        case 0x73:
+            if (mfx_ver < 4) OutZ80_bad ("MFX", port, value, TRUE);
+            fifo_buf[fifo_wr] = value;
+            ++fifo_wr;
+            fifo_wr &= LEN_FIFO - 1;
+            fifo_rd = 0;
+            break;
+        default:
+            OutZ80_bad ("MFX", port, value, TRUE);
             break;
         }
     }
