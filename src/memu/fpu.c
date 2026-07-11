@@ -118,7 +118,7 @@ static void fpu_fadd (void)
             {
             if (nos->e == 0)
                 {
-                iResult = R_UNDER;
+                iResult = R_UNDR;
                 break;
                 }
             --nos->e;
@@ -157,8 +157,8 @@ static void fpu_fmul (void)
                 mulres >>= 1;
                 }
             }
-        if (nexp > 0xFF) iResult = R_OVERF;
-        else if (nexp <= 0) iResult = T_UNDER;
+        if (nexp > 0xFF) iResult = R_OVER;
+        else if (nexp <= 0) iResult = R_UNDR;
         nos->e = nexp & 0xFF;
         nos->m = mulres >> 31;
         if (tneg == nneg) nos->m &= 0x7FFFFFFF;
@@ -197,8 +197,8 @@ static void fpu_fdiv (void)
                 divres >>= 1;
                 }
             }
-        if (nexp > 0xFF) iResult = R_OVERF;
-        else if (nexp <= 0) iResult = T_UNDER;
+        if (nexp > 0xFF) iResult = R_OVER;
+        else if (nexp <= 0) iResult = R_UNDR;
         nos->e = nexp & 0xFF;
         nos->m = divres >> 31;
         if (tneg == nneg) nos->m &= 0x7FFFFFFF;
@@ -207,7 +207,7 @@ static void fpu_fdiv (void)
 
 static void fpu_cmd (byte cmd)
     {
-    Float5 ftmp;
+    Float5 fTmp;
     switch (cmd)
         {
         case 0x00:    // C_INIT
@@ -385,10 +385,10 @@ static void fpu_cmd (byte cmd)
             else
                 {
                 tos->m |= 0x80000000;
-                tos->m >>= 0xA0 - tos->e
+                tos->m >>= 0xA0 - tos->e;
                 }
             break;
-        case default:
+        default:
             if ((cmd >= 0x40) && (cmd <= 0x59))
                 {
                 fpu_copy (tos, &fconst[cmd - 0x40]);
@@ -418,7 +418,7 @@ void fpu_out (word port, byte value)
             break;
         case 0xA5:
             fpu_cmd (value);
-            break
+            break;
         }
     }
 

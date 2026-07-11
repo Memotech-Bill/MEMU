@@ -59,6 +59,7 @@ elseif("${TARGET}" STREQUAL "XWin")
     ${CMAKE_CURRENT_LIST_DIR}/dart.c
     ${CMAKE_CURRENT_LIST_DIR}/dirmap.c
     ${CMAKE_CURRENT_LIST_DIR}/dirt_unix.c
+    ${CMAKE_CURRENT_LIST_DIR}/fpu.c
     ${CMAKE_CURRENT_LIST_DIR}/joy_lin.c
     ${CMAKE_CURRENT_LIST_DIR}/kbd2.c
     ${CMAKE_CURRENT_LIST_DIR}/main.c
@@ -93,6 +94,7 @@ elseif("${TARGET}" STREQUAL "FBuf")
     ${CMAKE_CURRENT_LIST_DIR}/dart.c
     ${CMAKE_CURRENT_LIST_DIR}/dirmap.c
     ${CMAKE_CURRENT_LIST_DIR}/dirt_unix.c
+    ${CMAKE_CURRENT_LIST_DIR}/fpu.c
     ${CMAKE_CURRENT_LIST_DIR}/joy_lin.c
     ${CMAKE_CURRENT_LIST_DIR}/kbd2.c
     ${CMAKE_CURRENT_LIST_DIR}/main.c
@@ -127,6 +129,7 @@ elseif("${TARGET}" STREQUAL "RPi")
     ${CMAKE_CURRENT_LIST_DIR}/dart.c
     ${CMAKE_CURRENT_LIST_DIR}/dirmap.c
     ${CMAKE_CURRENT_LIST_DIR}/dirt_unix.c
+    ${CMAKE_CURRENT_LIST_DIR}/fpu.c
     ${CMAKE_CURRENT_LIST_DIR}/joy_lin.c
     ${CMAKE_CURRENT_LIST_DIR}/kbd2.c
     ${CMAKE_CURRENT_LIST_DIR}/main.c
@@ -154,6 +157,7 @@ elseif("${TARGET}" STREQUAL "Win")
     ${CMAKE_CURRENT_LIST_DIR}/ctc.c
     ${CMAKE_CURRENT_LIST_DIR}/dirmap.c
     ${CMAKE_CURRENT_LIST_DIR}/dirt_w32.c
+    ${CMAKE_CURRENT_LIST_DIR}/fpu.c
     ${CMAKE_CURRENT_LIST_DIR}/joy_w32.c
     ${CMAKE_CURRENT_LIST_DIR}/kbd2.c
     ${CMAKE_CURRENT_LIST_DIR}/main.c
@@ -203,6 +207,7 @@ elseif("${TARGET}" STREQUAL "SDL")
     ${CMAKE_CURRENT_LIST_DIR}/cpm.c
     ${CMAKE_CURRENT_LIST_DIR}/ctc.c
     ${CMAKE_CURRENT_LIST_DIR}/dirmap.c
+    ${CMAKE_CURRENT_LIST_DIR}/fpu.c
     ${CMAKE_CURRENT_LIST_DIR}/joy_sdl.c
     ${CMAKE_CURRENT_LIST_DIR}/kbd2.c
     ${CMAKE_CURRENT_LIST_DIR}/main.c
