@@ -2156,6 +2156,17 @@ void OutZ80(word port, byte value)
 		    nfx_out(port & 0x03, value);
 		    break;
 #endif
+        case 0xA0:
+        case 0xA1:
+        case 0xA2:
+        case 0xA3:
+        case 0xA4:
+        case 0xA5:
+#if HAVE_MFX
+            if (mfx_ver >= 4) fpu_out (port, value);
+            else
+#endif
+            OutZ80_bad("Floating Point Accelerator", port, value, TRUE);
 #ifdef HAVE_CFX2
         case 0xb0:
         case 0xb1:
@@ -2165,7 +2176,7 @@ void OutZ80(word port, byte value)
         case 0xb5:
         case 0xb6:
         case 0xb7:
-            if ( ! cfg.bCFX2 ) OutZ80_bad("/CFX-II CF", port, value, TRUE);
+            if ( ! cfg.bCFX2 ) OutZ80_bad("CFX-II CF", port, value, TRUE);
             cfx2_out (port, value);
             break;
 #endif
@@ -2239,7 +2250,7 @@ byte InZ80_bad(const char *hardware, word port, BOOLEAN stop)
 #endif
 	if ( stop && !diag_flags[DIAG_BAD_PORT_IGNORE] )
 		fatal("no emulation of %s, in 0x%04x, so stopping emulation", hardware, port);
-	return 0xff;
+	return port & 0xff;
 	}
 /*...e*/
 
@@ -2434,6 +2445,16 @@ byte InZ80(word port)
  		case NFX_BASE + 3:
 		    return nfx_in(port & 0x03);
 #endif
+        case 0xA0:
+        case 0xA1:
+        case 0xA2:
+        case 0xA3:
+        case 0xA4:
+        case 0xA5:
+#if HAVE_MFX
+            if (mfx_ver >= 4) return fpu_in (port);
+#endif
+            return InZ80_bad("Floating Point Accelerator", port, TRUE);
 #ifdef HAVE_CFX2
         case 0xb0:
         case 0xb1:
@@ -2443,7 +2464,7 @@ byte InZ80(word port)
         case 0xb5:
         case 0xb6:
         case 0xb7:
-            if ( ! cfg.bCFX2 ) InZ80_bad("/CFX-II CF", port, TRUE);
+            if ( ! cfg.bCFX2 ) return InZ80_bad("CFX-II CF", port, TRUE);
             return cfx2_in (port);
 #endif
 		case 0xc0:

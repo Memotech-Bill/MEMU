@@ -6,6 +6,9 @@
 #ifdef HAVE_MFX
 
 #define MFXEMU_MAX  0x8000
+
+extern int mfx_ver;
+
 void mfx_init (int mfx_emu);
 void mfx_term (void);
 byte mfx_in (word port);

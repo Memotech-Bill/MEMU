@@ -293,8 +293,8 @@ static byte *vram = NULL;
 typedef byte FONT[0x100][THEIGHT];
 static FONT *font = NULL;
 
+int mfx_ver = 0;
 static int mfx_emu = 0;
-static int mfx_ver = 0;
 static byte page = 0;
 static byte palidx = 0;
 static byte raddr = 0;
@@ -421,38 +421,40 @@ byte mfx_in (word port)
     switch (port)
         {
         case 0x28:
-            if (mfx_ver < 2) InZ80_bad ("MFX", port, TRUE);
-            value = ccntr & 0xFF;
+            if (mfx_ver < 2) value = InZ80_bad ("MFX", port, TRUE);
+            else value = ccntr & 0xFF;
             break;
         case 0x29:
-            if (mfx_ver < 2) InZ80_bad ("MFX", port, TRUE);
-            value = ccntr >> 8;
+            if (mfx_ver < 2) value = InZ80_bad ("MFX", port, TRUE);
+            else value = ccntr >> 8;
             break;
         case 0x2A:
-            if (mfx_ver < 2) InZ80_bad ("MFX", port, TRUE);
-            value = caddr & 0xFF;
+            if (mfx_ver < 2) value = InZ80_bad ("MFX", port, TRUE);
+            else value = caddr & 0xFF;
             break;
         case 0x2B:
-            if (mfx_ver < 2) InZ80_bad ("MFX", port, TRUE);
-            value = caddr >> 8;
+            if (mfx_ver < 2) value = InZ80_bad ("MFX", port, TRUE);
+            else value = caddr >> 8;
             break;
         case 0x2C:
-            if (mfx_ver < 2) InZ80_bad ("MFX", port, TRUE);
-            value = vaddr & 0xFF;
+            if (mfx_ver < 2) value = InZ80_bad ("MFX", port, TRUE);
+            else value = vaddr & 0xFF;
             break;
         case 0x2D:
-            if (mfx_ver < 2) InZ80_bad ("MFX", port, TRUE);
-            value = vaddr >> 8;
+            if (mfx_ver < 2) value = InZ80_bad ("MFX", port, TRUE);
+            else value = vaddr >> 8;
             break;
         case 0x2E:
-            if (mfx_ver < 2) InZ80_bad ("MFX", port, TRUE);
-            value = vram[VADDR(vaddr)];
-            vaddr = (vaddr + vincr) & 0x7FFF;
-            value = value;
+            if (mfx_ver < 2) value = InZ80_bad ("MFX", port, TRUE);
+            else
+                {
+                value = vram[VADDR(vaddr)];
+                vaddr = (vaddr + vincr) & 0x7FFF;
+                }
             break;
         case 0x2F:
-            if (mfx_ver < 2) InZ80_bad ("MFX", port, TRUE);
-            value = vram[VADDR(vaddr)];
+            if (mfx_ver < 2) value = InZ80_bad ("MFX", port, TRUE);
+            else value = vram[VADDR(vaddr)];
             break;
         case 0x30:
             value = taddr & 0xFF;
@@ -476,18 +478,24 @@ byte mfx_in (word port)
             value = value;
             break;
         case 0x36:
-            if (mfx_ver < 2) InZ80_bad ("MFX", port, TRUE);
-            diag_message (DIAG_MFX_FONT, "Read font index = 0x%02X", fontidx);
-            value = fontidx;
+            if (mfx_ver < 2) value = InZ80_bad ("MFX", port, TRUE);
+            else
+                {
+                diag_message (DIAG_MFX_FONT, "Read font index = 0x%02X", fontidx);
+                value = fontidx;
+                }
             break;
         case 0x37:
-            if (mfx_ver < 2) InZ80_bad ("MFX", port, TRUE);
-            value = (*font)[fontidx][fontrow];
-            diag_message (DIAG_MFX_FONT, "Read font character 0X%02X row %d = 0x%02X", fontidx, fontrow, value);
-            if ( ++fontrow >= THEIGHT )
+            if (mfx_ver < 2) value = InZ80_bad ("MFX", port, TRUE);
+            else
                 {
-                fontrow = 0;
-                ++fontidx;
+                value = (*font)[fontidx][fontrow];
+                diag_message (DIAG_MFX_FONT, "Read font character 0X%02X row %d = 0x%02X", fontidx, fontrow, value);
+                if ( ++fontrow >= THEIGHT )
+                    {
+                    fontrow = 0;
+                    ++fontidx;
+                    }
                 }
             break;
         case 0x38:
@@ -503,40 +511,42 @@ byte mfx_in (word port)
             value = page;
             break;
         case 0x3C:
-            if (mfx_ver < 2) InZ80_bad ("MFX", port, TRUE);
-            value = palidx;
+            if (mfx_ver < 2) value = InZ80_bad ("MFX", port, TRUE);
+            else value = palidx;
             break;
         case 0x3D:
-            if (mfx_ver < 2) InZ80_bad ("MFX", port, TRUE);
-            value = (mfx_pal[palidx].g & 0xF0) | (mfx_pal[palidx].r >> 4);
+            if (mfx_ver < 2) value = InZ80_bad ("MFX", port, TRUE);
+            else value = (mfx_pal[palidx].g & 0xF0) | (mfx_pal[palidx].r >> 4);
             break;
         case 0x3E:
-            if (mfx_ver < 2) InZ80_bad ("MFX", port, TRUE);
-            value = mfx_pal[palidx].b >> 4;
+            if (mfx_ver < 2) value = InZ80_bad ("MFX", port, TRUE);
+            else value = mfx_pal[palidx].b >> 4;
             break;
         case 0x3F:
-            if (mfx_ver < 2) InZ80_bad ("MFX", port, TRUE);
-            value = atr2;
+            if (mfx_ver < 2) value = InZ80_bad ("MFX", port, TRUE);
+            else value = atr2;
             break;
         case 0x71:
-            if (mfx_ver < 4) InZ80_bad ("MFX", port, TRUE);
-            value = rtc_in71 ();
+            if (mfx_ver < 4) value = InZ80_bad ("MFX", port, TRUE);
+            else value = rtc_in71 ();
             break;
         case 0x72:
-            if (mfx_ver < 4) InZ80_bad ("MFX", port, TRUE);
-            value = rtc_in72 ();
+            if (mfx_ver < 4) value = InZ80_bad ("MFX", port, TRUE);
+            else value = rtc_in72 ();
             break;
         case 0x73:
-            if (mfx_ver < 4) InZ80_bad ("MFX", port, TRUE);
-            value = fifo_data;
-            fifo_data = fifo_buf[fifo_rd];
-            ++fifo_rd;
-            fifo_rd &= LEN_FIFO - 1;
-            fifo_wr = 0;
+            if (mfx_ver < 4) value = InZ80_bad ("MFX", port, TRUE);
+            else
+                {
+                value = fifo_data;
+                fifo_data = fifo_buf[fifo_rd];
+                ++fifo_rd;
+                fifo_rd &= LEN_FIFO - 1;
+                fifo_wr = 0;
+                }
             break;
         default:
-            InZ80_bad ("MFX", port, TRUE);
-            value = (byte) port;
+            value = InZ80_bad ("MFX", port, TRUE);
         }
     diag_message (DIAG_MFX_PORT, "mfx_in (0x%02X) = 0x%02X", port, value);
     return value;
