@@ -27,6 +27,10 @@
 
 #define NUM_ALT_TOGGLE  8
 
+#ifdef WIN32
+#define strcasecmp _stricmp
+#endif
+
 /*
   MTX matrix positions corresponding to key presses.
   High nibble (0-7) is drive line

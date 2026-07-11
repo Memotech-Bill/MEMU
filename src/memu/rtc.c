@@ -12,6 +12,10 @@
 #define N_TIM_REG   7
 #define NSPD        (24 * 60 * 60)
 
+#ifdef WIN32
+#define timegm _mkgmtime
+#endif
+
 static time_t   tOSSet;
 static time_t   tRTCSet;
 

@@ -9,3 +9,4 @@ run_time/*.dll
 test*
 temp*
 test/
+vs/
