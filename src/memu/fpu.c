@@ -96,7 +96,7 @@ static void fpu_fadd (void)
             ++nos->e;
             nosm >>= 1;
             }
-        nos->m = nosm >> 1;
+        nos->m = (unsigned int)(nosm >> 1);
         }
     else if (nosm == tosm)
         {
@@ -113,7 +113,7 @@ static void fpu_fadd (void)
             nneg = ! nneg;
             }
         if (nosm & 1) ++nosm;
-        nos->m = nosm >> 1;
+        nos->m = (unsigned int)(nosm >> 1);
         while (!(nos->m & 0x80000000))
             {
             if (nos->e == 0)
@@ -160,7 +160,7 @@ static void fpu_fmul (void)
         if (nexp > 0xFF) iResult = R_OVER;
         else if (nexp <= 0) iResult = R_UNDR;
         nos->e = nexp & 0xFF;
-        nos->m = mulres >> 31;
+        nos->m = (unsigned int)(mulres >> 31);
         if (tneg == nneg) nos->m &= 0x7FFFFFFF;
         }
     }
@@ -200,7 +200,7 @@ static void fpu_fdiv (void)
         if (nexp > 0xFF) iResult = R_OVER;
         else if (nexp <= 0) iResult = R_UNDR;
         nos->e = nexp & 0xFF;
-        nos->m = divres >> 31;
+        nos->m = (unsigned int)(divres >> 31);
         if (tneg == nneg) nos->m &= 0x7FFFFFFF;
         }
     }
@@ -244,7 +244,7 @@ static void fpu_cmd (byte cmd)
             tos->e = 0;
             break;
         case 0x20:    // C_INEG
-            tos->m = - tos->m;
+            tos->m = (unsigned int)(- (int)tos->m);
             break;
         case 0x21:    // C_INOT
             tos->m = ~ tos->m;
@@ -372,7 +372,7 @@ static void fpu_cmd (byte cmd)
         case 0x81:    // C_FTOU
             if (tos->e < 0x81)
                 {
-                tos->m == 0;
+                tos->m = 0;
                 }
             else if (tos->e > 0xA0)
                 {
