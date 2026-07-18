@@ -44,6 +44,7 @@ static Float5 *tos = &stack[0];
 static Float5 *nos = &stack[N_STACK - 1];
 static unsigned long long mulres = 0;
 static byte iResult = 0;
+static byte enable = 0;
 
 static inline Float5* fpu_stack (int iPos)
     {
@@ -399,52 +400,66 @@ static void fpu_cmd (byte cmd)
 
 void fpu_out (word port, byte value)
     {
-    switch (port & 0xFF)
+    if (port == 0xDA)
         {
-        case 0xA0:
-            tos->m = (tos->m & 0xFFFFFF00) | value;
-            break;
-        case 0xA1:
-            tos->m = (tos->m & 0xFFFF00FF) | (((unsigned int) value) << 8);
-            break;
-        case 0xA2:
-            tos->m = (tos->m & 0xFF00FFFF) | (((unsigned int) value) << 16);
-            break;
-        case 0xA3:
-            tos->m = (tos->m & 0x00FFFFFF) | (((unsigned int) value) << 14);
-            break;
-        case 0xA4:
-            tos->e = value;
-            break;
-        case 0xA5:
-            fpu_cmd (value);
-            break;
+        enable = value & 0x40;
+        }
+    else if (enable)
+        {
+        switch (port & 0xFF)
+            {
+            case 0xA0:
+                tos->m = (tos->m & 0xFFFFFF00) | value;
+                break;
+            case 0xA1:
+                tos->m = (tos->m & 0xFFFF00FF) | (((unsigned int) value) << 8);
+                break;
+            case 0xA2:
+                tos->m = (tos->m & 0xFF00FFFF) | (((unsigned int) value) << 16);
+                break;
+            case 0xA3:
+                tos->m = (tos->m & 0x00FFFFFF) | (((unsigned int) value) << 24);
+                break;
+            case 0xA4:
+                tos->e = value;
+                break;
+            case 0xA5:
+                fpu_cmd (value);
+                break;
+            }
         }
     }
 
 byte fpu_in (word port)
     {
-    byte value;
-    switch (port & 0xFF)
+    byte value = 0x78;
+    if (port = 0xDA)
         {
-        case 0xA0:
-            value = tos->m & 0xFF;
-            break;
-        case 0xA1:
-            value = (tos->m >> 8) & 0xFF;
-            break;
-        case 0xA2:
-            value = (tos->m >> 16) & 0xFF;
-            break;
-        case 0xA3:
-            value = (tos->m >> 24) & 0xFF;
-            break;
-        case 0xA4:
-            value = tos->e;
-            break;
-        case 0xA5:
-            value = iResult;
-            break;
+        value = enable;
+        }
+    else if (enable)
+        {
+        switch (port & 0xFF)
+            {
+            case 0xA0:
+                value = tos->m & 0xFF;
+                break;
+            case 0xA1:
+                value = (tos->m >> 8) & 0xFF;
+                break;
+            case 0xA2:
+                value = (tos->m >> 16) & 0xFF;
+                break;
+            case 0xA3:
+                value = (tos->m >> 24) & 0xFF;
+                break;
+            case 0xA4:
+                value = tos->e;
+                break;
+            case 0xA5:
+                value = iResult;
+                break;
+            }
         }
     return value;
     }

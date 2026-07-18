@@ -2493,6 +2493,11 @@ byte InZ80(word port)
 			return InZ80_bad("REMEMOTECH/REMEMOrizer clock divider", port, TRUE);
 		case 0xd9:
 			return InZ80_bad("REMEMOrizer flags", port, TRUE);
+        case 0xda:
+#if HAVE_MFX
+            if (mfx_ver >= 4) return fpu_in (port);
+#endif
+			return InZ80_bad("REMEMOTECH/REMEMOrizer flags", port, TRUE);
 #ifdef HAVE_SPEC
 		case 0xfb:
 			return spec_inFB();
