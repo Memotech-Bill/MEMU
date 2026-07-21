@@ -117,6 +117,9 @@ enum DIAGS {
     DIAG_CFX2_PORT,
     DIAG_CFX2_DATA,
     DIAG_CFX2_HW,
+    DIAG_FPU_PORT,
+    DIAG_FPU_STACK,
+    DIAG_FPU_CALC,
     DIAG_ALL_COUNT,
 // The below are actions, and should not be activated by -diag-all
     DIAG_ACT_VID_REGS = DIAG_ALL_COUNT,

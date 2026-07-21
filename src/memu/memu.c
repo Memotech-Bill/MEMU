@@ -84,6 +84,7 @@ memu.c - Memotech Emulator
 #include "sdcard.h"
 #ifdef HAVE_MFX
 #include "mfx.h"
+#include "fpu.h"
 #endif
 #ifdef HAVE_VGA
 #include "vga.h"
@@ -2202,7 +2203,12 @@ void OutZ80(word port, byte value)
 #endif
 			break;
 		case 0xd9:
-			OutZ80_bad("REMEMOrizer flags", port, value, TRUE);
+        case 0xda:
+#if HAVE_MFX
+            if (mfx_ver >= 4) fpu_out (port, value);
+            else
+#endif
+			OutZ80_bad("REMEMOTECH/REMEMOrizer flags", port, value, TRUE);
 			break;
         case 0xee:
         case 0xef:

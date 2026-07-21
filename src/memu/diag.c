@@ -176,10 +176,13 @@ static FLAGVAL flagvals[] =
         {"mfx-pal", DIAG_MFX_PAL},
         {"mfx-port", DIAG_MFX_PORT},
         {"mfx-text", DIAG_MFX_TEXT},
-		{"cfx1-ports" ,DIAG_CFX_PORT},
-		{"cfx2-ports" ,DIAG_CFX2_PORT},
-		{"cfx2-hw" ,DIAG_CFX2_HW},
-		{"cfx2-data" ,DIAG_CFX2_DATA},
+		{"cfx1-ports", DIAG_CFX_PORT},
+		{"cfx2-ports", DIAG_CFX2_PORT},
+		{"cfx2-hw", DIAG_CFX2_HW},
+		{"cfx2-data", DIAG_CFX2_DATA},
+		{"fpu-ports", DIAG_FPU_PORT},
+        {"fpu-stack", DIAG_FPU_STACK},
+        {"fpu-calc", DIAG_FPU_CALC},
 	};
 /*...e*/
 /*...sdiag_flag_of:0:*/
