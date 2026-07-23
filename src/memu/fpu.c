@@ -5,7 +5,8 @@
 #include <string.h>
 #include <math.h>
 
-#define N_STACK 8
+#define N_STACK     8
+#define SMUL_BUG    1
 
 typedef struct
     {
@@ -72,15 +73,15 @@ static const struct
     {0x24, "32 bit integer arithmetic shift right"},
     {0x25, "32 bit integer absolute value"},
     {0x26, "32 bit sign (result is -1, 0 or 1)"},
-    {0x30, "32 bit integer addition (40 bit result)"},
-    {0x31, "32 bit integer subtraction (40 bit result)"},
+    {0x30, "40 bit integer addition"},
+    {0x31, "40 bit integer subtraction"},
     {0x32, "32 bit integer unsigned multiplication"},
     {0x33, "32 bit integer signed multiplication"},
     {0x34, "32 bit integer unsigned division"},
     {0x35, "32 bit integer signed division"},
     {0x36, "32 bit integer unsigned modulus"},
     {0x37, "32 bit integer signed modulus"},
-    {0x38, "Push bits 32 to 63 of multiply result to top of stack"},
+    {0x38, "Push bits 32 to 63 of multiply result to top of stack (incorrect for negative results)"},
     {0x40, "Load 1.0 on top of stack (replaces previous value)"},
     {0x41, "Load 2.0 on top of stack"},
     {0x42, "Load 10.0 on top of stack"},
@@ -198,9 +199,8 @@ static void fpu_push (void)
     else diag_message (DIAG_FPU_STACK, "Overflowed FPU stack");
     }
 
-static void fpu_pop (void)
+static void fpu_popnos (void)
     {
-    fpu_copy (&tos, &nos);
     fpu_copy (&nos, &stack[iStk]);
     if (--iStk < 0) iStk = N_STACK - 1;
     if (nDepth > 0) --nDepth;
@@ -209,65 +209,75 @@ static void fpu_pop (void)
 
 static void fpu_fadd (void)
     {
-    BOOLEAN tneg = tos.m >= 0x80000000;
-    BOOLEAN nneg = nos.m >= 0x80000000;
-    long long tosm = ((long long)(tos.m | 0x80000000)) << 1;
-    long long nosm = ((long long)(nos.m | 0x80000000)) << 1;
-    diag_message (DIAG_FPU_CALC, "Original: tosm = %c%09llX, nosm = %c%09llX",
-        tneg ? '-' : '+', tosm, nneg ? '-' : '+', nosm);
+    if (nos.e == 0) return;
+    if (tos.e == 0)
+        {
+        fpu_copy (&tos, &nos);
+        return;
+        }
+    
+    BOOLEAN tneg = tos.m & 0x80000000;
+    BOOLEAN nneg = nos.m & 0x80000000;
+    unsigned long long tosm = ((unsigned long long)(tos.m | 0x80000000)) << 31;
+    unsigned long long nosm = ((unsigned long long)(nos.m | 0x80000000)) << 31;
+    unsigned long long summ;
+    int sume;
     if (tos.e >= nos.e)
         {
+        sume = tos.e;
         nosm >>= tos.e - nos.e;
-        nos.e = tos.e;
         }
     else
         {
+        sume = nos.e;
         tosm >>= nos.e - tos.e;
         }
-    diag_message (DIAG_FPU_CALC, "Shifted: tosm = %09llX, nosm = %09llX", tosm, nosm);
+    diag_message (DIAG_FPU_CALC, "nosm = %c%016llX, tosm = %c%016llX, sume = %03X",
+        nneg ? '-' : '+', nosm, tneg ? '-' : '+', tosm, sume);
     if (tneg == nneg)
         {
-        nosm += tosm;
-        if (nosm & 1) ++nosm;
-        diag_message (DIAG_FPU_CALC, "Added: nosm = %09llX, nos.e = %02X", nosm, nos.e);
-        if (nosm & 0x200000000ULL)
+        summ = nosm + tosm;
+        diag_message (DIAG_FPU_CALC, "After addition: summ = %016llX", summ);
+        summ += (summ & 0x40000000) << 1;
+        if (summ & 0x8000000000000000ULL)
             {
-            if (nos.e == 0xFF) iResult = R_OVER;
-            ++nos.e;
-            nosm >>= 1;
+            ++sume;
+            summ >>= 1;
             }
-        nos.m = (unsigned int)(nosm >> 1);
+        diag_message (DIAG_FPU_CALC, "After normalisation: summ = %016llX, sume = %03X", summ, sume);
+        tos.e = (byte) sume;
+        tos.m = (unsigned int)(summ >> 31);
+        if (! tneg) tos.m &= 0x7FFFFFFF;
+        if (sume & 0x100) iResult = R_OVER;
         }
     else if (nosm == tosm)
         {
-        nos.m = 0;
-        nos.e = 0;
-        nneg = FALSE;
-        diag_message (DIAG_FPU_CALC, "Subtract equal values");
+        tos.m = 0;
+        tos.e = 0;
+        diag_message (DIAG_FPU_CALC, "Subtracted equal values to give zero");
         }
     else
         {
-        nosm -= tosm;
-        if (nosm < 0)
+        if (nosm > tosm)
             {
-            nosm = -nosm;
-            nneg = ! nneg;
+            summ = nosm - tosm;
+            tneg = nneg;
             }
-        if (nosm & 1) ++nosm;
-        nos.m = (unsigned int)(nosm >> 1);
-        diag_message (DIAG_FPU_CALC, "Subtracted: nosm = %09llX, nos.e = %d", nosm, nos.e);
-        while (!(nos.m & 0x80000000))
+        else
             {
-            if (nos.e == 0)
-                {
-                iResult = R_UNDR;
-                break;
-                }
-            --nos.e;
-            nos.m <<= 1;
+            summ = tosm - nosm;
             }
+        diag_message (DIAG_FPU_CALC, "After subtraction: summ = %c%016llX", tneg ? '-' : '+', summ);
+        unsigned int nlz = __builtin_clzll (summ) - 1;
+        sume -= nlz;
+        summ <<= nlz;
+        summ += (summ & 0x40000000) << 1;
+        diag_message (DIAG_FPU_CALC, "After normalisation: summ = %016llX, sume = %03X", summ, sume);
+        tos.e = (byte) sume;
+        tos.m = (unsigned int)(summ >> 31);
+        if (! tneg) tos.m &= 0x7FFFFFFF;
+        if (sume <= 0) iResult = R_UNDR;
         }
-    if (!nneg) nos.m &= 0x7FFFFFFF;
     }
 
 static void fpu_fmul (void)
@@ -283,29 +293,33 @@ static void fpu_fmul (void)
         BOOLEAN nneg = nos.m >= 0x80000000;
         unsigned long long tosm = tos.m | 0x80000000;
         unsigned long long nosm = nos.m | 0x80000000;
+        int sume = (int) nos.e + (int) tos.e - 0x81;
+        diag_message (DIAG_FPU_CALC, "nosm = %c%08llX, tosm = %c%08llX, sume = %03X",
+            nneg ? '-' : '+', nosm, tneg ? '-' : '+', tosm, sume);
         mulres = nosm * tosm;
-        int nexp = (int) nos.e + (int) tos.e - 0x81;
-        diag_message (DIAG_FPU_CALC, "tosm = %c%08llX, nosm = %c%08llX, mulres = %016llX, nexp = %d",
-            tneg ? '-' : '+', tosm, nneg ? '-' : '+', nosm, mulres, nexp);
-        if (mulres & 0x8000000000000000ULL)
+        unsigned long long summ = mulres;
+        if (summ & 0x8000000000000000ULL)
             {
-            ++nexp;
-            mulres >>= 1;
+            ++sume;
             }
-        if (mulres & 0x40000000)
+        else
             {
-            mulres += 0x4000000;
-            if (mulres & 0x8000000000000000ULL)
-                {
-                ++nexp;
-                mulres >>= 1;
-                }
+            summ <<= 1;
             }
-        if (nexp > 0xFF) iResult = R_OVER;
-        else if (nexp <= 0) iResult = R_UNDR;
-        nos.e = nexp & 0xFF;
-        nos.m = (unsigned int)(mulres >> 31);
-        if (tneg == nneg) nos.m &= 0x7FFFFFFF;
+        diag_message (DIAG_FPU_CALC, "mulres = %016llX, summ = %016llX", mulres, summ);
+        summ += (summ & 0x80000000) << 1;
+        if ((summ & 0x8000000000000000ULL) == 0)
+            {
+            ++sume;
+            summ >>= 1;
+            summ |= 0x8000000000000000ULL;
+            }
+        diag_message (DIAG_FPU_CALC, "After rounding: summ = %016llX", summ);
+        tos.e = (byte) sume;
+        tos.m = (unsigned int)(summ >> 32);
+        if (nneg == tneg) tos.m &= 0x7FFFFFFF;
+        if (sume <= 0) iResult = R_UNDR;
+        else if (sume >= 0x100) iResult = R_OVER;
         }
     }
 
@@ -316,31 +330,55 @@ static void fpu_fdiv (void)
         diag_message (DIAG_FPU_CALC, "Floating divide by zero");
         iResult = R_DIV0;
         }
-    else if (nos.e != 0)
+    else if (nos.e == 0)
+        {
+        tos.e = 0;
+        tos.m = 0;
+        diag_message (DIAG_FPU_CALC, "Zero numerator");
+        }
+    else
         {
         BOOLEAN tneg = tos.m >= 0x80000000;
         BOOLEAN nneg = nos.m >= 0x80000000;
-        unsigned long long tosm = tos.m | 0x80000000;
-        unsigned long long nosm = nos.m | 0x80000000;
-        diag_message (DIAG_FPU_CALC, "tosm = %c%08llX, nosm = %c%08llX",
-            tneg ? '-' : '+', tosm, nneg ? '-' : '+', nosm);
-        nosm <<= 32;
-        nosm = (nosm + tosm / 2) / tosm;
-        int nexp = (int) nos.e - (int) tos.e + 0x81;
-        diag_message (DIAG_FPU_CALC, "nosm = %016llX, nexp = %02X", nosm, nexp);
-        if (nosm & 0x100000000ULL)
+        unsigned long long tosm = ((unsigned long long)(tos.m | 0x80000000)) << 32;
+        unsigned long long nosm = ((unsigned long long)(nos.m | 0x80000000)) << 32;
+        unsigned long long scale = 0x200000000ULL;
+        unsigned long long quot = 0;
+        int sume = (int) nos.e - (int) tos.e + 0x81;
+        diag_message (DIAG_FPU_CALC, "nosm = %c%016llX, tosm = %c%016llX, sume = %03X",
+            nneg ? '-' : '+', nosm, tneg ? '-' : '+', tosm, sume);
+        while (scale != 0)
             {
-            nosm >>= 1;
+            if (nosm >= tosm)
+                {
+                nosm -= tosm;
+                quot |= scale;
+                }
+            tosm >>= 1;
+            scale >>= 1;
+            diag_message (DIAG_FPU_CALC, "nosm = %016llX, tosm = %016llX, quot = %016llX, scale = %016llX",
+                nosm, tosm, quot, scale);
             }
-        else
+        unsigned long long summ = quot << 30;
+        diag_message (DIAG_FPU_CALC, "summ = %016llX", summ);
+        if ((summ & 0x8000000000000000ULL) == 0)
             {
-            --nexp;
+            --sume;
+            summ <<= 1;
             }
-        if (nexp > 0xFF) iResult = R_OVER;
-        else if (nexp <= 0) iResult = R_UNDR;
-        nos.e = nexp & 0xFF;
-        nos.m = nosm;
-        if (tneg == nneg) nos.m &= 0x7FFFFFFF;
+        summ += (summ & 0x80000000) << 1;
+        if ((summ & 0x8000000000000000ULL) == 0)
+            {
+            ++sume;
+            summ >>= 1;
+            summ |= 0x8000000000000000ULL;
+            }
+        diag_message (DIAG_FPU_CALC, "After rounding: summ = %016llX", summ);
+        tos.e = (byte) sume;
+        tos.m = (unsigned int)(summ >> 32);
+        if (nneg == tneg) tos.m &= 0x7FFFFFFF;
+        if (sume <= 0) iResult = R_UNDR;
+        else if (sume >= 0x100) iResult = R_OVER;
         }
     }
 
@@ -348,10 +386,11 @@ static void fpu_cmd (byte cmd)
     {
     Float5 fTmp;
     long long itmp;
+    BOOLEAN bNeg;
     if (diag_flags[DIAG_FPU_STACK])
         {
         const char *psCmd = show_cmd (cmd);
-        diag_message (DIAG_FPU_STACK, "-----\nBefore FPU command 0x%02X: %s", cmd, psCmd);
+        diag_message (DIAG_FPU_STACK, "\nBefore FPU command 0x%02X: %s", cmd, psCmd);
         show_stack (cmd);
         diag_message (DIAG_FPU_STACK, "After FPU command 0x%02X: %s", cmd, psCmd);
         }
@@ -371,7 +410,8 @@ static void fpu_cmd (byte cmd)
             fpu_push ();
             break;
         case 0x03:    // C_DROP
-            fpu_pop ();
+            fpu_copy (&tos, &nos);
+            fpu_popnos ();
             break;
         case 0x04:    // C_SWAP
             fpu_copy (&fTmp, &nos);
@@ -412,84 +452,98 @@ static void fpu_cmd (byte cmd)
             else if (tos.m > 0) tos.m = 1;
             break;
         case 0x30:    // C_IADD
-            itmp = (long long) nos.m + tos.m;
-            memcpy (&nos, &itmp, 5);
-            fpu_pop ();
+            itmp = ((((long long)nos.e) << 32) | nos.m) + ((((long long)tos.e) << 32) | tos.m);
+            memcpy (&tos, &itmp, 5);
+            fpu_popnos ();
             break;
         case 0x31:    // C_ISUB
-            itmp = (long long) nos.m - tos.m;
-            memcpy (&nos, &itmp, 5);
-            fpu_pop ();
+            itmp = ((((long long)nos.e) << 32) | nos.m) - ((((long long)tos.e) << 32) | tos.m);
+            memcpy (&tos, &itmp, 5);
+            fpu_popnos ();
             break;
         case 0x32:    // C_UMUL
             mulres = ((unsigned long long) nos.m) * ((unsigned long long) tos.m);
-            nos.m = ((unsigned int *) &mulres)[0];
-            nos.e = 0;
-            fpu_pop ();
-            if (diag_flags[DIAG_FPU_STACK]) diag_message (DIAG_FPU_CALC, "mulres = %016llX", mulres);
+            tos.m = ((unsigned int *) &mulres)[0];
+            fpu_popnos ();
+            diag_message (DIAG_FPU_CALC, "mulres = %016llX", mulres);
             break;
         case 0x33:    // C_SMUL
-            mulres = (unsigned long long)((long long)(int) nos.m) * ((long long)(int) tos.m);
-            nos.m = ((unsigned int *) &mulres)[0];
-            nos.e = 0;
-            fpu_pop ();
-            if (diag_flags[DIAG_FPU_STACK]) diag_message (DIAG_FPU_CALC, "mulres = %016llX", mulres);
+            bNeg = FALSE;
+            if (nos.m & 0x80000000)
+                {
+                nos.m = (unsigned int)(-((int) nos.m));
+                bNeg = TRUE;
+                }
+            if (tos.m & 0x80000000)
+                {
+                tos.m = (unsigned int)(-((int) tos.m));
+                bNeg = ! bNeg;
+                }
+            mulres = ((unsigned long long) nos.m) * ((unsigned long long) tos.m);
+            diag_message (DIAG_FPU_CALC, "mulres = 0x%016llX = %lld, bNeg = %c", mulres, mulres, bNeg ? 'T' : 'F');
+#if SMUL_BUG
+            // As per FPGA. Determines sign of result and applies it to lower 32 bits.
+            // However, fails to apply negative sign to upper 32 bits.
+            tos.m = ((unsigned int *) &mulres)[0];
+            if (bNeg) tos.m = (unsigned int)(-((int) tos.m));
+#else
+            if (bNeg) mulres = (unsigned long long)(-((long long) mulres));
+            tos.m = ((unsigned int *) &mulres)[0];
+#endif
+            fpu_popnos ();
             break;
         case 0x34:    // C_UDIV
             if (tos.m == 0)
                 {
                 iResult = R_DIV0;
-                nos.m = 0;
+                tos.m = 0;
                 }
             else
                 {
-                nos.m = nos.m / tos.m;
+                tos.m = nos.m / tos.m;
                 }
-            nos.e = 0;
-            fpu_pop ();
+            fpu_popnos ();
             break;
         case 0x35:    // C_SDIV
             if (tos.m == 0)
                 {
                 iResult = R_DIV0;
-                nos.m = 0;
+                tos.m = 0;
                 }
             else
                 {
-                nos.m = (unsigned int)(((int) nos.m) / ((int) tos.m));
+                tos.m = (unsigned int)(((int) nos.m) / ((int) tos.m));
                 }
-            nos.e = 0;
-            fpu_pop ();
+            fpu_popnos ();
             break;
         case 0x36:    // C_UMOD
             if (tos.m == 0)
                 {
                 iResult = R_DIV0;
-                nos.m = 0;
+                tos.m = 0;
                 }
             else
                 {
-                nos.m = nos.m % tos.m;
+                tos.m = nos.m % tos.m;
                 }
-            nos.e = 0;
-            fpu_pop ();
+            fpu_popnos ();
             break;
         case 0x37:    // C_SMOD
             if (tos.m == 0)
                 {
                 iResult = R_DIV0;
-                nos.m = 0;
+                tos.m = 0;
                 }
             else
                 {
-                nos.m = (unsigned int)(((int) nos.m) % ((int) tos.m));
+                tos.m = (unsigned int)(((int) nos.m) % ((int) tos.m));
                 }
-            nos.e = 0;
-            fpu_pop ();
+            fpu_popnos ();
             break;
         case 0x38:    // C_HMUL
             fpu_push ();
             tos.m = ((unsigned int *) &mulres)[1];
+            tos.e = 0;
             break;
         case 0x60:    // C_FNEG
             if (tos.e != 0) tos.m ^= 0x80000000;
@@ -528,15 +582,15 @@ static void fpu_cmd (byte cmd)
             tos.m ^= 0x80000000;
         case 0x70:    // C_FADD
             fpu_fadd ();
-            fpu_pop ();
+            fpu_popnos ();
             break;
         case 0x72:    // C_FMUL
             fpu_fmul ();
-            fpu_pop ();
+            fpu_popnos ();
             break;
         case 0x73:    // C_FDIV
             fpu_fdiv ();
-            fpu_pop ();
+            fpu_popnos ();
             break;
         case 0x80:    // C_UTOF
             if (tos.m == 0)
@@ -555,22 +609,28 @@ static void fpu_cmd (byte cmd)
                 }
             break;
         case 0x81:    // C_FTOU
-            if (tos.e < 0x81)
+            if (tos.e == 0)
                 {
-                tos.m = 0;
-                }
-            else if (tos.e > 0xA0)
-                {
-                iResult = R_OVER;
+                diag_message (DIAG_FPU_CALC, "Zero exponant. Assumes mantissa is already zero");
                 }
             else if (tos.m & 0x80000000)
                 {
                 iResult = R_UNDR;
                 }
+            else if (tos.e < 0x81)
+                {
+                tos.m = 0;
+                tos.e = 0;
+                }
+            else if (tos.e > 0xA0)
+                {
+                iResult = R_OVER;
+                }
             else
                 {
                 tos.m |= 0x80000000;
                 tos.m >>= 0xA0 - tos.e;
+                tos.e = 0;
                 }
             break;
         default:
